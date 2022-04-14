@@ -1,0 +1,23 @@
+export { parse, stringify } from './core';
+export type {
+  JsonPathItem,
+  Value,
+  Root,
+  Current,
+  Negate,
+  SubscriptDot,
+  SubscriptDotdot,
+  SubscriptBracket,
+  Subscriptable,
+  Subscriptables,
+  FilterSubscript,
+  ArraySlice,
+  StringLiteral,
+  Identifier,
+  NumericLiteral,
+  FilterExpression,
+  ScriptExpression,
+  GroupExpression,
+  BinaryExpression,
+  Comparator,
+} from './types';
