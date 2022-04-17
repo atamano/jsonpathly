@@ -17,7 +17,9 @@ const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown
   switch (treeValue.type) {
     case 'identifier':
       if (treeValue.value === '*') {
-        return Object.values(payload);
+        if (isObject(payload) || isArray(payload)) {
+          results = results.concat(Object.values(payload));
+        }
       }
     case 'string_literal': {
       if (isObject(payload)) {

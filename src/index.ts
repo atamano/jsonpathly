@@ -45,13 +45,13 @@ try {
     // '$.nestedObject.object.test',
     // '$.notExist',
     // '$.*',
-    '$..hello.hello',
+    '$..*',
   ];
 
   for (const input of inputs) {
     const res = query(PAYLOAD, input);
 
-    console.log(input, res);
+    console.log(input, JSON.stringify(res));
   }
 } catch (e) {
   console.log(e);
