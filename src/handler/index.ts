@@ -16,14 +16,16 @@ const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown
 
   switch (treeValue.type) {
     case 'identifier':
-    case 'string_literal': {
       if (treeValue.value === '*') {
-        return results; //todo
+        return Object.values(payload);
       }
+    case 'string_literal': {
       if (isObject(payload)) {
         if (treeValue.value in payload) {
-          const res = handleSubscriptDotdot(payload[treeValue.value], tree);
-          results.push(payload[treeValue.value]);
+          const res = queryPayload(payload[treeValue.value], tree.next);
+          if (typeof res !== 'undefined') {
+            results.push(res);
+          }
         }
         for (const value of Object.values(payload)) {
           const res = handleSubscriptDotdot(value, tree);
@@ -44,7 +46,7 @@ const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown
 
 const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
   if (!isObject(payload)) {
-    return undefined;
+    return;
   }
   const treeValue = tree.value;
   switch (treeValue.type) {
@@ -52,7 +54,7 @@ const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
       if (treeValue.value in payload) {
         return queryPayload(payload[treeValue.value], tree.next);
       } else {
-        return undefined;
+        return;
       }
     }
     case 'identifier': {
@@ -61,7 +63,7 @@ const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
       } else if (treeValue.value === '*') {
         return Object.values(payload);
       } else {
-        return undefined;
+        return;
       }
     }
   }

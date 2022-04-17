@@ -45,7 +45,7 @@ try {
     // '$.nestedObject.object.test',
     // '$.notExist',
     // '$.*',
-    '$..hello',
+    '$..hello.hello',
   ];
 
   for (const input of inputs) {
