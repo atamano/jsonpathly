@@ -9,11 +9,44 @@ const PAYLOAD = {
     object: {
       test: '1',
     },
+    array: [
+      {
+        item: {
+          hello: {
+            hello: [{ hello: ' 1' }],
+          },
+        },
+      },
+      {
+        item: {
+          hello: {
+            hello: [{ hello: ' 2' }],
+          },
+        },
+      },
+      {
+        item: {
+          hello: {
+            hello: [{ hello: ' 13' }],
+          },
+        },
+      },
+    ],
   },
 };
 
 try {
-  const inputs = ['$.string', '$.number', '$.arrayOfNumber', '$.arrayOfString', '$.nestedObject.object.test'];
+  const inputs = [
+    // '$.string',
+    // '$.number',
+    // '$.arrayOfNumber',
+    // '$.arrayOfString',
+    // '$.nestedObject.object',
+    // '$.nestedObject.object.test',
+    // '$.notExist',
+    // '$.*',
+    '$..hello',
+  ];
 
   for (const input of inputs) {
     const res = query(PAYLOAD, input);

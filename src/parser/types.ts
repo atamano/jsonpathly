@@ -60,7 +60,7 @@ export type SubscriptDot = {
 export type SubscriptDotdot = {
   type: 'subscript';
   subtype: 'dotdot';
-  value: StringLiteral | Subscriptables;
+  value: Bareword | Subscriptables;
   next: Subscript | null;
 };
 
