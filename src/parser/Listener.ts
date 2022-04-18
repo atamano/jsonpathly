@@ -1,5 +1,6 @@
-import { default as isPlainObjet } from 'lodash.isplainobject';
 import { RuleContext } from 'antlr4ts/RuleContext';
+import { default as isPlainObjet } from 'lodash.isplainobject';
+import { ValidationError } from './errors';
 import { JSONPathListener } from './generated/JSONPathListener';
 import {
   ArrayContext,
@@ -17,19 +18,18 @@ import {
   ValueContext,
 } from './generated/JSONPathParser';
 import {
-  FilterExpressionChild,
   ComparatorArgument,
+  FilterExpressionChild,
+  Identifier,
   Node,
   Root,
+  ScriptExpressionChild,
   StartFunction,
   Subscript,
   Subscriptable,
-  Value,
-  Identifier,
   Subscriptables,
-  ScriptExpressionChild,
+  Value,
 } from './types';
-import { ErrorNode } from 'antlr4ts/tree/ErrorNode';
 
 export const WILDCARD = '*';
 
@@ -71,15 +71,6 @@ const TYPE_CHECKER = {
   subscriptable: isSubscriptable,
   subscriptables: (node: StackType): node is Subscriptables => 'type' in node && node.type === 'subscriptables',
 } as const;
-
-class ValidationError extends Error {
-  rule: RuleContext | null;
-
-  constructor(msg: string, rule: RuleContext | null) {
-    super(msg);
-    this.rule = rule;
-  }
-}
 
 type TypeGardReturn<K> = K extends (a: unknown) => a is infer T ? T : never;
 
