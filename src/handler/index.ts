@@ -1,12 +1,14 @@
-import { parse, JsonPathItem } from '../parser';
 import * as isPlainObject from 'lodash.isplainobject';
+import { WILDCARD } from '../parser/Listener';
+import { parse } from '../parser';
 import {
-  SubscriptDotdot,
-  SubscriptDot,
-  Subscriptables,
-  Subscriptable,
-  SubscriptBracket,
   StringLiteral,
+  Subscript,
+  Subscriptable,
+  Subscriptables,
+  SubscriptBracket,
+  SubscriptDot,
+  SubscriptDotdot,
 } from '../parser/types';
 
 const isArray = (item: unknown): item is unknown[] => {
@@ -46,10 +48,10 @@ const handleSubscriptBracket = (payload: unknown, tree: SubscriptBracket): unkno
   const results = handleSubscriptables(payload, tree.value);
 
   if (tree.value.values.length === 1 && ['string_literal', 'numeric_literal'].includes(tree.value.values[0].type)) {
-    return queryPayload(results.pop(), tree.next);
+    return handlSubscript(results.pop(), tree.next);
   }
 
-  return queryPayload(results, tree.next);
+  return handlSubscript(results, tree.next);
 };
 
 const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown[] => {
@@ -61,14 +63,14 @@ const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown
       return handleSubscriptables(payload, treeValue);
     }
     case 'identifier': {
-      if (treeValue.value === '*') {
+      if (treeValue.value === WILDCARD) {
         if (isObject(payload) || isArray(payload)) {
           results = results.concat(Object.values(payload));
         }
       }
       if (isObject(payload)) {
         if (treeValue.value in payload) {
-          const res = queryPayload(payload[treeValue.value], tree.next);
+          const res = handlSubscript(payload[treeValue.value], tree.next);
           if (typeof res !== 'undefined') {
             results.push(res);
           }
@@ -92,58 +94,35 @@ const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown
 };
 
 const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
+  const treeValue = tree.value;
+
   if (!isObject(payload)) {
     return;
   }
-  const treeValue = tree.value;
-  switch (treeValue.type) {
-    case 'string_literal': {
-      const res = handleStringLitteral(payload, treeValue);
-      return queryPayload(res, tree.next);
-    }
-    case 'identifier': {
-      if (treeValue.value in payload) {
-        return queryPayload(payload[treeValue.value], tree.next);
-      } else if (treeValue.value === '*') {
-        return Object.values(payload);
-      } else {
-        return;
-      }
-    }
+
+  if (treeValue.value === WILDCARD) {
+    return Object.values(payload);
+  }
+
+  if (treeValue.value in payload) {
+    return handlSubscript(payload[treeValue.value], tree.next);
   }
 };
 
-const queryPayload = (payload: unknown, tree: JsonPathItem): unknown => {
+const handlSubscript = (payload: unknown, tree: Subscript): unknown => {
   if (tree === null) {
     return payload;
   }
 
-  switch (tree.type) {
-    case 'current':
-    case 'root': {
-      return queryPayload(payload, tree.next);
+  switch (tree.subtype) {
+    case 'bracket': {
+      return handleSubscriptBracket(payload, tree);
     }
-    case 'negate': {
-      return !queryPayload(payload, tree.value);
+    case 'dot': {
+      return handleSubscriptDot(payload, tree);
     }
-    case 'value':
-    case 'identifier':
-    case 'numeric_literal':
-    case 'string_literal': {
-      return tree.value;
-    }
-    case 'subscript': {
-      switch (tree.subtype) {
-        case 'bracket': {
-          return handleSubscriptBracket(payload, tree);
-        }
-        case 'dot': {
-          return handleSubscriptDot(payload, tree);
-        }
-        case 'dotdot': {
-          return handleSubscriptDotdot(payload, tree);
-        }
-      }
+    case 'dotdot': {
+      return handleSubscriptDotdot(payload, tree);
     }
   }
 };
@@ -151,7 +130,7 @@ const queryPayload = (payload: unknown, tree: JsonPathItem): unknown => {
 export const query = (payload: unknown, path: string): unknown => {
   const tree = parse(path);
 
-  return queryPayload(payload, tree);
+  return handlSubscript(payload, tree.next);
 };
 
 // subscriptables

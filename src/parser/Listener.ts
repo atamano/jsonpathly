@@ -26,9 +26,10 @@ import {
   Subscriptable,
   Value,
   Identifier,
-  StringLiteralOrIdentifier,
   Subscriptables,
 } from './types';
+
+export const WILDCARD = '*';
 
 type StackType = Node | Node[];
 
@@ -61,8 +62,8 @@ const TYPE_CHECKER = {
     typeof node.type === 'string' &&
     ['comparator', 'group_expression', 'negate', 'binary_expression', 'value', 'current', 'root'].includes(node.type),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
-  string_identifier: (node: StackType): node is StringLiteralOrIdentifier | Identifier =>
-    'type' in node && typeof node.type === 'string' && ['identifier', 'string_literal'].includes(node.type),
+  identifier: (node: StackType): node is Identifier | Identifier =>
+    'type' in node && typeof node.type === 'string' && node.type === 'identifier',
   start_function: (node: StackType): node is StartFunction => typeof node === 'function',
   subscriptable: isSubscriptable,
   subscriptables: (node: StackType): node is Subscriptables => 'type' in node && node.type === 'subscriptables',
@@ -118,11 +119,11 @@ export default class Listener implements JSONPathListener {
   public exitSubscript(ctx: SubscriptContext): void {
     switch (true) {
       case !!ctx.SUBSCRIPT(): {
-        let node: StringLiteralOrIdentifier;
+        let node: Identifier;
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
         if (ctx.subscriptableBareword()) {
-          node = this.popWithCheck('string_identifier', ctx);
+          node = this.popWithCheck('identifier', ctx);
         } else {
           throw new ValidationError('subscript child should be bareword', ctx);
         }
@@ -136,11 +137,11 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.RECURSIVE_DESCENT(): {
-        let node: StringLiteralOrIdentifier | Subscriptables;
+        let node: Identifier | Subscriptables;
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
         if (ctx.subscriptableBareword()) {
-          node = this.popWithCheck('string_identifier', ctx);
+          node = this.popWithCheck('identifier', ctx);
         } else if (ctx.subscriptables()) {
           node = this.popWithCheck('subscriptables', ctx);
         } else {
@@ -206,7 +207,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.WILDCARD(): {
-        this.push({ type: 'identifier', value: '*' });
+        this.push({ type: 'identifier', value: WILDCARD });
         break;
       }
       case !!ctx.expression(): {
@@ -243,7 +244,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.WILDCARD(): {
-        this.push({ type: 'identifier', value: '*' });
+        this.push({ type: 'identifier', value: WILDCARD });
         break;
       }
       default: {

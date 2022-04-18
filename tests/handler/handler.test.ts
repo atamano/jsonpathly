@@ -43,6 +43,8 @@ describe('query with dot notations', () => {
     { path: `$.nestedObject`, expected: PAYLOAD.nestedObject },
     { path: `$.nestedObject.object`, expected: PAYLOAD.nestedObject.object },
     { path: `$.nestedObject.object.test`, expected: PAYLOAD.nestedObject.object.test },
+    { path: `$.*`, expected: Object.values(PAYLOAD) },
+    { path: `$.nestedObject.*`, expected: Object.values(PAYLOAD.nestedObject) },
   ];
 
   test.each(textCases)('query(%s)', ({ path, expected }) => {
