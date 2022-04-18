@@ -53,14 +53,14 @@ export type StartFunction = (start: number) => ArraySlice;
 export type SubscriptDot = {
   type: 'subscript';
   subtype: 'dot';
-  value: Bareword;
+  value: StringLiteralOrIdentifier;
   next: Subscript | null;
 };
 
 export type SubscriptDotdot = {
   type: 'subscript';
   subtype: 'dotdot';
-  value: Bareword | Subscriptables;
+  value: Identifier | Subscriptables;
   next: Subscript | null;
 };
 
@@ -117,7 +117,7 @@ export type ScriptExpression = {
   right: ExpressionChild;
 };
 
-export type Bareword = StringLiteral | Identifier;
+export type StringLiteralOrIdentifier = StringLiteral | Identifier;
 export type ComparatorArgument = Current | Root | Value;
 
 export type ExpressionChild = Comparator | GroupExpression | BinaryExpression | Negate | ComparatorArgument;

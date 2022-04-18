@@ -19,7 +19,6 @@ import {
 import {
   ExpressionChild,
   ComparatorArgument,
-  BinaryExpression,
   Node,
   Root,
   StartFunction,
@@ -27,7 +26,7 @@ import {
   Subscriptable,
   Value,
   Identifier,
-  Bareword,
+  StringLiteralOrIdentifier,
   Subscriptables,
 } from './types';
 
@@ -49,6 +48,7 @@ const isSubscriptable = (node: StackType): node is Subscriptable => {
     ].includes(node.type)
   );
 };
+
 const TYPE_CHECKER = {
   simple_object: (node: StackType): node is Record<string, unknown> => isPlainObjet(node),
   simple_array: (node: StackType): node is unknown[] => Array.isArray(node),
@@ -61,7 +61,7 @@ const TYPE_CHECKER = {
     typeof node.type === 'string' &&
     ['comparator', 'group_expression', 'negate', 'binary_expression', 'value', 'current', 'root'].includes(node.type),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
-  bareword: (node: StackType): node is Bareword | Identifier =>
+  string_identifier: (node: StackType): node is StringLiteralOrIdentifier | Identifier =>
     'type' in node && typeof node.type === 'string' && ['identifier', 'string_literal'].includes(node.type),
   start_function: (node: StackType): node is StartFunction => typeof node === 'function',
   subscriptable: isSubscriptable,
@@ -118,11 +118,11 @@ export default class Listener implements JSONPathListener {
   public exitSubscript(ctx: SubscriptContext): void {
     switch (true) {
       case !!ctx.SUBSCRIPT(): {
-        let subscriptableNode: Bareword;
+        let node: StringLiteralOrIdentifier;
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
         if (ctx.subscriptableBareword()) {
-          subscriptableNode = this.popWithCheck('bareword', ctx);
+          node = this.popWithCheck('string_identifier', ctx);
         } else {
           throw new ValidationError('subscript child should be bareword', ctx);
         }
@@ -131,18 +131,18 @@ export default class Listener implements JSONPathListener {
           type: 'subscript',
           subtype: 'dot',
           next,
-          value: subscriptableNode,
+          value: node,
         });
         break;
       }
       case !!ctx.RECURSIVE_DESCENT(): {
-        let subscriptableNode: Bareword | Subscriptables;
+        let node: StringLiteralOrIdentifier | Subscriptables;
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
         if (ctx.subscriptableBareword()) {
-          subscriptableNode = this.popWithCheck('bareword', ctx);
+          node = this.popWithCheck('string_identifier', ctx);
         } else if (ctx.subscriptables()) {
-          subscriptableNode = this.popWithCheck('subscriptables', ctx);
+          node = this.popWithCheck('subscriptables', ctx);
         } else {
           throw new ValidationError('recursive descent child should be either bareword or subscriptables', ctx);
         }
@@ -151,19 +151,19 @@ export default class Listener implements JSONPathListener {
           type: 'subscript',
           subtype: 'dotdot',
           next,
-          value: subscriptableNode,
+          value: node,
         });
         break;
       }
       case !!ctx.subscriptables(): {
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
-        const subscriptableNode = this.popWithCheck('subscriptables', ctx);
+        const node = this.popWithCheck('subscriptables', ctx);
 
         this.push({
           type: 'subscript',
           subtype: 'bracket',
           next,
-          value: subscriptableNode,
+          value: node,
         });
         break;
       }
@@ -273,16 +273,16 @@ export default class Listener implements JSONPathListener {
   }
 
   public exitSubscriptables(ctx: SubscriptablesContext): void {
-    const subscriptableNodes: Subscriptable[] = [];
+    const nodes: Subscriptable[] = [];
 
     for (let index = 0; index < ctx.subscriptable().length; index += 1) {
       const subscriptable_node = this.popWithCheck('subscriptable', ctx);
-      subscriptableNodes.unshift(subscriptable_node);
+      nodes.unshift(subscriptable_node);
     }
 
     this.push({
       type: 'subscriptables',
-      values: subscriptableNodes,
+      values: nodes,
     });
   }
 

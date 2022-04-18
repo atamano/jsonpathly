@@ -1,6 +1,13 @@
 import { parse, JsonPathItem } from '../parser';
 import * as isPlainObject from 'lodash.isplainobject';
-import { SubscriptDotdot, SubscriptDot } from '../parser/types';
+import {
+  SubscriptDotdot,
+  SubscriptDot,
+  Subscriptables,
+  Subscriptable,
+  SubscriptBracket,
+  StringLiteral,
+} from '../parser/types';
 
 const isArray = (item: unknown): item is unknown[] => {
   return Array.isArray(item);
@@ -10,18 +17,55 @@ const isObject = (item: unknown): item is Record<string, unknown> => {
   return isPlainObject(item);
 };
 
+const handleStringLitteral = (payload: unknown, tree: StringLiteral): unknown => {
+  if (isObject(payload) && tree.value in payload) {
+    return payload[tree.value];
+  }
+  return;
+};
+
+const handleSubscriptable = (payload: unknown, tree: Subscriptable): unknown => {
+  switch (tree.type) {
+    case 'string_literal': {
+      return handleStringLitteral(payload, tree);
+    }
+  }
+};
+
+const handleSubscriptables = (payload: unknown, tree: Subscriptables): unknown[] => {
+  const results = [];
+  for (const treeValue of tree.values) {
+    const res = handleSubscriptable(payload, treeValue);
+    results.push(res);
+  }
+
+  return results;
+};
+
+const handleSubscriptBracket = (payload: unknown, tree: SubscriptBracket): unknown => {
+  const results = handleSubscriptables(payload, tree.value);
+
+  if (tree.value.values.length === 1 && ['string_literal', 'numeric_literal'].includes(tree.value.values[0].type)) {
+    return queryPayload(results.pop(), tree.next);
+  }
+
+  return queryPayload(results, tree.next);
+};
+
 const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown[] => {
   let results = [];
   const treeValue = tree.value;
 
   switch (treeValue.type) {
-    case 'identifier':
+    case 'subscriptables': {
+      return handleSubscriptables(payload, treeValue);
+    }
+    case 'identifier': {
       if (treeValue.value === '*') {
         if (isObject(payload) || isArray(payload)) {
           results = results.concat(Object.values(payload));
         }
       }
-    case 'string_literal': {
       if (isObject(payload)) {
         if (treeValue.value in payload) {
           const res = queryPayload(payload[treeValue.value], tree.next);
@@ -40,6 +84,7 @@ const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown
           results = results.concat(res);
         }
       }
+      break;
     }
   }
 
@@ -53,11 +98,8 @@ const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
   const treeValue = tree.value;
   switch (treeValue.type) {
     case 'string_literal': {
-      if (treeValue.value in payload) {
-        return queryPayload(payload[treeValue.value], tree.next);
-      } else {
-        return;
-      }
+      const res = handleStringLitteral(payload, treeValue);
+      return queryPayload(res, tree.next);
     }
     case 'identifier': {
       if (treeValue.value in payload) {
@@ -92,6 +134,9 @@ const queryPayload = (payload: unknown, tree: JsonPathItem): unknown => {
     }
     case 'subscript': {
       switch (tree.subtype) {
+        case 'bracket': {
+          return handleSubscriptBracket(payload, tree);
+        }
         case 'dot': {
           return handleSubscriptDot(payload, tree);
         }
@@ -99,7 +144,6 @@ const queryPayload = (payload: unknown, tree: JsonPathItem): unknown => {
           return handleSubscriptDotdot(payload, tree);
         }
       }
-      return queryPayload(payload, tree.next);
     }
   }
 };

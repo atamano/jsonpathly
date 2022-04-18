@@ -13,14 +13,14 @@ const PAYLOAD = {
       {
         item: {
           hello: {
-            hello: [{ hello: ' 1' }],
+            hello: [{ hello: { toto: '123' } }],
           },
         },
       },
       {
         item: {
           hello: {
-            hello: [{ hello: ' 2' }],
+            hello: [{ hello: { toto: '2501' } }],
           },
         },
       },
@@ -45,7 +45,8 @@ try {
     // '$.nestedObject.object.test',
     // '$.notExist',
     // '$.*',
-    '$..*',
+    // '$..hello.toto',
+    `$['nestedObject'].object["test"]`,
   ];
 
   for (const input of inputs) {
