@@ -3,7 +3,7 @@ import { query } from './handler';
 const PAYLOAD = {
   string: 'stringValue',
   number: 0,
-  arrayOfNumber: [1, 2, 3, 4, 5],
+  arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
   arrayOfString: ['11', '22', '33', '44', '55'],
   nestedObject: {
     object: {
@@ -45,8 +45,8 @@ try {
     // '$.nestedObject.object.test',
     // '$.notExist',
     // '$.*',
-    '$..hello.hello.hello',
     // `$['nestedObject'].object["test"]`,
+    `$.arrayOfNumber[2::3]`,
   ];
 
   for (const input of inputs) {

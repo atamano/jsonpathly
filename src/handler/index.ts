@@ -2,6 +2,7 @@ import * as isPlainObject from 'lodash.isplainobject';
 import { WILDCARD } from '../parser/Listener';
 import { parse } from '../parser';
 import {
+  ArraySlice,
   Identifier,
   NumericLiteral,
   StringLiteral,
@@ -44,7 +45,26 @@ const handleNumericLiteral = (payload: Payload, tree: NumericLiteral): unknown =
   if (!isArray(payload) || tree.value >= payload.length) {
     return;
   }
+
   return payload[tree.value];
+};
+
+const handleArraySlice = (payload: Payload, tree: ArraySlice): unknown[] => {
+  if (!isArray(payload)) {
+    return;
+  }
+
+  const results = [];
+  const result = payload.slice(tree.start !== null ? tree.start : undefined, tree.end !== null ? tree.end : undefined);
+  const step = tree.step === null || tree.step <= 0 ? 1 : tree.step;
+
+  for (let i = 0; i < result.length; i++) {
+    if (i % step === 0) {
+      results.push(result[i]);
+    }
+  }
+
+  return results;
 };
 
 const handleStringLiteral = (payload: Payload, tree: StringLiteral): unknown => {
@@ -70,7 +90,7 @@ const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => 
       return;
     }
     case 'array_slice': {
-      return;
+      return handleArraySlice(payload, tree);
     }
     case 'script_expression': {
       return;
@@ -79,10 +99,10 @@ const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => 
 };
 
 const handleSubscriptables = (payload: Payload, tree: Subscriptables): unknown[] => {
-  const results = [];
+  let results = [];
   for (const treeValue of tree.values) {
     const res = handleSubscriptable(payload, treeValue);
-    results.push(res);
+    results = results.concat(res);
   }
 
   return results;
@@ -91,7 +111,10 @@ const handleSubscriptables = (payload: Payload, tree: Subscriptables): unknown[]
 const handleSubscriptBracket = (payload: Payload, tree: SubscriptBracket): Payload => {
   const results = handleSubscriptables(payload, tree.value);
 
-  if (tree.value.values.length === 1 && ['string_literal', 'numeric_literal'].includes(tree.value.values[0].type)) {
+  if (
+    tree.value.values.length === 1 &&
+    ['string_literal', 'numeric_literal', 'identifier'].includes(tree.value.values[0].type)
+  ) {
     return handleSubscript(results.pop(), tree.next);
   }
 
@@ -177,4 +200,3 @@ export const query = (payload: unknown, path: string): Payload => {
 // comparator
 // binary_expression
 // filter_subscript
-// array_slice
