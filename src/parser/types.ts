@@ -36,9 +36,9 @@ export type BinaryExpression = {
 
 export type ArraySlice = {
   type: 'array_slice';
-  start: number;
-  end: number;
-  step: number;
+  start: number | null;
+  end: number | null;
+  step: number | null;
 };
 
 export type Comparator = {
@@ -48,7 +48,7 @@ export type Comparator = {
   right: ComparatorArgument;
 };
 
-export type StartFunction = (start: number) => ArraySlice;
+export type StartFunction = (start: number | null) => ArraySlice;
 
 export type SubscriptDot = {
   type: 'subscript';
@@ -116,14 +116,7 @@ export type ComparatorArgument = Root | Current | Value;
 
 export type ScriptExpressionChild = Root | Current | Value;
 
-export type FilterExpressionChild =
-  | Comparator
-  | GroupExpression
-  | BinaryExpression
-  | Negate
-  | ComparatorArgument
-  | Current
-  | Root;
+export type FilterExpressionChild = Comparator | GroupExpression | BinaryExpression | Negate | Current | Root;
 
 export type JsonPathItem =
   | Value

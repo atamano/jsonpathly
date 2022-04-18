@@ -58,9 +58,9 @@ describe('parse', () => {
     const res = parse(input);
 
     if (expected) {
-      expect(stringify(res)).toEqual(expected);
+      expect(stringify(res || null)).toEqual(expected);
     } else {
-      expect(stringify(res)).toEqual(input.replace(/'/g, '"'));
+      expect(stringify(res || null)).toEqual(input.replace(/'/g, '"'));
     }
   });
 });

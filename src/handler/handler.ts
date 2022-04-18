@@ -17,7 +17,7 @@ import {
   SubscriptDot,
   SubscriptDotdot,
 } from '../parser/types';
-import { isArray, isObject } from './helper';
+import { isArray, isNumber, isObject } from './helper';
 
 class Handler {
   rootPayload: unknown;
@@ -68,15 +68,27 @@ class Handler {
         return leftValue !== rightValue;
       }
       case 'lt': {
+        if (!isNumber(leftValue) || !isNumber(rightValue)) {
+          return false;
+        }
         return leftValue < rightValue;
       }
       case 'le': {
+        if (!isNumber(leftValue) || !isNumber(rightValue)) {
+          return false;
+        }
         return leftValue <= rightValue;
       }
       case 'gt': {
+        if (!isNumber(leftValue) || !isNumber(rightValue)) {
+          return false;
+        }
         return leftValue > rightValue;
       }
       case 'ge': {
+        if (!isNumber(leftValue) || !isNumber(rightValue)) {
+          return false;
+        }
         return leftValue >= rightValue;
       }
       case 'in': {
@@ -141,11 +153,12 @@ class Handler {
   };
 
   handleArraySlice = (payload: unknown, tree: ArraySlice): unknown[] => {
+    const results = [];
+
     if (!isArray(payload)) {
-      return;
+      return [];
     }
 
-    const results = [];
     const result = payload.slice(
       tree.start !== null ? tree.start : undefined,
       tree.end !== null ? tree.end : undefined,
@@ -187,7 +200,8 @@ class Handler {
         return this.handleNumericLiteral(payload, tree);
       }
       case 'filter_expression': {
-        let results = [];
+        let results: unknown[] = [];
+
         if (isArray(payload)) {
           for (const item of payload) {
             const isValid = this.handleFilterExpressionChild(item, tree.value);
@@ -209,7 +223,7 @@ class Handler {
   };
 
   handleSubscriptables = (payload: unknown, tree: Subscriptables): unknown[] => {
-    let results = [];
+    let results: unknown[] = [];
 
     for (const treeValue of tree.values) {
       const res = this.handleSubscriptable(payload, treeValue);
@@ -242,7 +256,7 @@ class Handler {
         return this.handleSubscriptables(payload, treeValue);
       }
       case 'identifier': {
-        let results = [];
+        let results: unknown[] = [];
         const identifierRes = this.handleIdentifier(payload, treeValue);
         const res = this.handleSubscript(identifierRes, tree.next);
         if (typeof res !== 'undefined') {
@@ -279,7 +293,7 @@ class Handler {
     return this.handleSubscript(result, tree.next);
   };
 
-  handleSubscript = (payload: unknown, tree: Subscript): unknown => {
+  handleSubscript = (payload: unknown, tree: Subscript | null): unknown => {
     if (tree === null) {
       return payload;
     }
@@ -300,6 +314,9 @@ class Handler {
 
 export const query = (payload: unknown, path: string): unknown => {
   const tree = parse(path);
+  if (!tree) {
+    return;
+  }
 
   const handler = new Handler(payload);
 
