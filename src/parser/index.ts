@@ -1,4 +1,4 @@
-export { parse, stringify } from './core';
+export { parse, stringify } from './parser';
 export type {
   JsonPathItem,
   Value,

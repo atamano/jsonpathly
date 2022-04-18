@@ -1,4 +1,4 @@
-import { query } from '../../src/handler';
+import { query } from './handler';
 
 const PAYLOAD = {
   string: 'stringValue',

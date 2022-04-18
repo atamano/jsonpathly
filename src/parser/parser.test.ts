@@ -1,4 +1,4 @@
-import { parse, stringify } from '../../src/parser';
+import { parse, stringify } from './parser';
 
 describe('parse', () => {
   const textCases = [
