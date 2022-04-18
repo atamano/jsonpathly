@@ -1,5 +1,4 @@
 import { WILDCARD } from '../parser/Listener';
-import { parse } from '../parser';
 import {
   ArraySlice,
   BinaryExpression,
