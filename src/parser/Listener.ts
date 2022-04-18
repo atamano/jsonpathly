@@ -317,10 +317,7 @@ export default class Listener implements JSONPathListener {
 
         this.push({
           type: 'negate',
-          value: {
-            type: 'filter_expression',
-            value,
-          },
+          value,
         });
         break;
       }

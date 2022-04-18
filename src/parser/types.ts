@@ -19,7 +19,7 @@ export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | Value
 
 export type Negate = {
   type: 'negate';
-  value: FilterExpression;
+  value: ExpressionChild;
 };
 
 export type GroupExpression = {

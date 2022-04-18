@@ -3,9 +3,10 @@ import { WILDCARD } from '../parser/Listener';
 import { parse } from '../parser';
 import {
   ArraySlice,
+  BinaryExpression,
   Comparator,
   ComparatorArgument,
-  FilterExpression,
+  ExpressionChild,
   Identifier,
   NumericLiteral,
   ScriptExpression,
@@ -92,35 +93,45 @@ const handleComparator = (payload: Payload, tree: Comparator): boolean => {
   }
 };
 
-const handleFilterExpression = (payload: Payload, tree: FilterExpression): boolean => {
-  const treeValue = tree.value;
+const handleBinaryExpression = (payload: Payload, tree: BinaryExpression): boolean => {
+  const leftValue = handleExpressionChild(payload, tree.left);
+  const rightValue = handleExpressionChild(payload, tree.right);
+  switch (tree.operator) {
+    case 'and': {
+      return leftValue && rightValue;
+    }
+    case 'or': {
+      return leftValue || rightValue;
+    }
+  }
+};
 
-  switch (treeValue.type) {
+const handleExpressionChild = (payload: Payload, tree: ExpressionChild): boolean => {
+  switch (tree.type) {
     case 'binary_expression': {
-      break;
+      return handleBinaryExpression(payload, tree);
     }
     case 'comparator': {
-      return handleComparator(payload, treeValue);
+      return handleComparator(payload, tree);
     }
     case 'group_expression': {
-      break;
+      return handleExpressionChild(payload, tree.value);
     }
     case 'negate': {
-      return !handleFilterExpression(payload, treeValue.value);
+      return !handleExpressionChild(payload, tree.value);
     }
     case 'root': {
       // TODO
-      return !!handleSubscript(payload, treeValue.next);
+      return !!handleSubscript(payload, tree.next);
     }
     case 'current': {
-      return !!handleSubscript(payload, treeValue.next);
+      return !!handleSubscript(payload, tree.next);
     }
     case 'value': {
       // TODO: Check if correct
-      return !!treeValue.value;
+      return !!tree.value;
     }
   }
-  return false;
 };
 
 const handleNumericLiteral = (payload: Payload, tree: NumericLiteral): unknown => {
@@ -179,7 +190,7 @@ const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => 
       let results = [];
       if (isArray(payload)) {
         for (const item of payload) {
-          const isValid = handleFilterExpression(item, tree);
+          const isValid = handleExpressionChild(item, tree.value);
           if (isValid) {
             results = results.concat(item);
           }
@@ -291,6 +302,3 @@ export const query = (payload: unknown, path: string): Payload => {
 
   return handleSubscript(payload, tree.next);
 };
-
-// group_expression
-// binary_expression
