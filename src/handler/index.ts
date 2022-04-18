@@ -6,7 +6,7 @@ import {
   BinaryExpression,
   Comparator,
   ComparatorArgument,
-  ExpressionChild,
+  FilterExpressionChild,
   Identifier,
   NumericLiteral,
   ScriptExpression,
@@ -19,8 +19,6 @@ import {
   SubscriptDotdot,
 } from '../parser/types';
 
-type Payload = unknown | unknown[];
-
 const isArray = (item: unknown): item is unknown[] => {
   return Array.isArray(item);
 };
@@ -29,7 +27,7 @@ const isObject = (item: unknown): item is Record<string, unknown> => {
   return isPlainObject(item);
 };
 
-const handleIdentifier = (payload: Payload, tree: Identifier): unknown => {
+const handleIdentifier = (payload: unknown, tree: Identifier): unknown => {
   if (!isObject(payload) && !isArray(payload)) {
     return;
   }
@@ -45,8 +43,12 @@ const handleIdentifier = (payload: Payload, tree: Identifier): unknown => {
   return payload[tree.value];
 };
 
-const handleComparatorArgument = (payload: Payload, tree: ComparatorArgument): Payload => {
+const handleComparatorArgument = (payload: unknown, tree: ComparatorArgument): unknown => {
   switch (tree.type) {
+    case 'root': {
+      // TODO
+      return handleSubscript(payload, tree.next);
+    }
     case 'current': {
       return handleSubscript(payload, tree.next);
     }
@@ -55,7 +57,8 @@ const handleComparatorArgument = (payload: Payload, tree: ComparatorArgument): P
     }
   }
 };
-const handleComparator = (payload: Payload, tree: Comparator): boolean => {
+
+const handleComparator = (payload: unknown, tree: Comparator): boolean => {
   const leftValue = handleComparatorArgument(payload, tree.left);
   const rightValue = handleComparatorArgument(payload, tree.right);
 
@@ -93,9 +96,9 @@ const handleComparator = (payload: Payload, tree: Comparator): boolean => {
   }
 };
 
-const handleBinaryExpression = (payload: Payload, tree: BinaryExpression): boolean => {
-  const leftValue = handleExpressionChild(payload, tree.left);
-  const rightValue = handleExpressionChild(payload, tree.right);
+const handleBinaryExpression = (payload: unknown, tree: BinaryExpression): boolean => {
+  const leftValue = handleFilterExpressionChild(payload, tree.left);
+  const rightValue = handleFilterExpressionChild(payload, tree.right);
   switch (tree.operator) {
     case 'and': {
       return leftValue && rightValue;
@@ -106,7 +109,7 @@ const handleBinaryExpression = (payload: Payload, tree: BinaryExpression): boole
   }
 };
 
-const handleExpressionChild = (payload: Payload, tree: ExpressionChild): boolean => {
+const handleFilterExpressionChild = (payload: unknown, tree: FilterExpressionChild): boolean => {
   switch (tree.type) {
     case 'binary_expression': {
       return handleBinaryExpression(payload, tree);
@@ -115,10 +118,10 @@ const handleExpressionChild = (payload: Payload, tree: ExpressionChild): boolean
       return handleComparator(payload, tree);
     }
     case 'group_expression': {
-      return handleExpressionChild(payload, tree.value);
+      return handleFilterExpressionChild(payload, tree.value);
     }
     case 'negate': {
-      return !handleExpressionChild(payload, tree.value);
+      return !handleFilterExpressionChild(payload, tree.value);
     }
     case 'root': {
       // TODO
@@ -134,16 +137,17 @@ const handleExpressionChild = (payload: Payload, tree: ExpressionChild): boolean
   }
 };
 
-const handleNumericLiteral = (payload: Payload, tree: NumericLiteral): unknown => {
-  // Only array allowed (should handle string as well ?)
-  if (!isArray(payload) || tree.value >= payload.length) {
-    return;
+const handleNumericLiteral = (payload: unknown, tree: NumericLiteral): unknown => {
+  if (isArray(payload) && tree.value < payload.length) {
+    return payload[tree.value];
   }
 
-  return payload[tree.value];
+  if (typeof payload === 'string' && tree.value < payload.length) {
+    return payload[tree.value];
+  }
 };
 
-const handleArraySlice = (payload: Payload, tree: ArraySlice): unknown[] => {
+const handleArraySlice = (payload: unknown, tree: ArraySlice): unknown[] => {
   if (!isArray(payload)) {
     return;
   }
@@ -161,7 +165,7 @@ const handleArraySlice = (payload: Payload, tree: ArraySlice): unknown[] => {
   return results;
 };
 
-const handleStringLiteral = (payload: Payload, tree: StringLiteral): unknown => {
+const handleStringLiteral = (payload: unknown, tree: StringLiteral): unknown => {
   if (!isObject(payload) || !(tree.value in payload)) {
     return;
   }
@@ -169,13 +173,13 @@ const handleStringLiteral = (payload: Payload, tree: StringLiteral): unknown => 
   return payload[tree.value];
 };
 
-const handleScriptExpression = (payload: Payload, tree: ScriptExpression): Payload => {
+const handleScriptExpression = (payload: unknown, tree: ScriptExpression): unknown => {
   console.log('Script expression', tree);
 
   return payload;
 };
 
-const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => {
+const handleSubscriptable = (payload: unknown, tree: Subscriptable): unknown => {
   switch (tree.type) {
     case 'identifier': {
       return handleIdentifier(payload, tree);
@@ -190,7 +194,7 @@ const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => 
       let results = [];
       if (isArray(payload)) {
         for (const item of payload) {
-          const isValid = handleExpressionChild(item, tree.value);
+          const isValid = handleFilterExpressionChild(item, tree.value);
           if (isValid) {
             results = results.concat(item);
           }
@@ -208,7 +212,7 @@ const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => 
   }
 };
 
-const handleSubscriptables = (payload: Payload, tree: Subscriptables): unknown[] => {
+const handleSubscriptables = (payload: unknown, tree: Subscriptables): unknown[] => {
   let results = [];
 
   for (const treeValue of tree.values) {
@@ -221,7 +225,7 @@ const handleSubscriptables = (payload: Payload, tree: Subscriptables): unknown[]
   return results;
 };
 
-const handleSubscriptBracket = (payload: Payload, tree: SubscriptBracket): Payload => {
+const handleSubscriptBracket = (payload: unknown, tree: SubscriptBracket): unknown => {
   const results = handleSubscriptables(payload, tree.value);
 
   if (
@@ -234,7 +238,7 @@ const handleSubscriptBracket = (payload: Payload, tree: SubscriptBracket): Paylo
   return handleSubscript(results, tree.next);
 };
 
-const handleSubscriptDotdot = (payload: Payload, tree: SubscriptDotdot): Payload => {
+const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown => {
   const treeValue = tree.value;
 
   switch (treeValue.type) {
@@ -266,7 +270,7 @@ const handleSubscriptDotdot = (payload: Payload, tree: SubscriptDotdot): Payload
   }
 };
 
-const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): Payload => {
+const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
   if (!isObject(payload)) {
     return;
   }
@@ -279,7 +283,7 @@ const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): Payload => {
   return handleSubscript(result, tree.next);
 };
 
-const handleSubscript = (payload: Payload, tree: Subscript): Payload => {
+const handleSubscript = (payload: unknown, tree: Subscript): unknown => {
   if (tree === null) {
     return payload;
   }
@@ -297,7 +301,7 @@ const handleSubscript = (payload: Payload, tree: Subscript): Payload => {
   }
 };
 
-export const query = (payload: unknown, path: string): Payload => {
+export const query = (payload: unknown, path: string): unknown => {
   const tree = parse(path);
 
   return handleSubscript(payload, tree.next);

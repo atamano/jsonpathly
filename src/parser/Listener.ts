@@ -17,7 +17,7 @@ import {
   ValueContext,
 } from './JSONPathParser';
 import {
-  ExpressionChild,
+  FilterExpressionChild,
   ComparatorArgument,
   Node,
   Root,
@@ -27,6 +27,7 @@ import {
   Value,
   Identifier,
   Subscriptables,
+  ScriptExpressionChild,
 } from './types';
 
 export const WILDCARD = '*';
@@ -56,10 +57,12 @@ const TYPE_CHECKER = {
   value: (node: StackType): node is Value => 'type' in node && node.type === 'value',
   comparator_argument: (node: StackType): node is ComparatorArgument =>
     'type' in node && typeof node.type === 'string' && ['value', 'current', 'root'].includes(node.type),
-  expression_child: (node: StackType): node is ExpressionChild =>
+  filter_expression_child: (node: StackType): node is FilterExpressionChild =>
     'type' in node &&
     typeof node.type === 'string' &&
     ['comparator', 'group_expression', 'negate', 'binary_expression', 'value', 'current', 'root'].includes(node.type),
+  script_expression_child: (node: StackType): node is ScriptExpressionChild =>
+    'type' in node && typeof node.type === 'string' && ['value', 'current', 'root'].includes(node.type),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
   identifier: (node: StackType): node is Identifier | Identifier =>
     'type' in node && typeof node.type === 'string' && node.type === 'identifier',
@@ -210,14 +213,14 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.expression(): {
-        const expression = this.popWithCheck('expression_child', ctx);
+        const expression = this.popWithCheck('filter_expression_child', ctx);
 
         this.push({ type: 'filter_expression', value: expression });
         break;
       }
       case !!ctx.filterarg(): {
-        const right = this.popWithCheck('expression_child', ctx);
-        const left = this.popWithCheck('expression_child', ctx);
+        const right = this.popWithCheck('script_expression_child', ctx);
+        const left = this.popWithCheck('script_expression_child', ctx);
 
         this.push({ type: 'script_expression', left, right });
         break;
@@ -313,7 +316,7 @@ export default class Listener implements JSONPathListener {
   public exitExpression(ctx: ExpressionContext): void {
     switch (true) {
       case !!ctx.NOT(): {
-        const value = this.popWithCheck('expression_child', ctx);
+        const value = this.popWithCheck('filter_expression_child', ctx);
 
         this.push({
           type: 'negate',
@@ -322,21 +325,21 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.AND(): {
-        const right = this.popWithCheck('expression_child', ctx);
-        const left = this.popWithCheck('expression_child', ctx);
+        const right = this.popWithCheck('filter_expression_child', ctx);
+        const left = this.popWithCheck('filter_expression_child', ctx);
 
         this.push({ type: 'binary_expression', operator: 'and', left, right });
         break;
       }
       case !!ctx.OR(): {
-        const right = this.popWithCheck('expression_child', ctx);
-        const left = this.popWithCheck('expression_child', ctx);
+        const right = this.popWithCheck('filter_expression_child', ctx);
+        const left = this.popWithCheck('filter_expression_child', ctx);
 
         this.push({ type: 'binary_expression', operator: 'or', left, right });
         break;
       }
       case !!ctx.PAREN_LEFT(): {
-        const value = this.popWithCheck('expression_child', ctx);
+        const value = this.popWithCheck('filter_expression_child', ctx);
 
         this.push({ type: 'group_expression', value });
         break;

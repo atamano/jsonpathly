@@ -19,19 +19,19 @@ export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | Value
 
 export type Negate = {
   type: 'negate';
-  value: ExpressionChild;
+  value: FilterExpressionChild;
 };
 
 export type GroupExpression = {
   type: 'group_expression';
-  value: ExpressionChild;
+  value: FilterExpressionChild;
 };
 
 export type BinaryExpression = {
   type: 'binary_expression';
   operator: 'or' | 'and';
-  left: ExpressionChild;
-  right: ExpressionChild;
+  left: FilterExpressionChild;
+  right: FilterExpressionChild;
 };
 
 export type ArraySlice = {
@@ -103,18 +103,20 @@ export type Subscriptables = {
 
 export type FilterExpression = {
   type: 'filter_expression';
-  value: ExpressionChild;
+  value: FilterExpressionChild;
 };
 
 export type ScriptExpression = {
   type: 'script_expression';
-  left: ExpressionChild;
-  right: ExpressionChild;
+  left: ScriptExpressionChild;
+  right: ScriptExpressionChild;
 };
 
-export type ComparatorArgument = Current | Value;
+export type ComparatorArgument = Root | Current | Value;
 
-export type ExpressionChild =
+export type ScriptExpressionChild = Root | Current | Value;
+
+export type FilterExpressionChild =
   | Comparator
   | GroupExpression
   | BinaryExpression

@@ -74,7 +74,7 @@ describe('query with bracket numeric value', () => {
     { path: `$.arrayOfNumber[1,3,5]`, expected: [2, 4, 6] },
     { path: `$.arrayOfNumber[10,11,12]`, expected: [] },
     { path: `$.arrayOfNumber[10]`, expected: undefined },
-    { path: `$.string[0]`, expected: undefined },
+    { path: `$.string[0]`, expected: PAYLOAD.string[0] },
   ];
 
   test.each(textCases)('query(%s)', ({ path, expected }) => {
