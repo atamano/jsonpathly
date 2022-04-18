@@ -46,7 +46,8 @@ try {
     // '$.notExist',
     // '$.*',
     // `$['nestedObject'].object["test"]`,
-    `$.arrayOfNumber[2::3]`,
+    // `$.arrayOfNumber[2::3]`,
+    `$[@.string]`,
   ];
 
   for (const input of inputs) {

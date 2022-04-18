@@ -99,9 +99,6 @@ export function stringify(input: JsonPathItem | null): string {
     case 'binary_expression': {
       return stringify(input.left) + ` ${EXPR_OPERATOR[input.operator]} ` + stringify(input.right);
     }
-    case 'filter_subscript': {
-      return stringify(input.value);
-    }
     case 'array_slice': {
       return `${input.start !== null ? input.start : ''}:${input.end !== null ? input.end : ''}${
         input.step !== null ? ':' + input.step : ''

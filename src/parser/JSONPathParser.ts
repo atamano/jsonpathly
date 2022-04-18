@@ -435,7 +435,7 @@ export class JSONPathParser extends Parser {
 		this.enterRule(_localctx, 12, JSONPathParser.RULE_subscriptable);
 		let _la: number;
 		try {
-			this.state = 95;
+			this.state = 94;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case JSONPathParser.STRING:
@@ -510,18 +510,10 @@ export class JSONPathParser extends Parser {
 				this.match(JSONPathParser.PAREN_RIGHT);
 				}
 				break;
-			case JSONPathParser.CURRENT_VALUE:
-			case JSONPathParser.ROOT_VALUE:
+			case JSONPathParser.IDENTIFIER:
 				this.enterOuterAlt(_localctx, 7);
 				{
 				this.state = 93;
-				this.filterpath();
-				}
-				break;
-			case JSONPathParser.IDENTIFIER:
-				this.enterOuterAlt(_localctx, 8);
-				{
-				this.state = 94;
 				this.match(JSONPathParser.IDENTIFIER);
 				}
 				break;
@@ -551,31 +543,31 @@ export class JSONPathParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 97;
+			this.state = 96;
 			this.match(JSONPathParser.COLON);
-			this.state = 99;
+			this.state = 98;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === JSONPathParser.NUMBER) {
 				{
-				this.state = 98;
+				this.state = 97;
 				this.match(JSONPathParser.NUMBER);
 				}
 			}
 
-			this.state = 105;
+			this.state = 104;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la === JSONPathParser.COLON) {
 				{
-				this.state = 101;
+				this.state = 100;
 				this.match(JSONPathParser.COLON);
-				this.state = 103;
+				this.state = 102;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				if (_la === JSONPathParser.NUMBER) {
 					{
-					this.state = 102;
+					this.state = 101;
 					this.match(JSONPathParser.NUMBER);
 					}
 				}
@@ -619,24 +611,24 @@ export class JSONPathParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 119;
+			this.state = 118;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case JSONPathParser.NOT:
 				{
-				this.state = 108;
+				this.state = 107;
 				this.match(JSONPathParser.NOT);
-				this.state = 109;
+				this.state = 108;
 				this.expression(5);
 				}
 				break;
 			case JSONPathParser.PAREN_LEFT:
 				{
-				this.state = 110;
+				this.state = 109;
 				this.match(JSONPathParser.PAREN_LEFT);
-				this.state = 111;
+				this.state = 110;
 				this.expression(0);
-				this.state = 112;
+				this.state = 111;
 				this.match(JSONPathParser.PAREN_RIGHT);
 				}
 				break;
@@ -650,14 +642,14 @@ export class JSONPathParser extends Parser {
 			case JSONPathParser.STRING:
 			case JSONPathParser.NUMBER:
 				{
-				this.state = 114;
+				this.state = 113;
 				this.filterarg();
-				this.state = 117;
+				this.state = 116;
 				this._errHandler.sync(this);
 				switch ( this.interpreter.adaptivePredict(this._input, 15, this._ctx) ) {
 				case 1:
 					{
-					this.state = 115;
+					this.state = 114;
 					_la = this._input.LA(1);
 					if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << JSONPathParser.EQ) | (1 << JSONPathParser.GE) | (1 << JSONPathParser.GT) | (1 << JSONPathParser.LE) | (1 << JSONPathParser.LT) | (1 << JSONPathParser.NE) | (1 << JSONPathParser.IN) | (1 << JSONPathParser.NIN))) !== 0))) {
 					this._errHandler.recoverInline(this);
@@ -669,7 +661,7 @@ export class JSONPathParser extends Parser {
 						this._errHandler.reportMatch(this);
 						this.consume();
 					}
-					this.state = 116;
+					this.state = 115;
 					this.filterarg();
 					}
 					break;
@@ -680,7 +672,7 @@ export class JSONPathParser extends Parser {
 				throw new NoViableAltException(this);
 			}
 			this._ctx._stop = this._input.tryLT(-1);
-			this.state = 129;
+			this.state = 128;
 			this._errHandler.sync(this);
 			_alt = this.interpreter.adaptivePredict(this._input, 18, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
@@ -690,20 +682,20 @@ export class JSONPathParser extends Parser {
 					}
 					_prevctx = _localctx;
 					{
-					this.state = 127;
+					this.state = 126;
 					this._errHandler.sync(this);
 					switch ( this.interpreter.adaptivePredict(this._input, 17, this._ctx) ) {
 					case 1:
 						{
 						_localctx = new ExpressionContext(_parentctx, _parentState);
 						this.pushNewRecursionContext(_localctx, _startState, JSONPathParser.RULE_expression);
-						this.state = 121;
+						this.state = 120;
 						if (!(this.precpred(this._ctx, 4))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 4)");
 						}
-						this.state = 122;
+						this.state = 121;
 						this.match(JSONPathParser.AND);
-						this.state = 123;
+						this.state = 122;
 						this.expression(5);
 						}
 						break;
@@ -712,20 +704,20 @@ export class JSONPathParser extends Parser {
 						{
 						_localctx = new ExpressionContext(_parentctx, _parentState);
 						this.pushNewRecursionContext(_localctx, _startState, JSONPathParser.RULE_expression);
-						this.state = 124;
+						this.state = 123;
 						if (!(this.precpred(this._ctx, 3))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 3)");
 						}
-						this.state = 125;
+						this.state = 124;
 						this.match(JSONPathParser.OR);
-						this.state = 126;
+						this.state = 125;
 						this.expression(4);
 						}
 						break;
 					}
 					}
 				}
-				this.state = 131;
+				this.state = 130;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 18, this._ctx);
 			}
@@ -752,7 +744,7 @@ export class JSONPathParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 132;
+			this.state = 131;
 			this.value();
 			}
 		}
@@ -776,33 +768,33 @@ export class JSONPathParser extends Parser {
 		this.enterRule(_localctx, 20, JSONPathParser.RULE_obj);
 		let _la: number;
 		try {
-			this.state = 147;
+			this.state = 146;
 			this._errHandler.sync(this);
 			switch ( this.interpreter.adaptivePredict(this._input, 20, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 134;
+				this.state = 133;
 				this.match(JSONPathParser.BRACE_LEFT);
-				this.state = 135;
+				this.state = 134;
 				this.pair();
-				this.state = 140;
+				this.state = 139;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === JSONPathParser.COMMA) {
 					{
 					{
-					this.state = 136;
+					this.state = 135;
 					this.match(JSONPathParser.COMMA);
-					this.state = 137;
+					this.state = 136;
 					this.pair();
 					}
 					}
-					this.state = 142;
+					this.state = 141;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 143;
+				this.state = 142;
 				this.match(JSONPathParser.BRACE_RIGHT);
 				}
 				break;
@@ -810,9 +802,9 @@ export class JSONPathParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 145;
+				this.state = 144;
 				this.match(JSONPathParser.BRACE_LEFT);
-				this.state = 146;
+				this.state = 145;
 				this.match(JSONPathParser.BRACE_RIGHT);
 				}
 				break;
@@ -839,11 +831,11 @@ export class JSONPathParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 149;
+			this.state = 148;
 			this.match(JSONPathParser.STRING);
-			this.state = 150;
+			this.state = 149;
 			this.match(JSONPathParser.COLON);
-			this.state = 151;
+			this.state = 150;
 			this.value();
 			}
 		}
@@ -867,33 +859,33 @@ export class JSONPathParser extends Parser {
 		this.enterRule(_localctx, 24, JSONPathParser.RULE_array);
 		let _la: number;
 		try {
-			this.state = 166;
+			this.state = 165;
 			this._errHandler.sync(this);
 			switch ( this.interpreter.adaptivePredict(this._input, 22, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 153;
+				this.state = 152;
 				this.match(JSONPathParser.BRACKET_LEFT);
-				this.state = 154;
+				this.state = 153;
 				this.value();
-				this.state = 159;
+				this.state = 158;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la === JSONPathParser.COMMA) {
 					{
 					{
-					this.state = 155;
+					this.state = 154;
 					this.match(JSONPathParser.COMMA);
-					this.state = 156;
+					this.state = 155;
 					this.value();
 					}
 					}
-					this.state = 161;
+					this.state = 160;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 162;
+				this.state = 161;
 				this.match(JSONPathParser.BRACKET_RIGHT);
 				}
 				break;
@@ -901,9 +893,9 @@ export class JSONPathParser extends Parser {
 			case 2:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 164;
+				this.state = 163;
 				this.match(JSONPathParser.BRACKET_LEFT);
-				this.state = 165;
+				this.state = 164;
 				this.match(JSONPathParser.BRACKET_RIGHT);
 				}
 				break;
@@ -928,55 +920,55 @@ export class JSONPathParser extends Parser {
 		let _localctx: ValueContext = new ValueContext(this._ctx, this.state);
 		this.enterRule(_localctx, 26, JSONPathParser.RULE_value);
 		try {
-			this.state = 175;
+			this.state = 174;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case JSONPathParser.STRING:
 				this.enterOuterAlt(_localctx, 1);
 				{
-				this.state = 168;
+				this.state = 167;
 				this.match(JSONPathParser.STRING);
 				}
 				break;
 			case JSONPathParser.NUMBER:
 				this.enterOuterAlt(_localctx, 2);
 				{
-				this.state = 169;
+				this.state = 168;
 				this.match(JSONPathParser.NUMBER);
 				}
 				break;
 			case JSONPathParser.BRACE_LEFT:
 				this.enterOuterAlt(_localctx, 3);
 				{
-				this.state = 170;
+				this.state = 169;
 				this.obj();
 				}
 				break;
 			case JSONPathParser.BRACKET_LEFT:
 				this.enterOuterAlt(_localctx, 4);
 				{
-				this.state = 171;
+				this.state = 170;
 				this.array();
 				}
 				break;
 			case JSONPathParser.TRUE:
 				this.enterOuterAlt(_localctx, 5);
 				{
-				this.state = 172;
+				this.state = 171;
 				this.match(JSONPathParser.TRUE);
 				}
 				break;
 			case JSONPathParser.FALSE:
 				this.enterOuterAlt(_localctx, 6);
 				{
-				this.state = 173;
+				this.state = 172;
 				this.match(JSONPathParser.FALSE);
 				}
 				break;
 			case JSONPathParser.NULL:
 				this.enterOuterAlt(_localctx, 7);
 				{
-				this.state = 174;
+				this.state = 173;
 				this.match(JSONPathParser.NULL);
 				}
 				break;
@@ -1018,7 +1010,7 @@ export class JSONPathParser extends Parser {
 	}
 
 	public static readonly _serializedATN: string =
-		"\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x03\"\xB4\x04\x02" +
+		"\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x03\"\xB3\x04\x02" +
 		"\t\x02\x04\x03\t\x03\x04\x04\t\x04\x04\x05\t\x05\x04\x06\t\x06\x04\x07" +
 		"\t\x07\x04\b\t\b\x04\t\t\t\x04\n\t\n\x04\v\t\v\x04\f\t\f\x04\r\t\r\x04" +
 		"\x0E\t\x0E\x04\x0F\t\x0F\x03\x02\x03\x02\x05\x02!\n\x02\x03\x02\x03\x02" +
@@ -1028,75 +1020,74 @@ export class JSONPathParser extends Parser {
 		"\x03\x06\x03\x06\x03\x06\x03\x06\x07\x06D\n\x06\f\x06\x0E\x06G\v\x06\x03" +
 		"\x06\x03\x06\x03\x07\x03\x07\x03\b\x03\b\x03\b\x05\bP\n\b\x03\b\x03\b" +
 		"\x03\b\x03\b\x03\b\x05\bW\n\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03" +
-		"\b\x03\b\x03\b\x05\bb\n\b\x03\t\x03\t\x05\tf\n\t\x03\t\x03\t\x05\tj\n" +
-		"\t\x05\tl\n\t\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03" +
-		"\n\x05\nx\n\n\x05\nz\n\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x07\n\x82" +
-		"\n\n\f\n\x0E\n\x85\v\n\x03\v\x03\v\x03\f\x03\f\x03\f\x03\f\x07\f\x8D\n" +
-		"\f\f\f\x0E\f\x90\v\f\x03\f\x03\f\x03\f\x03\f\x05\f\x96\n\f\x03\r\x03\r" +
-		"\x03\r\x03\r\x03\x0E\x03\x0E\x03\x0E\x03\x0E\x07\x0E\xA0\n\x0E\f\x0E\x0E" +
-		"\x0E\xA3\v\x0E\x03\x0E\x03\x0E\x03\x0E\x03\x0E\x05\x0E\xA9\n\x0E\x03\x0F" +
-		"\x03\x0F\x03\x0F\x03\x0F\x03\x0F\x03\x0F\x03\x0F\x05\x0F\xB2\n\x0F\x03" +
-		"\x0F\x02\x02\x03\x12\x10\x02\x02\x04\x02\x06\x02\b\x02\n\x02\f\x02\x0E" +
-		"\x02\x10\x02\x12\x02\x14\x02\x16\x02\x18\x02\x1A\x02\x1C\x02\x02\x05\x04" +
-		"\x02\x03\x03\x05\x05\x04\x02\x07\x07\x1F\x1F\x03\x02\t\x10\x02\xCA\x02" +
-		"\x1E\x03\x02\x02\x02\x04$\x03\x02\x02\x02\x06*\x03\x02\x02\x02\b=\x03" +
-		"\x02\x02\x02\n?\x03\x02\x02\x02\fJ\x03\x02\x02\x02\x0Ea\x03\x02\x02\x02" +
-		"\x10c\x03\x02\x02\x02\x12y\x03\x02\x02\x02\x14\x86\x03\x02\x02\x02\x16" +
-		"\x95\x03\x02\x02\x02\x18\x97\x03\x02\x02\x02\x1A\xA8\x03\x02\x02\x02\x1C" +
-		"\xB1\x03\x02\x02\x02\x1E \x07\x05\x02\x02\x1F!\x05\b\x05\x02 \x1F\x03" +
-		"\x02\x02\x02 !\x03\x02\x02\x02!\"\x03\x02\x02\x02\"#\x07\x02\x02\x03#" +
-		"\x03\x03\x02\x02\x02$&\t\x02\x02\x02%\'\x05\b\x05\x02&%\x03\x02\x02\x02" +
-		"&\'\x03\x02\x02\x02\'\x05\x03\x02\x02\x02(+\x05\x04\x03\x02)+\x05\x1C" +
-		"\x0F\x02*(\x03\x02\x02\x02*)\x03\x02\x02\x02+\x07\x03\x02\x02\x02,/\x07" +
-		"\x04\x02\x02-0\x05\f\x07\x02.0\x05\n\x06\x02/-\x03\x02\x02\x02/.\x03\x02" +
-		"\x02\x0202\x03\x02\x02\x0213\x05\b\x05\x0221\x03\x02\x02\x0223\x03\x02" +
-		"\x02\x023>\x03\x02\x02\x0245\x07\x06\x02\x0257\x05\f\x07\x0268\x05\b\x05" +
-		"\x0276\x03\x02\x02\x0278\x03\x02\x02\x028>\x03\x02\x02\x029;\x05\n\x06" +
-		"\x02:<\x05\b\x05\x02;:\x03\x02\x02\x02;<\x03\x02\x02\x02<>\x03\x02\x02" +
-		"\x02=,\x03\x02\x02\x02=4\x03\x02\x02\x02=9\x03\x02\x02\x02>\t\x03\x02" +
-		"\x02\x02?@\x07\x18\x02\x02@E\x05\x0E\b\x02AB\x07\x1B\x02\x02BD\x05\x0E" +
-		"\b\x02CA\x03\x02\x02\x02DG\x03\x02\x02\x02EC\x03\x02\x02\x02EF\x03\x02" +
-		"\x02\x02FH\x03\x02\x02\x02GE\x03\x02\x02\x02HI\x07\x19\x02\x02I\v\x03" +
-		"\x02\x02\x02JK\t\x03\x02\x02K\r\x03\x02\x02\x02Lb\x07 \x02\x02MO\x07!" +
-		"\x02\x02NP\x05\x10\t\x02ON\x03\x02\x02\x02OP\x03\x02\x02\x02Pb\x03\x02" +
-		"\x02\x02Qb\x05\x10\t\x02Rb\x07\x07\x02\x02ST\x07\x1C\x02\x02TV\x05\x06" +
-		"\x04\x02UW\x05\x06\x04\x02VU\x03\x02\x02\x02VW\x03\x02\x02\x02WX\x03\x02" +
-		"\x02\x02XY\x07\x1D\x02\x02Yb\x03\x02\x02\x02Z[\x07\x1E\x02\x02[\\\x07" +
-		"\x1C\x02\x02\\]\x05\x12\n\x02]^\x07\x1D\x02\x02^b\x03\x02\x02\x02_b\x05" +
-		"\x04\x03\x02`b\x07\x1F\x02\x02aL\x03\x02\x02\x02aM\x03\x02\x02\x02aQ\x03" +
-		"\x02\x02\x02aR\x03\x02\x02\x02aS\x03\x02\x02\x02aZ\x03\x02\x02\x02a_\x03" +
-		"\x02\x02\x02a`\x03\x02\x02\x02b\x0F\x03\x02\x02\x02ce\x07\x1A\x02\x02" +
-		"df\x07!\x02\x02ed\x03\x02\x02\x02ef\x03\x02\x02\x02fk\x03\x02\x02\x02" +
-		"gi\x07\x1A\x02\x02hj\x07!\x02\x02ih\x03\x02\x02\x02ij\x03\x02\x02\x02" +
-		"jl\x03\x02\x02\x02kg\x03\x02\x02\x02kl\x03\x02\x02\x02l\x11\x03\x02\x02" +
-		"\x02mn\b\n\x01\x02no\x07\x11\x02\x02oz\x05\x12\n\x07pq\x07\x1C\x02\x02" +
-		"qr\x05\x12\n\x02rs\x07\x1D\x02\x02sz\x03\x02\x02\x02tw\x05\x06\x04\x02" +
-		"uv\t\x04\x02\x02vx\x05\x06\x04\x02wu\x03\x02\x02\x02wx\x03\x02\x02\x02" +
-		"xz\x03\x02\x02\x02ym\x03\x02\x02\x02yp\x03\x02\x02\x02yt\x03\x02\x02\x02" +
-		"z\x83\x03\x02\x02\x02{|\f\x06\x02\x02|}\x07\b\x02\x02}\x82\x05\x12\n\x07" +
-		"~\x7F\f\x05\x02\x02\x7F\x80\x07\x12\x02\x02\x80\x82\x05\x12\n\x06\x81" +
-		"{\x03\x02\x02\x02\x81~\x03\x02\x02\x02\x82\x85\x03\x02\x02\x02\x83\x81" +
-		"\x03\x02\x02\x02\x83\x84\x03\x02\x02\x02\x84\x13\x03\x02\x02\x02\x85\x83" +
-		"\x03\x02\x02\x02\x86\x87\x05\x1C\x0F\x02\x87\x15\x03\x02\x02\x02\x88\x89" +
-		"\x07\x16\x02\x02\x89\x8E\x05\x18\r\x02\x8A\x8B\x07\x1B\x02\x02\x8B\x8D" +
-		"\x05\x18\r\x02\x8C\x8A\x03\x02\x02\x02\x8D\x90\x03\x02\x02\x02\x8E\x8C" +
-		"\x03\x02\x02\x02\x8E\x8F\x03\x02\x02\x02\x8F\x91\x03\x02\x02\x02\x90\x8E" +
-		"\x03\x02\x02\x02\x91\x92\x07\x17\x02\x02\x92\x96\x03\x02\x02\x02\x93\x94" +
-		"\x07\x16\x02\x02\x94\x96\x07\x17\x02\x02\x95\x88\x03\x02\x02\x02\x95\x93" +
-		"\x03\x02\x02\x02\x96\x17\x03\x02\x02\x02\x97\x98\x07 \x02\x02\x98\x99" +
-		"\x07\x1A\x02\x02\x99\x9A\x05\x1C\x0F\x02\x9A\x19\x03\x02\x02\x02\x9B\x9C" +
-		"\x07\x18\x02\x02\x9C\xA1\x05\x1C\x0F\x02\x9D\x9E\x07\x1B\x02\x02\x9E\xA0" +
-		"\x05\x1C\x0F\x02\x9F\x9D\x03\x02\x02\x02\xA0\xA3\x03\x02\x02\x02\xA1\x9F" +
-		"\x03\x02\x02\x02\xA1\xA2\x03\x02\x02\x02\xA2\xA4\x03\x02\x02\x02\xA3\xA1" +
-		"\x03\x02\x02\x02\xA4\xA5\x07\x19\x02\x02\xA5\xA9\x03\x02\x02\x02\xA6\xA7" +
-		"\x07\x18\x02\x02\xA7\xA9\x07\x19\x02\x02\xA8\x9B\x03\x02\x02\x02\xA8\xA6" +
-		"\x03\x02\x02\x02\xA9\x1B\x03\x02\x02\x02\xAA\xB2\x07 \x02\x02\xAB\xB2" +
-		"\x07!\x02\x02\xAC\xB2\x05\x16\f\x02\xAD\xB2\x05\x1A\x0E\x02\xAE\xB2\x07" +
-		"\x13\x02\x02\xAF\xB2\x07\x14\x02\x02\xB0\xB2\x07\x15\x02\x02\xB1\xAA\x03" +
-		"\x02\x02\x02\xB1\xAB\x03\x02\x02\x02\xB1\xAC\x03\x02\x02\x02\xB1\xAD\x03" +
-		"\x02\x02\x02\xB1\xAE\x03\x02\x02\x02\xB1\xAF\x03\x02\x02\x02\xB1\xB0\x03" +
-		"\x02\x02\x02\xB2\x1D\x03\x02\x02\x02\x1A &*/27;=EOVaeikwy\x81\x83\x8E" +
-		"\x95\xA1\xA8\xB1";
+		"\b\x03\b\x05\ba\n\b\x03\t\x03\t\x05\te\n\t\x03\t\x03\t\x05\ti\n\t\x05" +
+		"\tk\n\t\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x05" +
+		"\nw\n\n\x05\ny\n\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x07\n\x81\n\n\f" +
+		"\n\x0E\n\x84\v\n\x03\v\x03\v\x03\f\x03\f\x03\f\x03\f\x07\f\x8C\n\f\f\f" +
+		"\x0E\f\x8F\v\f\x03\f\x03\f\x03\f\x03\f\x05\f\x95\n\f\x03\r\x03\r\x03\r" +
+		"\x03\r\x03\x0E\x03\x0E\x03\x0E\x03\x0E\x07\x0E\x9F\n\x0E\f\x0E\x0E\x0E" +
+		"\xA2\v\x0E\x03\x0E\x03\x0E\x03\x0E\x03\x0E\x05\x0E\xA8\n\x0E\x03\x0F\x03" +
+		"\x0F\x03\x0F\x03\x0F\x03\x0F\x03\x0F\x03\x0F\x05\x0F\xB1\n\x0F\x03\x0F" +
+		"\x02\x02\x03\x12\x10\x02\x02\x04\x02\x06\x02\b\x02\n\x02\f\x02\x0E\x02" +
+		"\x10\x02\x12\x02\x14\x02\x16\x02\x18\x02\x1A\x02\x1C\x02\x02\x05\x04\x02" +
+		"\x03\x03\x05\x05\x04\x02\x07\x07\x1F\x1F\x03\x02\t\x10\x02\xC8\x02\x1E" +
+		"\x03\x02\x02\x02\x04$\x03\x02\x02\x02\x06*\x03\x02\x02\x02\b=\x03\x02" +
+		"\x02\x02\n?\x03\x02\x02\x02\fJ\x03\x02\x02\x02\x0E`\x03\x02\x02\x02\x10" +
+		"b\x03\x02\x02\x02\x12x\x03\x02\x02\x02\x14\x85\x03\x02\x02\x02\x16\x94" +
+		"\x03\x02\x02\x02\x18\x96\x03\x02\x02\x02\x1A\xA7\x03\x02\x02\x02\x1C\xB0" +
+		"\x03\x02\x02\x02\x1E \x07\x05\x02\x02\x1F!\x05\b\x05\x02 \x1F\x03\x02" +
+		"\x02\x02 !\x03\x02\x02\x02!\"\x03\x02\x02\x02\"#\x07\x02\x02\x03#\x03" +
+		"\x03\x02\x02\x02$&\t\x02\x02\x02%\'\x05\b\x05\x02&%\x03\x02\x02\x02&\'" +
+		"\x03\x02\x02\x02\'\x05\x03\x02\x02\x02(+\x05\x04\x03\x02)+\x05\x1C\x0F" +
+		"\x02*(\x03\x02\x02\x02*)\x03\x02\x02\x02+\x07\x03\x02\x02\x02,/\x07\x04" +
+		"\x02\x02-0\x05\f\x07\x02.0\x05\n\x06\x02/-\x03\x02\x02\x02/.\x03\x02\x02" +
+		"\x0202\x03\x02\x02\x0213\x05\b\x05\x0221\x03\x02\x02\x0223\x03\x02\x02" +
+		"\x023>\x03\x02\x02\x0245\x07\x06\x02\x0257\x05\f\x07\x0268\x05\b\x05\x02" +
+		"76\x03\x02\x02\x0278\x03\x02\x02\x028>\x03\x02\x02\x029;\x05\n\x06\x02" +
+		":<\x05\b\x05\x02;:\x03\x02\x02\x02;<\x03\x02\x02\x02<>\x03\x02\x02\x02" +
+		"=,\x03\x02\x02\x02=4\x03\x02\x02\x02=9\x03\x02\x02\x02>\t\x03\x02\x02" +
+		"\x02?@\x07\x18\x02\x02@E\x05\x0E\b\x02AB\x07\x1B\x02\x02BD\x05\x0E\b\x02" +
+		"CA\x03\x02\x02\x02DG\x03\x02\x02\x02EC\x03\x02\x02\x02EF\x03\x02\x02\x02" +
+		"FH\x03\x02\x02\x02GE\x03\x02\x02\x02HI\x07\x19\x02\x02I\v\x03\x02\x02" +
+		"\x02JK\t\x03\x02\x02K\r\x03\x02\x02\x02La\x07 \x02\x02MO\x07!\x02\x02" +
+		"NP\x05\x10\t\x02ON\x03\x02\x02\x02OP\x03\x02\x02\x02Pa\x03\x02\x02\x02" +
+		"Qa\x05\x10\t\x02Ra\x07\x07\x02\x02ST\x07\x1C\x02\x02TV\x05\x06\x04\x02" +
+		"UW\x05\x06\x04\x02VU\x03\x02\x02\x02VW\x03\x02\x02\x02WX\x03\x02\x02\x02" +
+		"XY\x07\x1D\x02\x02Ya\x03\x02\x02\x02Z[\x07\x1E\x02\x02[\\\x07\x1C\x02" +
+		"\x02\\]\x05\x12\n\x02]^\x07\x1D\x02\x02^a\x03\x02\x02\x02_a\x07\x1F\x02" +
+		"\x02`L\x03\x02\x02\x02`M\x03\x02\x02\x02`Q\x03\x02\x02\x02`R\x03\x02\x02" +
+		"\x02`S\x03\x02\x02\x02`Z\x03\x02\x02\x02`_\x03\x02\x02\x02a\x0F\x03\x02" +
+		"\x02\x02bd\x07\x1A\x02\x02ce\x07!\x02\x02dc\x03\x02\x02\x02de\x03\x02" +
+		"\x02\x02ej\x03\x02\x02\x02fh\x07\x1A\x02\x02gi\x07!\x02\x02hg\x03\x02" +
+		"\x02\x02hi\x03\x02\x02\x02ik\x03\x02\x02\x02jf\x03\x02\x02\x02jk\x03\x02" +
+		"\x02\x02k\x11\x03\x02\x02\x02lm\b\n\x01\x02mn\x07\x11\x02\x02ny\x05\x12" +
+		"\n\x07op\x07\x1C\x02\x02pq\x05\x12\n\x02qr\x07\x1D\x02\x02ry\x03\x02\x02" +
+		"\x02sv\x05\x06\x04\x02tu\t\x04\x02\x02uw\x05\x06\x04\x02vt\x03\x02\x02" +
+		"\x02vw\x03\x02\x02\x02wy\x03\x02\x02\x02xl\x03\x02\x02\x02xo\x03\x02\x02" +
+		"\x02xs\x03\x02\x02\x02y\x82\x03\x02\x02\x02z{\f\x06\x02\x02{|\x07\b\x02" +
+		"\x02|\x81\x05\x12\n\x07}~\f\x05\x02\x02~\x7F\x07\x12\x02\x02\x7F\x81\x05" +
+		"\x12\n\x06\x80z\x03\x02\x02\x02\x80}\x03\x02\x02\x02\x81\x84\x03\x02\x02" +
+		"\x02\x82\x80\x03\x02\x02\x02\x82\x83\x03\x02\x02\x02\x83\x13\x03\x02\x02" +
+		"\x02\x84\x82\x03\x02\x02\x02\x85\x86\x05\x1C\x0F\x02\x86\x15\x03\x02\x02" +
+		"\x02\x87\x88\x07\x16\x02\x02\x88\x8D\x05\x18\r\x02\x89\x8A\x07\x1B\x02" +
+		"\x02\x8A\x8C\x05\x18\r\x02\x8B\x89\x03\x02\x02\x02\x8C\x8F\x03\x02\x02" +
+		"\x02\x8D\x8B\x03\x02\x02\x02\x8D\x8E\x03\x02\x02\x02\x8E\x90\x03\x02\x02" +
+		"\x02\x8F\x8D\x03\x02\x02\x02\x90\x91\x07\x17\x02\x02\x91\x95\x03\x02\x02" +
+		"\x02\x92\x93\x07\x16\x02\x02\x93\x95\x07\x17\x02\x02\x94\x87\x03\x02\x02" +
+		"\x02\x94\x92\x03\x02\x02\x02\x95\x17\x03\x02\x02\x02\x96\x97\x07 \x02" +
+		"\x02\x97\x98\x07\x1A\x02\x02\x98\x99\x05\x1C\x0F\x02\x99\x19\x03\x02\x02" +
+		"\x02\x9A\x9B\x07\x18\x02\x02\x9B\xA0\x05\x1C\x0F\x02\x9C\x9D\x07\x1B\x02" +
+		"\x02\x9D\x9F\x05\x1C\x0F\x02\x9E\x9C\x03\x02\x02\x02\x9F\xA2\x03\x02\x02" +
+		"\x02\xA0\x9E\x03\x02\x02\x02\xA0\xA1\x03\x02\x02\x02\xA1\xA3\x03\x02\x02" +
+		"\x02\xA2\xA0\x03\x02\x02\x02\xA3\xA4\x07\x19\x02\x02\xA4\xA8\x03\x02\x02" +
+		"\x02\xA5\xA6\x07\x18\x02\x02\xA6\xA8\x07\x19\x02\x02\xA7\x9A\x03\x02\x02" +
+		"\x02\xA7\xA5\x03\x02\x02\x02\xA8\x1B\x03\x02\x02\x02\xA9\xB1\x07 \x02" +
+		"\x02\xAA\xB1\x07!\x02\x02\xAB\xB1\x05\x16\f\x02\xAC\xB1\x05\x1A\x0E\x02" +
+		"\xAD\xB1\x07\x13\x02\x02\xAE\xB1\x07\x14\x02\x02\xAF\xB1\x07\x15\x02\x02" +
+		"\xB0\xA9\x03\x02\x02\x02\xB0\xAA\x03\x02\x02\x02\xB0\xAB\x03\x02\x02\x02" +
+		"\xB0\xAC\x03\x02\x02\x02\xB0\xAD\x03\x02\x02\x02\xB0\xAE\x03\x02\x02\x02" +
+		"\xB0\xAF\x03\x02\x02\x02\xB1\x1D\x03\x02\x02\x02\x1A &*/27;=EOV`dhjvx" +
+		"\x80\x82\x8D\x94\xA0\xA7\xB0";
 	public static __ATN: ATN;
 	public static get _ATN(): ATN {
 		if (!JSONPathParser.__ATN) {
@@ -1304,9 +1295,6 @@ export class SubscriptableContext extends ParserRuleContext {
 	public QUESTION(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.QUESTION, 0); }
 	public expression(): ExpressionContext | undefined {
 		return this.tryGetRuleContext(0, ExpressionContext);
-	}
-	public filterpath(): FilterpathContext | undefined {
-		return this.tryGetRuleContext(0, FilterpathContext);
 	}
 	public IDENTIFIER(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.IDENTIFIER, 0); }
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {

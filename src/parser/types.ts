@@ -76,16 +76,10 @@ export type Subscriptable =
   | StringLiteral
   | NumericLiteral
   | FilterExpression
-  | FilterSubscript
   | ArraySlice
   | ScriptExpression;
 
 export type Subscript = SubscriptDot | SubscriptDotdot | SubscriptBracket;
-
-export type FilterSubscript = {
-  type: 'filter_subscript';
-  value: ExpressionChild;
-};
 
 export type StringLiteral = {
   type: 'string_literal';
@@ -132,7 +126,6 @@ export type JsonPathItem =
   | SubscriptBracket
   | Subscriptable
   | Subscriptables
-  | FilterSubscript
   | ArraySlice
   | StringLiteral
   | Identifier

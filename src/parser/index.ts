@@ -10,7 +10,6 @@ export type {
   SubscriptBracket,
   Subscriptable,
   Subscriptables,
-  FilterSubscript,
   ArraySlice,
   StringLiteral,
   Identifier,

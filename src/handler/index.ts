@@ -5,6 +5,7 @@ import {
   ArraySlice,
   Identifier,
   NumericLiteral,
+  ScriptExpression,
   StringLiteral,
   Subscript,
   Subscriptable,
@@ -75,6 +76,12 @@ const handleStringLiteral = (payload: Payload, tree: StringLiteral): unknown => 
   return payload[tree.value];
 };
 
+const handleScriptExpression = (payload: Payload, tree: ScriptExpression): Payload => {
+  console.log('Script expression', tree);
+
+  return payload;
+};
+
 const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => {
   switch (tree.type) {
     case 'string_literal': {
@@ -86,14 +93,11 @@ const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => 
     case 'filter_expression': {
       return;
     }
-    case 'filter_subscript': {
-      return;
-    }
     case 'array_slice': {
       return handleArraySlice(payload, tree);
     }
     case 'script_expression': {
-      return;
+      return handleScriptExpression(payload, tree);
     }
   }
 };
@@ -102,7 +106,9 @@ const handleSubscriptables = (payload: Payload, tree: Subscriptables): unknown[]
   let results = [];
   for (const treeValue of tree.values) {
     const res = handleSubscriptable(payload, treeValue);
-    results = results.concat(res);
+    if (typeof res !== 'undefined') {
+      results = results.concat(res);
+    }
   }
 
   return results;
@@ -122,7 +128,6 @@ const handleSubscriptBracket = (payload: Payload, tree: SubscriptBracket): Paylo
 };
 
 const handleSubscriptDotdot = (payload: Payload, tree: SubscriptDotdot): Payload => {
-  let results: unknown[] = [];
   const treeValue = tree.value;
 
   switch (treeValue.type) {
@@ -130,6 +135,7 @@ const handleSubscriptDotdot = (payload: Payload, tree: SubscriptDotdot): Payload
       return handleSubscriptables(payload, treeValue);
     }
     case 'identifier': {
+      let results = [];
       const identifierRes = handleIdentifier(payload, treeValue);
       const res = handleSubscript(identifierRes, tree.next);
       if (typeof res !== 'undefined') {
@@ -148,11 +154,9 @@ const handleSubscriptDotdot = (payload: Payload, tree: SubscriptDotdot): Payload
           results = results.concat(res);
         }
       }
-      break;
+      return results;
     }
   }
-
-  return results;
 };
 
 const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): Payload => {
@@ -192,8 +196,6 @@ export const query = (payload: unknown, path: string): Payload => {
   return handleSubscript(payload, tree.next);
 };
 
-// subscriptables
-// subscript
 // filter_expression
 // script_expression
 // group_expression

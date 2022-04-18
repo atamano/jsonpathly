@@ -67,7 +67,6 @@ subscriptable
    | WILDCARD
    | PAREN_LEFT filterarg ( filterarg )? PAREN_RIGHT
    | QUESTION PAREN_LEFT expression PAREN_RIGHT
-   | filterpath
    | IDENTIFIER
    ;
 

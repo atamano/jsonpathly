@@ -43,7 +43,6 @@ const isSubscriptable = (node: StackType): node is Subscriptable => {
       'numeric_literal',
       'wildcard',
       'filter_expression',
-      'filter_subscript',
       'script_expression',
       'array_slice',
     ].includes(node.type)
@@ -214,12 +213,6 @@ export default class Listener implements JSONPathListener {
         const expression = this.popWithCheck('expression_child', ctx);
 
         this.push({ type: 'filter_expression', value: expression });
-        break;
-      }
-      case !!ctx.filterpath(): {
-        const value = this.popWithCheck('expression_child', ctx);
-
-        this.push({ type: 'filter_subscript', value });
         break;
       }
       case !!ctx.filterarg(): {

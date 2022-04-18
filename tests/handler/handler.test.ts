@@ -70,7 +70,9 @@ describe('query with dot dot notations', () => {
 
 describe('query with bracket numeric value', () => {
   const textCases = [
-    { path: `$.arrayOfNumber[1]`, expected: PAYLOAD.arrayOfNumber[1] },
+    { path: `$.arrayOfNumber[1]`, expected: 2 },
+    { path: `$.arrayOfNumber[1,3,5]`, expected: [2, 4, 6] },
+    { path: `$.arrayOfNumber[10,11,12]`, expected: [] },
     { path: `$.arrayOfNumber[10]`, expected: undefined },
     { path: `$.string[0]`, expected: undefined },
   ];
@@ -86,6 +88,8 @@ describe('query with bracket string value', () => {
   const textCases = [
     { path: `$["notExist"]`, undefined },
     { path: `$["string"]`, expected: PAYLOAD.string },
+    // Different implementation depending on libraries
+    { path: `$["string", "number"]`, expected: [PAYLOAD.string, PAYLOAD.number] },
     { path: `$["nestedObject"]["object"]`, expected: PAYLOAD.nestedObject.object },
   ];
 
