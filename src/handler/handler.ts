@@ -1,4 +1,3 @@
-import * as isPlainObject from 'lodash.isplainobject';
 import { WILDCARD } from '../parser/Listener';
 import { parse } from '../parser';
 import {
@@ -18,14 +17,7 @@ import {
   SubscriptDot,
   SubscriptDotdot,
 } from '../parser/types';
-
-const isArray = (item: unknown): item is unknown[] => {
-  return Array.isArray(item);
-};
-
-const isObject = (item: unknown): item is Record<string, unknown> => {
-  return isPlainObject(item);
-};
+import { isArray, isObject } from './helper';
 
 class Handler {
   rootPayload: unknown;

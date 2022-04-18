@@ -1,6 +1,6 @@
 import * as isPlainObjet from 'lodash.isplainobject';
 import { RuleContext } from 'antlr4ts/RuleContext';
-import { JSONPathListener } from './JSONPathListener';
+import { JSONPathListener } from './generated/JSONPathListener';
 import {
   ArrayContext,
   ExpressionContext,
@@ -15,7 +15,7 @@ import {
   SubscriptablesContext,
   SubscriptContext,
   ValueContext,
-} from './JSONPathParser';
+} from './generated/JSONPathParser';
 import {
   FilterExpressionChild,
   ComparatorArgument,

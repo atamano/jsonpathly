@@ -1,8 +1,8 @@
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker';
-import { JSONPathLexer } from './JSONPathLexer';
-import { JSONPathListener } from './JSONPathListener';
-import { JSONPathParser } from './JSONPathParser';
+import { JSONPathLexer } from './generated/JSONPathLexer';
+import { JSONPathListener } from './generated/JSONPathListener';
+import { JSONPathParser } from './generated/JSONPathParser';
 import CustomJSONPathListener from './Listener';
 import { Comparator, BinaryExpression, JsonPathItem, Root } from './types';
 
