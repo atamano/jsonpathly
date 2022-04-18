@@ -123,8 +123,7 @@ export type FilterExpressionChild =
   | Negate
   | ComparatorArgument
   | Current
-  | Root
-  | Value;
+  | Root;
 
 export type JsonPathItem =
   | Value

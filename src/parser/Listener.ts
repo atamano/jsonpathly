@@ -60,7 +60,7 @@ const TYPE_CHECKER = {
   filter_expression_child: (node: StackType): node is FilterExpressionChild =>
     'type' in node &&
     typeof node.type === 'string' &&
-    ['comparator', 'group_expression', 'negate', 'binary_expression', 'value', 'current', 'root'].includes(node.type),
+    ['comparator', 'group_expression', 'negate', 'binary_expression', 'current', 'root'].includes(node.type),
   script_expression_child: (node: StackType): node is ScriptExpressionChild =>
     'type' in node && typeof node.type === 'string' && ['value', 'current', 'root'].includes(node.type),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',

@@ -79,7 +79,8 @@ expression
    | expression AND expression
    | expression OR expression
    | PAREN_LEFT expression PAREN_RIGHT
-   | filterarg ( ( EQ | NE | LT | LE | GT | GE | IN | NIN ) filterarg )?
+   | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN ) filterarg
+   | filterpath
    ;
 
 IDENTIFIER

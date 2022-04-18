@@ -613,16 +613,17 @@ export class JSONPathParser extends Parser {
 			{
 			this.state = 118;
 			this._errHandler.sync(this);
-			switch (this._input.LA(1)) {
-			case JSONPathParser.NOT:
+			switch ( this.interpreter.adaptivePredict(this._input, 15, this._ctx) ) {
+			case 1:
 				{
 				this.state = 107;
 				this.match(JSONPathParser.NOT);
 				this.state = 108;
-				this.expression(5);
+				this.expression(6);
 				}
 				break;
-			case JSONPathParser.PAREN_LEFT:
+
+			case 2:
 				{
 				this.state = 109;
 				this.match(JSONPathParser.PAREN_LEFT);
@@ -632,49 +633,39 @@ export class JSONPathParser extends Parser {
 				this.match(JSONPathParser.PAREN_RIGHT);
 				}
 				break;
-			case JSONPathParser.CURRENT_VALUE:
-			case JSONPathParser.ROOT_VALUE:
-			case JSONPathParser.TRUE:
-			case JSONPathParser.FALSE:
-			case JSONPathParser.NULL:
-			case JSONPathParser.BRACE_LEFT:
-			case JSONPathParser.BRACKET_LEFT:
-			case JSONPathParser.STRING:
-			case JSONPathParser.NUMBER:
+
+			case 3:
 				{
 				this.state = 113;
 				this.filterarg();
-				this.state = 116;
-				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 15, this._ctx) ) {
-				case 1:
-					{
-					this.state = 114;
-					_la = this._input.LA(1);
-					if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << JSONPathParser.EQ) | (1 << JSONPathParser.GE) | (1 << JSONPathParser.GT) | (1 << JSONPathParser.LE) | (1 << JSONPathParser.LT) | (1 << JSONPathParser.NE) | (1 << JSONPathParser.IN) | (1 << JSONPathParser.NIN))) !== 0))) {
-					this._errHandler.recoverInline(this);
-					} else {
-						if (this._input.LA(1) === Token.EOF) {
-							this.matchedEOF = true;
-						}
+				this.state = 114;
+				_la = this._input.LA(1);
+				if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << JSONPathParser.EQ) | (1 << JSONPathParser.GE) | (1 << JSONPathParser.GT) | (1 << JSONPathParser.LE) | (1 << JSONPathParser.LT) | (1 << JSONPathParser.NE) | (1 << JSONPathParser.IN) | (1 << JSONPathParser.NIN))) !== 0))) {
+				this._errHandler.recoverInline(this);
+				} else {
+					if (this._input.LA(1) === Token.EOF) {
+						this.matchedEOF = true;
+					}
 
-						this._errHandler.reportMatch(this);
-						this.consume();
-					}
-					this.state = 115;
-					this.filterarg();
-					}
-					break;
+					this._errHandler.reportMatch(this);
+					this.consume();
 				}
+				this.state = 115;
+				this.filterarg();
 				}
 				break;
-			default:
-				throw new NoViableAltException(this);
+
+			case 4:
+				{
+				this.state = 117;
+				this.filterpath();
+				}
+				break;
 			}
 			this._ctx._stop = this._input.tryLT(-1);
 			this.state = 128;
 			this._errHandler.sync(this);
-			_alt = this.interpreter.adaptivePredict(this._input, 18, this._ctx);
+			_alt = this.interpreter.adaptivePredict(this._input, 17, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 				if (_alt === 1) {
 					if (this._parseListeners != null) {
@@ -684,19 +675,19 @@ export class JSONPathParser extends Parser {
 					{
 					this.state = 126;
 					this._errHandler.sync(this);
-					switch ( this.interpreter.adaptivePredict(this._input, 17, this._ctx) ) {
+					switch ( this.interpreter.adaptivePredict(this._input, 16, this._ctx) ) {
 					case 1:
 						{
 						_localctx = new ExpressionContext(_parentctx, _parentState);
 						this.pushNewRecursionContext(_localctx, _startState, JSONPathParser.RULE_expression);
 						this.state = 120;
-						if (!(this.precpred(this._ctx, 4))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 4)");
+						if (!(this.precpred(this._ctx, 5))) {
+							throw this.createFailedPredicateException("this.precpred(this._ctx, 5)");
 						}
 						this.state = 121;
 						this.match(JSONPathParser.AND);
 						this.state = 122;
-						this.expression(5);
+						this.expression(6);
 						}
 						break;
 
@@ -705,13 +696,13 @@ export class JSONPathParser extends Parser {
 						_localctx = new ExpressionContext(_parentctx, _parentState);
 						this.pushNewRecursionContext(_localctx, _startState, JSONPathParser.RULE_expression);
 						this.state = 123;
-						if (!(this.precpred(this._ctx, 3))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 3)");
+						if (!(this.precpred(this._ctx, 4))) {
+							throw this.createFailedPredicateException("this.precpred(this._ctx, 4)");
 						}
 						this.state = 124;
 						this.match(JSONPathParser.OR);
 						this.state = 125;
-						this.expression(4);
+						this.expression(5);
 						}
 						break;
 					}
@@ -719,7 +710,7 @@ export class JSONPathParser extends Parser {
 				}
 				this.state = 130;
 				this._errHandler.sync(this);
-				_alt = this.interpreter.adaptivePredict(this._input, 18, this._ctx);
+				_alt = this.interpreter.adaptivePredict(this._input, 17, this._ctx);
 			}
 			}
 		}
@@ -770,7 +761,7 @@ export class JSONPathParser extends Parser {
 		try {
 			this.state = 146;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 20, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 19, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
@@ -861,7 +852,7 @@ export class JSONPathParser extends Parser {
 		try {
 			this.state = 165;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 22, this._ctx) ) {
+			switch ( this.interpreter.adaptivePredict(this._input, 21, this._ctx) ) {
 			case 1:
 				this.enterOuterAlt(_localctx, 1);
 				{
@@ -1001,10 +992,10 @@ export class JSONPathParser extends Parser {
 	private expression_sempred(_localctx: ExpressionContext, predIndex: number): boolean {
 		switch (predIndex) {
 		case 0:
-			return this.precpred(this._ctx, 4);
+			return this.precpred(this._ctx, 5);
 
 		case 1:
-			return this.precpred(this._ctx, 3);
+			return this.precpred(this._ctx, 4);
 		}
 		return true;
 	}
@@ -1021,11 +1012,11 @@ export class JSONPathParser extends Parser {
 		"\x06\x03\x06\x03\x07\x03\x07\x03\b\x03\b\x03\b\x05\bP\n\b\x03\b\x03\b" +
 		"\x03\b\x03\b\x03\b\x05\bW\n\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03\b\x03" +
 		"\b\x03\b\x05\ba\n\b\x03\t\x03\t\x05\te\n\t\x03\t\x03\t\x05\ti\n\t\x05" +
-		"\tk\n\t\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x05" +
-		"\nw\n\n\x05\ny\n\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x07\n\x81\n\n\f" +
-		"\n\x0E\n\x84\v\n\x03\v\x03\v\x03\f\x03\f\x03\f\x03\f\x07\f\x8C\n\f\f\f" +
-		"\x0E\f\x8F\v\f\x03\f\x03\f\x03\f\x03\f\x05\f\x95\n\f\x03\r\x03\r\x03\r" +
-		"\x03\r\x03\x0E\x03\x0E\x03\x0E\x03\x0E\x07\x0E\x9F\n\x0E\f\x0E\x0E\x0E" +
+		"\tk\n\t\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03" +
+		"\n\x03\n\x05\ny\n\n\x03\n\x03\n\x03\n\x03\n\x03\n\x03\n\x07\n\x81\n\n" +
+		"\f\n\x0E\n\x84\v\n\x03\v\x03\v\x03\f\x03\f\x03\f\x03\f\x07\f\x8C\n\f\f" +
+		"\f\x0E\f\x8F\v\f\x03\f\x03\f\x03\f\x03\f\x05\f\x95\n\f\x03\r\x03\r\x03" +
+		"\r\x03\r\x03\x0E\x03\x0E\x03\x0E\x03\x0E\x07\x0E\x9F\n\x0E\f\x0E\x0E\x0E" +
 		"\xA2\v\x0E\x03\x0E\x03\x0E\x03\x0E\x03\x0E\x05\x0E\xA8\n\x0E\x03\x0F\x03" +
 		"\x0F\x03\x0F\x03\x0F\x03\x0F\x03\x0F\x03\x0F\x05\x0F\xB1\n\x0F\x03\x0F" +
 		"\x02\x02\x03\x12\x10\x02\x02\x04\x02\x06\x02\b\x02\n\x02\f\x02\x0E\x02" +
@@ -1061,12 +1052,12 @@ export class JSONPathParser extends Parser {
 		"\x02\x02ej\x03\x02\x02\x02fh\x07\x1A\x02\x02gi\x07!\x02\x02hg\x03\x02" +
 		"\x02\x02hi\x03\x02\x02\x02ik\x03\x02\x02\x02jf\x03\x02\x02\x02jk\x03\x02" +
 		"\x02\x02k\x11\x03\x02\x02\x02lm\b\n\x01\x02mn\x07\x11\x02\x02ny\x05\x12" +
-		"\n\x07op\x07\x1C\x02\x02pq\x05\x12\n\x02qr\x07\x1D\x02\x02ry\x03\x02\x02" +
-		"\x02sv\x05\x06\x04\x02tu\t\x04\x02\x02uw\x05\x06\x04\x02vt\x03\x02\x02" +
-		"\x02vw\x03\x02\x02\x02wy\x03\x02\x02\x02xl\x03\x02\x02\x02xo\x03\x02\x02" +
-		"\x02xs\x03\x02\x02\x02y\x82\x03\x02\x02\x02z{\f\x06\x02\x02{|\x07\b\x02" +
-		"\x02|\x81\x05\x12\n\x07}~\f\x05\x02\x02~\x7F\x07\x12\x02\x02\x7F\x81\x05" +
-		"\x12\n\x06\x80z\x03\x02\x02\x02\x80}\x03\x02\x02\x02\x81\x84\x03\x02\x02" +
+		"\n\bop\x07\x1C\x02\x02pq\x05\x12\n\x02qr\x07\x1D\x02\x02ry\x03\x02\x02" +
+		"\x02st\x05\x06\x04\x02tu\t\x04\x02\x02uv\x05\x06\x04\x02vy\x03\x02\x02" +
+		"\x02wy\x05\x04\x03\x02xl\x03\x02\x02\x02xo\x03\x02\x02\x02xs\x03\x02\x02" +
+		"\x02xw\x03\x02\x02\x02y\x82\x03\x02\x02\x02z{\f\x07\x02\x02{|\x07\b\x02" +
+		"\x02|\x81\x05\x12\n\b}~\f\x06\x02\x02~\x7F\x07\x12\x02\x02\x7F\x81\x05" +
+		"\x12\n\x07\x80z\x03\x02\x02\x02\x80}\x03\x02\x02\x02\x81\x84\x03\x02\x02" +
 		"\x02\x82\x80\x03\x02\x02\x02\x82\x83\x03\x02\x02\x02\x83\x13\x03\x02\x02" +
 		"\x02\x84\x82\x03\x02\x02\x02\x85\x86\x05\x1C\x0F\x02\x86\x15\x03\x02\x02" +
 		"\x02\x87\x88\x07\x16\x02\x02\x88\x8D\x05\x18\r\x02\x89\x8A\x07\x1B\x02" +
@@ -1086,8 +1077,8 @@ export class JSONPathParser extends Parser {
 		"\xAD\xB1\x07\x13\x02\x02\xAE\xB1\x07\x14\x02\x02\xAF\xB1\x07\x15\x02\x02" +
 		"\xB0\xA9\x03\x02\x02\x02\xB0\xAA\x03\x02\x02\x02\xB0\xAB\x03\x02\x02\x02" +
 		"\xB0\xAC\x03\x02\x02\x02\xB0\xAD\x03\x02\x02\x02\xB0\xAE\x03\x02\x02\x02" +
-		"\xB0\xAF\x03\x02\x02\x02\xB1\x1D\x03\x02\x02\x02\x1A &*/27;=EOV`dhjvx" +
-		"\x80\x82\x8D\x94\xA0\xA7\xB0";
+		"\xB0\xAF\x03\x02\x02\x02\xB1\x1D\x03\x02\x02\x02\x19 &*/27;=EOV`dhjx\x80" +
+		"\x82\x8D\x94\xA0\xA7\xB0";
 	public static __ATN: ATN;
 	public static get _ATN(): ATN {
 		if (!JSONPathParser.__ATN) {
@@ -1388,6 +1379,9 @@ export class ExpressionContext extends ParserRuleContext {
 	public GE(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.GE, 0); }
 	public IN(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.IN, 0); }
 	public NIN(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.NIN, 0); }
+	public filterpath(): FilterpathContext | undefined {
+		return this.tryGetRuleContext(0, FilterpathContext);
+	}
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
 		super(parent, invokingState);
 	}

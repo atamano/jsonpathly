@@ -130,10 +130,6 @@ const handleFilterExpressionChild = (payload: unknown, tree: FilterExpressionChi
     case 'current': {
       return !!handleSubscript(payload, tree.next);
     }
-    case 'value': {
-      // TODO: Check if correct
-      return !!tree.value;
-    }
   }
 };
 
