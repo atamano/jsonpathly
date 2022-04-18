@@ -19,7 +19,7 @@ import {
 } from '../parser/types';
 import { isArray, isNumber, isObject } from './helper';
 
-class Handler {
+export class Handler {
   rootPayload: unknown;
 
   constructor(rootPayload: unknown) {
@@ -311,14 +311,3 @@ class Handler {
     }
   };
 }
-
-export const query = (payload: unknown, path: string): unknown => {
-  const tree = parse(path);
-  if (!tree) {
-    return;
-  }
-
-  const handler = new Handler(payload);
-
-  return handler.handleSubscript(payload, tree.next);
-};

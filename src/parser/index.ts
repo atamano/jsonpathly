@@ -1,5 +1,7 @@
 export { PathSyntaxError, ValidationError } from './errors';
-export { parse, stringify } from './parser';
+export { parse } from './parse';
+export { stringify } from './stringify';
+
 export type {
   ArraySlice,
   BinaryExpression,

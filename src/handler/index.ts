@@ -1,1 +1,1 @@
-export { query } from './handler';
+export { query } from './query';
