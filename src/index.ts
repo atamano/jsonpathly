@@ -11,6 +11,7 @@ const PAYLOAD = {
     },
     array: [
       {
+        exist: 'hello',
         item: {
           hello: {
             hello: [{ hello: { toto: '123' } }],
@@ -18,6 +19,7 @@ const PAYLOAD = {
         },
       },
       {
+        exist: 4,
         item: {
           hello: {
             hello: [{ hello: { toto: '2501' } }],
@@ -47,7 +49,8 @@ try {
     // '$.*',
     // `$['nestedObject'].object["test"]`,
     // `$.arrayOfNumber[2::3]`,
-    `$[@.string]`,
+    // `$..phoneNumbers[?(!(@.price < 30 && !@.type == "iPhone" && !@.number))]`,
+    `$.nestedObject.array[?(@.exist == "hello")]`,
   ];
 
   for (const input of inputs) {

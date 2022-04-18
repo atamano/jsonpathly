@@ -19,7 +19,7 @@ export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | Value
 
 export type Negate = {
   type: 'negate';
-  value: ExpressionChild;
+  value: FilterExpression;
 };
 
 export type GroupExpression = {
@@ -112,9 +112,17 @@ export type ScriptExpression = {
   right: ExpressionChild;
 };
 
-export type ComparatorArgument = Current | Root | Value;
+export type ComparatorArgument = Current | Value;
 
-export type ExpressionChild = Comparator | GroupExpression | BinaryExpression | Negate | ComparatorArgument;
+export type ExpressionChild =
+  | Comparator
+  | GroupExpression
+  | BinaryExpression
+  | Negate
+  | ComparatorArgument
+  | Current
+  | Root
+  | Value;
 
 export type JsonPathItem =
   | Value

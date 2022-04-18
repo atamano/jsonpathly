@@ -79,7 +79,7 @@ export function stringify(input: JsonPathItem | null): string {
       return `${input.value}`;
     }
     case 'negate': {
-      return '!' + stringify(input.value);
+      return '!' + stringify(input.value.value);
     }
     case 'value': {
       return JSON.stringify(input.value);

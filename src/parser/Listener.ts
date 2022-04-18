@@ -315,7 +315,13 @@ export default class Listener implements JSONPathListener {
       case !!ctx.NOT(): {
         const value = this.popWithCheck('expression_child', ctx);
 
-        this.push({ type: 'negate', value });
+        this.push({
+          type: 'negate',
+          value: {
+            type: 'filter_expression',
+            value,
+          },
+        });
         break;
       }
       case !!ctx.AND(): {

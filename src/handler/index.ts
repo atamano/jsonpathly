@@ -3,6 +3,9 @@ import { WILDCARD } from '../parser/Listener';
 import { parse } from '../parser';
 import {
   ArraySlice,
+  Comparator,
+  ComparatorArgument,
+  FilterExpression,
   Identifier,
   NumericLiteral,
   ScriptExpression,
@@ -39,6 +42,85 @@ const handleIdentifier = (payload: Payload, tree: Identifier): unknown => {
   }
 
   return payload[tree.value];
+};
+
+const handleComparatorArgument = (payload: Payload, tree: ComparatorArgument): Payload => {
+  switch (tree.type) {
+    case 'current': {
+      return handleSubscript(payload, tree.next);
+    }
+    case 'value': {
+      return tree.value;
+    }
+  }
+};
+const handleComparator = (payload: Payload, tree: Comparator): boolean => {
+  const leftValue = handleComparatorArgument(payload, tree.left);
+  const rightValue = handleComparatorArgument(payload, tree.right);
+
+  switch (tree.operator) {
+    case 'eq': {
+      return leftValue === rightValue;
+    }
+    case 'ne': {
+      return leftValue !== rightValue;
+    }
+    case 'lt': {
+      return leftValue < rightValue;
+    }
+    case 'le': {
+      return leftValue <= rightValue;
+    }
+    case 'gt': {
+      return leftValue > rightValue;
+    }
+    case 'ge': {
+      return leftValue >= rightValue;
+    }
+    case 'in': {
+      if (isArray(rightValue)) {
+        return rightValue.includes(leftValue);
+      }
+      return false;
+    }
+    case 'nin': {
+      if (isArray(rightValue)) {
+        return !rightValue.includes(leftValue);
+      }
+      return false;
+    }
+  }
+};
+
+const handleFilterExpression = (payload: Payload, tree: FilterExpression): boolean => {
+  const treeValue = tree.value;
+
+  switch (treeValue.type) {
+    case 'binary_expression': {
+      break;
+    }
+    case 'comparator': {
+      return handleComparator(payload, treeValue);
+    }
+    case 'group_expression': {
+      break;
+    }
+    case 'negate': {
+      return !handleFilterExpression(payload, treeValue.value);
+    }
+    case 'root': {
+      // TODO
+      return !!handleSubscript(payload, treeValue.next);
+    }
+    case 'current': {
+      return !!handleSubscript(payload, treeValue.next);
+    }
+    case 'value': {
+      // TODO: Check if correct
+      return !!treeValue.value;
+    }
+  }
+  return false;
 };
 
 const handleNumericLiteral = (payload: Payload, tree: NumericLiteral): unknown => {
@@ -84,6 +166,9 @@ const handleScriptExpression = (payload: Payload, tree: ScriptExpression): Paylo
 
 const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => {
   switch (tree.type) {
+    case 'identifier': {
+      return handleIdentifier(payload, tree);
+    }
     case 'string_literal': {
       return handleStringLiteral(payload, tree);
     }
@@ -91,7 +176,17 @@ const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => 
       return handleNumericLiteral(payload, tree);
     }
     case 'filter_expression': {
-      return;
+      let results = [];
+      if (isArray(payload)) {
+        for (const item of payload) {
+          const isValid = handleFilterExpression(item, tree);
+          if (isValid) {
+            results = results.concat(item);
+          }
+        }
+      }
+      // Handle objects?
+      return results;
     }
     case 'array_slice': {
       return handleArraySlice(payload, tree);
@@ -104,6 +199,7 @@ const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => 
 
 const handleSubscriptables = (payload: Payload, tree: Subscriptables): unknown[] => {
   let results = [];
+
   for (const treeValue of tree.values) {
     const res = handleSubscriptable(payload, treeValue);
     if (typeof res !== 'undefined') {
@@ -139,7 +235,7 @@ const handleSubscriptDotdot = (payload: Payload, tree: SubscriptDotdot): Payload
       const identifierRes = handleIdentifier(payload, treeValue);
       const res = handleSubscript(identifierRes, tree.next);
       if (typeof res !== 'undefined') {
-        results.push(res);
+        results = results.concat(res);
       }
 
       if (isObject(payload)) {
@@ -196,9 +292,5 @@ export const query = (payload: unknown, path: string): Payload => {
   return handleSubscript(payload, tree.next);
 };
 
-// filter_expression
-// script_expression
 // group_expression
-// comparator
 // binary_expression
-// filter_subscript
