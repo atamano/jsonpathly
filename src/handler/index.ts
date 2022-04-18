@@ -3,6 +3,7 @@ import { WILDCARD } from '../parser/Listener';
 import { parse } from '../parser';
 import {
   Identifier,
+  NumericLiteral,
   StringLiteral,
   Subscript,
   Subscriptable,
@@ -38,17 +39,41 @@ const handleIdentifier = (payload: Payload, tree: Identifier): unknown => {
   return payload[tree.value];
 };
 
-const handleStringLitteral = (payload: Payload, tree: StringLiteral): unknown => {
-  if (isObject(payload) && tree.value in payload) {
-    return payload[tree.value];
+const handleNumericLiteral = (payload: Payload, tree: NumericLiteral): unknown => {
+  // Only array allowed (should handle string as well ?)
+  if (!isArray(payload) || tree.value >= payload.length) {
+    return;
   }
-  return;
+  return payload[tree.value];
+};
+
+const handleStringLiteral = (payload: Payload, tree: StringLiteral): unknown => {
+  if (!isObject(payload) || !(tree.value in payload)) {
+    return;
+  }
+
+  return payload[tree.value];
 };
 
 const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => {
   switch (tree.type) {
     case 'string_literal': {
-      return handleStringLitteral(payload, tree);
+      return handleStringLiteral(payload, tree);
+    }
+    case 'numeric_literal': {
+      return handleNumericLiteral(payload, tree);
+    }
+    case 'filter_expression': {
+      return;
+    }
+    case 'filter_subscript': {
+      return;
+    }
+    case 'array_slice': {
+      return;
+    }
+    case 'script_expression': {
+      return;
     }
   }
 };

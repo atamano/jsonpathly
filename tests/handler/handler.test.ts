@@ -53,10 +53,26 @@ describe('query with dot notations', () => {
     expect(res).toEqual(expected);
   });
 });
+
 describe('query with dot dot notations', () => {
   const textCases = [
     { path: `$..string`, expected: [PAYLOAD.string] },
+    { path: `$..notExist`, expected: [] },
     { path: `$..hello.toto`, expected: ['123', '2501'] },
+  ];
+
+  test.each(textCases)('query(%s)', ({ path, expected }) => {
+    const res = query(PAYLOAD, path);
+
+    expect(res).toEqual(expected);
+  });
+});
+
+describe('query with bracket numeric value', () => {
+  const textCases = [
+    { path: `$.arrayOfNumber[0]`, expected: PAYLOAD.arrayOfNumber[0] },
+    { path: `$.arrayOfNumber[10]`, expected: undefined },
+    { path: `$.string[0]`, expected: undefined },
   ];
 
   test.each(textCases)('query(%s)', ({ path, expected }) => {
