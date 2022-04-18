@@ -53,3 +53,15 @@ describe('query with dot notations', () => {
     expect(res).toEqual(expected);
   });
 });
+describe('query with dot dot notations', () => {
+  const textCases = [
+    { path: `$..string`, expected: [PAYLOAD.string] },
+    { path: `$..hello.toto`, expected: ['123', '2501'] },
+  ];
+
+  test.each(textCases)('query(%s)', ({ path, expected }) => {
+    const res = query(PAYLOAD, path);
+
+    expect(res).toEqual(expected);
+  });
+});

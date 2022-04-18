@@ -2,6 +2,7 @@ import * as isPlainObject from 'lodash.isplainobject';
 import { WILDCARD } from '../parser/Listener';
 import { parse } from '../parser';
 import {
+  Identifier,
   StringLiteral,
   Subscript,
   Subscriptable,
@@ -11,6 +12,8 @@ import {
   SubscriptDotdot,
 } from '../parser/types';
 
+type Payload = unknown | unknown[];
+
 const isArray = (item: unknown): item is unknown[] => {
   return Array.isArray(item);
 };
@@ -19,14 +22,30 @@ const isObject = (item: unknown): item is Record<string, unknown> => {
   return isPlainObject(item);
 };
 
-const handleStringLitteral = (payload: unknown, tree: StringLiteral): unknown => {
+const handleIdentifier = (payload: Payload, tree: Identifier): unknown => {
+  if (!isObject(payload) && !isArray(payload)) {
+    return;
+  }
+
+  if (tree.value === WILDCARD) {
+    return Object.values(payload);
+  }
+
+  if (isArray(payload) || !isObject(payload) || !(tree.value in payload)) {
+    return;
+  }
+
+  return payload[tree.value];
+};
+
+const handleStringLitteral = (payload: Payload, tree: StringLiteral): unknown => {
   if (isObject(payload) && tree.value in payload) {
     return payload[tree.value];
   }
   return;
 };
 
-const handleSubscriptable = (payload: unknown, tree: Subscriptable): unknown => {
+const handleSubscriptable = (payload: Payload, tree: Subscriptable): unknown => {
   switch (tree.type) {
     case 'string_literal': {
       return handleStringLitteral(payload, tree);
@@ -34,7 +53,7 @@ const handleSubscriptable = (payload: unknown, tree: Subscriptable): unknown => 
   }
 };
 
-const handleSubscriptables = (payload: unknown, tree: Subscriptables): unknown[] => {
+const handleSubscriptables = (payload: Payload, tree: Subscriptables): unknown[] => {
   const results = [];
   for (const treeValue of tree.values) {
     const res = handleSubscriptable(payload, treeValue);
@@ -44,18 +63,18 @@ const handleSubscriptables = (payload: unknown, tree: Subscriptables): unknown[]
   return results;
 };
 
-const handleSubscriptBracket = (payload: unknown, tree: SubscriptBracket): unknown => {
+const handleSubscriptBracket = (payload: Payload, tree: SubscriptBracket): Payload => {
   const results = handleSubscriptables(payload, tree.value);
 
   if (tree.value.values.length === 1 && ['string_literal', 'numeric_literal'].includes(tree.value.values[0].type)) {
-    return handlSubscript(results.pop(), tree.next);
+    return handleSubscript(results.pop(), tree.next);
   }
 
-  return handlSubscript(results, tree.next);
+  return handleSubscript(results, tree.next);
 };
 
-const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown[] => {
-  let results = [];
+const handleSubscriptDotdot = (payload: Payload, tree: SubscriptDotdot): Payload => {
+  let results: unknown[] = [];
   const treeValue = tree.value;
 
   switch (treeValue.type) {
@@ -63,18 +82,13 @@ const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown
       return handleSubscriptables(payload, treeValue);
     }
     case 'identifier': {
-      if (treeValue.value === WILDCARD) {
-        if (isObject(payload) || isArray(payload)) {
-          results = results.concat(Object.values(payload));
-        }
+      const identifierRes = handleIdentifier(payload, treeValue);
+      const res = handleSubscript(identifierRes, tree.next);
+      if (typeof res !== 'undefined') {
+        results.push(res);
       }
+
       if (isObject(payload)) {
-        if (treeValue.value in payload) {
-          const res = handlSubscript(payload[treeValue.value], tree.next);
-          if (typeof res !== 'undefined') {
-            results.push(res);
-          }
-        }
         for (const value of Object.values(payload)) {
           const res = handleSubscriptDotdot(value, tree);
           results = results.concat(res);
@@ -93,23 +107,20 @@ const handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown
   return results;
 };
 
-const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
-  const treeValue = tree.value;
-
+const handleSubscriptDot = (payload: unknown, tree: SubscriptDot): Payload => {
   if (!isObject(payload)) {
     return;
   }
 
-  if (treeValue.value === WILDCARD) {
-    return Object.values(payload);
+  const result = handleIdentifier(payload, tree.value);
+  if (typeof result === 'undefined') {
+    return;
   }
 
-  if (treeValue.value in payload) {
-    return handlSubscript(payload[treeValue.value], tree.next);
-  }
+  return handleSubscript(result, tree.next);
 };
 
-const handlSubscript = (payload: unknown, tree: Subscript): unknown => {
+const handleSubscript = (payload: Payload, tree: Subscript): Payload => {
   if (tree === null) {
     return payload;
   }
@@ -127,10 +138,10 @@ const handlSubscript = (payload: unknown, tree: Subscript): unknown => {
   }
 };
 
-export const query = (payload: unknown, path: string): unknown => {
+export const query = (payload: unknown, path: string): Payload => {
   const tree = parse(path);
 
-  return handlSubscript(payload, tree.next);
+  return handleSubscript(payload, tree.next);
 };
 
 // subscriptables
