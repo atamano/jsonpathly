@@ -59,6 +59,13 @@ describe('query with dot dot notations', () => {
     { path: `$..string`, expected: [PAYLOAD.string] },
     { path: `$..notExist`, expected: [] },
     { path: `$..hello.toto`, expected: ['123', '2501'] },
+    { path: `$..hello.hello..toto`, expected: ['123', '2501'] },
+    { path: `$..hello..toto`, expected: ['123', '123', '123', '2501', '2501', '2501'] },
+    {
+      path: `$..hello..*..toto`,
+      expected: ['123', '123', '123', '123', '123', '2501', '2501', '2501', '2501', '2501'],
+    },
+    { path: `$..*.object`, expected: [{ test: '1' }] },
   ];
 
   test.each(textCases)('query(%s)', ({ path, expected }) => {

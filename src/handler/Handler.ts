@@ -239,13 +239,13 @@ export class Handler {
       tree.value.values.length === 1 &&
       ['string_literal', 'numeric_literal', 'identifier'].includes(tree.value.values[0].type)
     ) {
-      return this.handleSubscript(results.pop(), tree.next);
+      return results.pop();
     }
 
-    return this.handleSubscript(results, tree.next);
+    return results;
   };
 
-  handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotDot): unknown => {
+  handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotDot): unknown[] => {
     const treeValue = tree.value;
 
     switch (treeValue.type) {
@@ -255,9 +255,12 @@ export class Handler {
       case 'identifier': {
         let results: unknown[] = [];
         const identifierRes = this.handleIdentifier(payload, treeValue);
-        const res = this.handleSubscript(identifierRes, tree.next);
-        if (!isUndefined(res)) {
-          results = results.concat(res);
+        if (!isUndefined(identifierRes)) {
+          if (treeValue.value === WILDCARD) {
+            results = results.concat(identifierRes);
+          } else {
+            results.push(identifierRes);
+          }
         }
 
         if (isObject(payload)) {
@@ -266,12 +269,14 @@ export class Handler {
             results = results.concat(res);
           }
         }
+
         if (isArray(payload)) {
-          for (const item of payload) {
-            const res = this.handleSubscriptDotdot(item, tree);
+          for (const value of payload) {
+            const res = this.handleSubscriptDotdot(value, tree);
             results = results.concat(res);
           }
         }
+
         return results;
       }
     }
@@ -282,12 +287,7 @@ export class Handler {
       return;
     }
 
-    const result = this.handleIdentifier(payload, tree.value);
-    if (isUndefined(result)) {
-      return;
-    }
-
-    return this.handleSubscript(result, tree.next);
+    return this.handleIdentifier(payload, tree.value);
   };
 
   handleSubscript = (payload: unknown, tree: Subscript | null): unknown => {
@@ -297,13 +297,24 @@ export class Handler {
 
     switch (tree.subtype) {
       case 'bracket': {
-        return this.handleSubscriptBracket(payload, tree);
+        const result = this.handleSubscriptBracket(payload, tree);
+        return this.handleSubscript(result, tree.next);
       }
       case 'dot': {
-        return this.handleSubscriptDot(payload, tree);
+        const result = this.handleSubscriptDot(payload, tree);
+        return this.handleSubscript(result, tree.next);
       }
       case 'dotdot': {
-        return this.handleSubscriptDotdot(payload, tree);
+        let resultsFinal: unknown[] = [];
+        const results = this.handleSubscriptDotdot(payload, tree);
+
+        for (const item of results) {
+          const res = this.handleSubscript(item, tree.next);
+          if (!isUndefined(res)) {
+            resultsFinal = resultsFinal.concat(res);
+          }
+        }
+        return resultsFinal;
       }
     }
   };
