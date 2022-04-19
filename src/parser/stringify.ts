@@ -1,4 +1,4 @@
-import { BinaryExpression, Comparator, JsonPathItem } from './types';
+import { LogicalExpression, Comparator, JsonPathItem } from './types';
 
 const OPERATOR: Record<Comparator['operator'], string> = {
   eq: '==',
@@ -11,7 +11,7 @@ const OPERATOR: Record<Comparator['operator'], string> = {
   nin: 'nin',
 };
 
-const EXPR_OPERATOR: Record<BinaryExpression['operator'], string> = {
+const EXPR_OPERATOR: Record<LogicalExpression['operator'], string> = {
   and: '&&',
   or: '||',
 };
@@ -59,7 +59,7 @@ export function stringify(input: JsonPathItem | null): string {
     case 'numeric_literal': {
       return `${input.value}`;
     }
-    case 'negate': {
+    case 'negate_expression': {
       return '!' + stringify(input.value);
     }
     case 'value': {
@@ -77,7 +77,7 @@ export function stringify(input: JsonPathItem | null): string {
     case 'comparator': {
       return stringify(input.left) + ` ${OPERATOR[input.operator]} ` + stringify(input.right);
     }
-    case 'binary_expression': {
+    case 'logical_expression': {
       return stringify(input.left) + ` ${EXPR_OPERATOR[input.operator]} ` + stringify(input.right);
     }
     case 'array_slice': {

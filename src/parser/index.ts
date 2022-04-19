@@ -4,14 +4,14 @@ export { stringify } from './stringify';
 
 export type {
   ArraySlice,
-  BinaryExpression,
+  LogicalExpression,
   Comparator,
   Current,
   FilterExpression,
   GroupExpression,
   Identifier,
   JsonPathItem,
-  Negate,
+  NegateExpression,
   NumericLiteral,
   Root,
   ScriptExpression,
@@ -20,6 +20,6 @@ export type {
   Subscriptables,
   SubscriptBracket,
   SubscriptDot,
-  SubscriptDotdot,
+  SubscriptDotDot,
   Value,
 } from './types';

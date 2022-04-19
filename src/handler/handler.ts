@@ -1,7 +1,7 @@
 import { WILDCARD } from '../parser/Listener';
 import {
   ArraySlice,
-  BinaryExpression,
+  LogicalExpression,
   Comparator,
   ComparatorArgument,
   FilterExpressionChild,
@@ -14,7 +14,7 @@ import {
   Subscriptables,
   SubscriptBracket,
   SubscriptDot,
-  SubscriptDotdot,
+  SubscriptDotDot,
 } from '../parser/types';
 import { isArray, isNumber, isObject } from './helper';
 
@@ -105,7 +105,7 @@ export class Handler {
     }
   };
 
-  handleBinaryExpression = (payload: unknown, tree: BinaryExpression): boolean => {
+  handleLogicalExpression = (payload: unknown, tree: LogicalExpression): boolean => {
     const leftValue = this.handleFilterExpressionChild(payload, tree.left);
     const rightValue = this.handleFilterExpressionChild(payload, tree.right);
     switch (tree.operator) {
@@ -120,8 +120,8 @@ export class Handler {
 
   handleFilterExpressionChild = (payload: unknown, tree: FilterExpressionChild): boolean => {
     switch (tree.type) {
-      case 'binary_expression': {
-        return this.handleBinaryExpression(payload, tree);
+      case 'logical_expression': {
+        return this.handleLogicalExpression(payload, tree);
       }
       case 'comparator': {
         return this.handleComparator(payload, tree);
@@ -129,7 +129,7 @@ export class Handler {
       case 'group_expression': {
         return this.handleFilterExpressionChild(payload, tree.value);
       }
-      case 'negate': {
+      case 'negate_expression': {
         return !this.handleFilterExpressionChild(payload, tree.value);
       }
       case 'root': {
@@ -247,7 +247,7 @@ export class Handler {
     return this.handleSubscript(results, tree.next);
   };
 
-  handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotdot): unknown => {
+  handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotDot): unknown => {
     const treeValue = tree.value;
 
     switch (treeValue.type) {

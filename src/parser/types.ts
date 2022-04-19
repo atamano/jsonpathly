@@ -17,8 +17,8 @@ export type ValueNull = { type: 'value'; value: null; subtype: 'null' };
 
 export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | ValueArray | ValueObject;
 
-export type Negate = {
-  type: 'negate';
+export type NegateExpression = {
+  type: 'negate_expression';
   value: FilterExpressionChild;
 };
 
@@ -27,8 +27,8 @@ export type GroupExpression = {
   value: FilterExpressionChild;
 };
 
-export type BinaryExpression = {
-  type: 'binary_expression';
+export type LogicalExpression = {
+  type: 'logical_expression';
   operator: 'or' | 'and';
   left: FilterExpressionChild;
   right: FilterExpressionChild;
@@ -57,7 +57,7 @@ export type SubscriptDot = {
   next: Subscript | null;
 };
 
-export type SubscriptDotdot = {
+export type SubscriptDotDot = {
   type: 'subscript';
   subtype: 'dotdot';
   value: Identifier | Subscriptables;
@@ -79,7 +79,7 @@ export type Subscriptable =
   | ArraySlice
   | ScriptExpression;
 
-export type Subscript = SubscriptDot | SubscriptDotdot | SubscriptBracket;
+export type Subscript = SubscriptDot | SubscriptDotDot | SubscriptBracket;
 
 export type StringLiteral = {
   type: 'string_literal';
@@ -116,15 +116,21 @@ export type ComparatorArgument = Root | Current | Value;
 
 export type ScriptExpressionChild = Root | Current | Value;
 
-export type FilterExpressionChild = Comparator | GroupExpression | BinaryExpression | Negate | Current | Root;
+export type FilterExpressionChild =
+  | Comparator
+  | GroupExpression
+  | LogicalExpression
+  | NegateExpression
+  | Current
+  | Root;
 
 export type JsonPathItem =
   | Value
   | Root
   | Current
-  | Negate
+  | NegateExpression
   | SubscriptDot
-  | SubscriptDotdot
+  | SubscriptDotDot
   | SubscriptBracket
   | Subscriptable
   | Subscriptables
@@ -135,7 +141,7 @@ export type JsonPathItem =
   | FilterExpression
   | ScriptExpression
   | GroupExpression
-  | BinaryExpression
+  | LogicalExpression
   | Comparator;
 
 export type Node = unknown[] | Record<string, unknown> | StartFunction | JsonPathItem;

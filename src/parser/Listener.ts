@@ -35,22 +35,6 @@ export const WILDCARD = '*';
 
 type StackType = Node | Node[];
 
-const isSubscriptable = (node: StackType): node is Subscriptable => {
-  return (
-    'type' in node &&
-    typeof node.type === 'string' &&
-    [
-      'string_literal',
-      'identifier',
-      'numeric_literal',
-      'wildcard',
-      'filter_expression',
-      'script_expression',
-      'array_slice',
-    ].includes(node.type)
-  );
-};
-
 const TYPE_CHECKER = {
   simple_object: (node: StackType): node is Record<string, unknown> => isPlainObjet(node),
   simple_array: (node: StackType): node is unknown[] => Array.isArray(node),
@@ -61,14 +45,30 @@ const TYPE_CHECKER = {
   filter_expression_child: (node: StackType): node is FilterExpressionChild =>
     'type' in node &&
     typeof node.type === 'string' &&
-    ['comparator', 'group_expression', 'negate', 'binary_expression', 'current', 'root'].includes(node.type),
+    ['comparator', 'group_expression', 'negate_expression', 'logical_expression', 'current', 'root'].includes(
+      node.type,
+    ),
   script_expression_child: (node: StackType): node is ScriptExpressionChild =>
     'type' in node && typeof node.type === 'string' && ['value', 'current', 'root'].includes(node.type),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
   identifier: (node: StackType): node is Identifier | Identifier =>
     'type' in node && typeof node.type === 'string' && node.type === 'identifier',
   start_function: (node: StackType): node is StartFunction => typeof node === 'function',
-  subscriptable: isSubscriptable,
+  subscriptable: (node: StackType): node is Subscriptable => {
+    return (
+      'type' in node &&
+      typeof node.type === 'string' &&
+      [
+        'string_literal',
+        'identifier',
+        'numeric_literal',
+        'wildcard',
+        'filter_expression',
+        'script_expression',
+        'array_slice',
+      ].includes(node.type)
+    );
+  },
   subscriptables: (node: StackType): node is Subscriptables => 'type' in node && node.type === 'subscriptables',
 } as const;
 
@@ -277,15 +277,16 @@ export default class Listener implements JSONPathListener {
     let end: number | null = null;
     let step: number | null = null;
 
-    if (ctx.tryGetToken(JSONPathParser.NUMBER, 0)) {
-      if (ctx.tryGetToken(JSONPathParser.COLON, 1)) {
-        const number0 = ctx.tryGetToken(JSONPathParser.NUMBER, 0);
-        const colon1 = ctx.tryGetToken(JSONPathParser.COLON, 1);
+    const number0 = ctx.tryGetToken(JSONPathParser.NUMBER, 0);
+    const number1 = ctx.tryGetToken(JSONPathParser.NUMBER, 1);
+    const colon1 = ctx.tryGetToken(JSONPathParser.COLON, 1);
 
-        if (ctx.tryGetToken(JSONPathParser.NUMBER, 1)) {
+    if (number0) {
+      if (colon1) {
+        if (number1) {
           end = Number.parseInt(ctx.NUMBER(0).text);
           step = Number.parseInt(ctx.NUMBER(1).text);
-        } else if (number0 && colon1 && number0?.sourceInterval.a < colon1?.sourceInterval?.a) {
+        } else if (number0.sourceInterval.a < colon1.sourceInterval.a) {
           end = Number.parseInt(ctx.NUMBER(0).text);
           step = null;
         } else {
@@ -309,7 +310,7 @@ export default class Listener implements JSONPathListener {
         const value = this.popWithCheck('filter_expression_child', ctx);
 
         this.push({
-          type: 'negate',
+          type: 'negate_expression',
           value,
         });
         break;
@@ -318,14 +319,14 @@ export default class Listener implements JSONPathListener {
         const right = this.popWithCheck('filter_expression_child', ctx);
         const left = this.popWithCheck('filter_expression_child', ctx);
 
-        this.push({ type: 'binary_expression', operator: 'and', left, right });
+        this.push({ type: 'logical_expression', operator: 'and', left, right });
         break;
       }
       case !!ctx.OR(): {
         const right = this.popWithCheck('filter_expression_child', ctx);
         const left = this.popWithCheck('filter_expression_child', ctx);
 
-        this.push({ type: 'binary_expression', operator: 'or', left, right });
+        this.push({ type: 'logical_expression', operator: 'or', left, right });
         break;
       }
       case !!ctx.PAREN_LEFT(): {
@@ -381,20 +382,13 @@ export default class Listener implements JSONPathListener {
   }
 
   public exitObj(ctx: ObjContext): void {
-    const values: Record<string, unknown>[] = [];
-
-    for (const _ of ctx.pair()) {
-      const value = this.popWithCheck('value', ctx);
-      values.unshift(value);
-    }
-
-    let i = 0;
     let obj: Record<string, unknown> = {};
+
     for (const pairCtx of ctx.pair()) {
+      const value = this.popWithCheck('value', ctx) as Value;
       const key = pairCtx.STRING().text.slice(1, -1);
 
-      obj[key] = values[i].value;
-      i += 1;
+      obj[key] = value.value;
     }
 
     this.push(obj);
