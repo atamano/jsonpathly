@@ -133,10 +133,10 @@ export class Handler {
         return !this.handleFilterExpressionChild(payload, tree.value);
       }
       case 'root': {
-        return !!this.handleSubscript(this.rootPayload, tree.next);
+        return !isUndefined(this.handleSubscript(this.rootPayload, tree.next));
       }
       case 'current': {
-        return !!this.handleSubscript(payload, tree.next);
+        return !isUndefined(this.handleSubscript(payload, tree.next));
       }
     }
   };
@@ -181,10 +181,8 @@ export class Handler {
     return payload[tree.value];
   };
 
-  handleScriptExpression = (payload: unknown, tree: ScriptExpression): unknown => {
-    console.log('Script expression', tree);
-
-    return payload;
+  handleScriptExpression = (_payload: unknown, _tree: ScriptExpression): unknown => {
+    throw new Error('Script expressions not handles');
   };
 
   handleSubscriptable = (payload: unknown, tree: Subscriptable): unknown => {

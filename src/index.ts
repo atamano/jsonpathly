@@ -50,7 +50,7 @@ try {
     // `$['nestedObject'].object["test"]`,
     // `$.arrayOfNumber[2::3]`,
     // `$..phoneNumbers[?(!(@.price < 30 && !@.type == "iPhone" && !@.number))]`,
-    `$.nestedObject.array[?(@.exist == "hello" || @.exist == 4)]`,
+    `$.arrayOfNumber[(@.length -1)]`,
   ];
 
   for (const input of inputs) {

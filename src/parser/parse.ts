@@ -15,12 +15,12 @@ export function parse(input: string): Root | undefined {
   parser.removeErrorListeners();
   parser.addErrorListener({
     syntaxError: <T>(
-      _: Recognizer<T, any>,
-      __: T | undefined,
+      _recognizer: Recognizer<T, any>,
+      _offendingSymbol: T | undefined,
       line: number,
       charPositionInLine: number,
       msg: string,
-      ___: RecognitionException | undefined,
+      _e: RecognitionException | undefined,
     ): void => {
       throw new PathSyntaxError(line, charPositionInLine, msg);
     },
