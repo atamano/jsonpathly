@@ -35,7 +35,7 @@ export const WILDCARD = '*';
 
 type StackType = Node | Node[];
 
-const TYPE_CHECKER = {
+const TYPE_CHECK_MAPPER = {
   simple_object: (node: StackType): node is Record<string, unknown> => isPlainObjet(node),
   simple_array: (node: StackType): node is unknown[] => Array.isArray(node),
   root: (node: StackType): node is Root => 'type' in node && node.type === 'root',
@@ -72,7 +72,7 @@ const TYPE_CHECKER = {
   subscriptables: (node: StackType): node is Subscriptables => 'type' in node && node.type === 'subscriptables',
 } as const;
 
-type TypeGardReturn<K> = K extends (a: unknown) => a is infer T ? T : never;
+type TypeGardReturn<K> = K extends (a: any) => a is infer T ? T : never;
 
 export default class Listener implements JSONPathListener {
   _stack: StackType[] = [];
@@ -81,14 +81,14 @@ export default class Listener implements JSONPathListener {
     return this.popWithCheck('root', null);
   }
 
-  private popWithCheck<T extends keyof typeof TYPE_CHECKER>(
+  private popWithCheck<T extends keyof typeof TYPE_CHECK_MAPPER>(
     key: T,
     ctx: RuleContext | null,
-  ): TypeGardReturn<typeof TYPE_CHECKER[T]> {
+  ): TypeGardReturn<typeof TYPE_CHECK_MAPPER[T]> {
     const value = this._stack.pop();
 
-    if (typeof value !== 'undefined' && TYPE_CHECKER[key](value)) {
-      return value as TypeGardReturn<typeof TYPE_CHECKER[T]>;
+    if (typeof value !== 'undefined' && TYPE_CHECK_MAPPER[key](value)) {
+      return value as TypeGardReturn<typeof TYPE_CHECK_MAPPER[T]>;
     }
 
     throw new ValidationError(`bad type returned for ${key}`, ctx);
@@ -385,7 +385,7 @@ export default class Listener implements JSONPathListener {
     let obj: Record<string, unknown> = {};
 
     for (const pairCtx of ctx.pair()) {
-      const value = this.popWithCheck('value', ctx) as Value;
+      const value = this.popWithCheck('value', ctx);
       const key = pairCtx.STRING().text.slice(1, -1);
 
       obj[key] = value.value;
@@ -398,7 +398,7 @@ export default class Listener implements JSONPathListener {
     const array: unknown[] = [];
 
     for (let index = 0; index < ctx.value().length; index += 1) {
-      const value = this.popWithCheck('value', ctx) as Value;
+      const value = this.popWithCheck('value', ctx);
 
       array.unshift(value.value);
     }

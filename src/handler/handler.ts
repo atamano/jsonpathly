@@ -16,7 +16,7 @@ import {
   SubscriptDot,
   SubscriptDotDot,
 } from '../parser/types';
-import { isArray, isNumber, isObject } from './helper';
+import { isArray, isNumber, isObject, isString, isUndefined } from './helper';
 
 export class Handler {
   rootPayload: unknown;
@@ -146,7 +146,7 @@ export class Handler {
       return payload[tree.value];
     }
 
-    if (typeof payload === 'string' && tree.value < payload.length) {
+    if (isString(payload) && tree.value < payload.length) {
       return payload[tree.value];
     }
   };
@@ -226,7 +226,7 @@ export class Handler {
 
     for (const treeValue of tree.values) {
       const res = this.handleSubscriptable(payload, treeValue);
-      if (typeof res !== 'undefined') {
+      if (!isUndefined(res)) {
         results = results.concat(res);
       }
     }
@@ -258,7 +258,7 @@ export class Handler {
         let results: unknown[] = [];
         const identifierRes = this.handleIdentifier(payload, treeValue);
         const res = this.handleSubscript(identifierRes, tree.next);
-        if (typeof res !== 'undefined') {
+        if (!isUndefined(res)) {
           results = results.concat(res);
         }
 
@@ -285,7 +285,7 @@ export class Handler {
     }
 
     const result = this.handleIdentifier(payload, tree.value);
-    if (typeof result === 'undefined') {
+    if (isUndefined(result)) {
       return;
     }
 
