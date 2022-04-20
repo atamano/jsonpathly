@@ -12,27 +12,32 @@ const PAYLOAD = {
     array: [
       {
         item: {
-          hello: {
-            hello: [{ hello: { toto: '123' } }],
+          nested: {
+            nested: [{ nested: { value: '123', exist: true } }],
           },
         },
       },
       {
         item: {
-          hello: {
-            hello: [{ hello: { toto: '2501' } }],
+          nested: {
+            nested: [{ nested: { value: '2501' } }],
           },
         },
       },
       {
         item: {
-          hello: {
-            hello: [{ hello: ' 13' }],
+          nested: {
+            nested: [{ nested: '13' }],
           },
         },
       },
     ],
   },
+  arraySimpleObjects: [
+    { number: 2, string: 'A', exist: true, array: [1, 2, 3] },
+    { number: 5, string: 'B', array: [4, 5, 6] },
+    { number: 7, string: 'C', array: [4, 5, 6] },
+  ],
 };
 
 try {
@@ -48,7 +53,7 @@ try {
     // `$['nestedObject'].object["test"]`,
     // `$.arrayOfNumber[2::3]`,
     // `$..phoneNumbers[?(!(@.price < 30 && !@.type == "iPhone" && !@.number))]`,
-    `$.*.object`,
+    `$..["nested"]`,
   ];
 
   for (const input of inputs) {

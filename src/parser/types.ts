@@ -73,6 +73,7 @@ export type SubscriptBracket = {
 
 export type Subscriptable =
   | Identifier
+  | Wildcard
   | StringLiteral
   | NumericLiteral
   | FilterExpression

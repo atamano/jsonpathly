@@ -12,27 +12,32 @@ const PAYLOAD = {
     array: [
       {
         item: {
-          hello: {
-            hello: [{ hello: { toto: '123' } }],
+          nested: {
+            nested: [{ nested: { value: '123', exist: true } }],
           },
         },
       },
       {
         item: {
-          hello: {
-            hello: [{ hello: { toto: '2501' } }],
+          nested: {
+            nested: [{ nested: { value: '2501' } }],
           },
         },
       },
       {
         item: {
-          hello: {
-            hello: [{ hello: ' 13' }],
+          nested: {
+            nested: [{ nested: '13' }],
           },
         },
       },
     ],
   },
+  arraySimpleObjects: [
+    { number: 2, string: 'A', exist: true, array: [1, 2, 3] },
+    { number: 5, string: 'B', array: [4, 5, 6] },
+    { number: 7, string: 'C', array: [4, 5, 6] },
+  ],
 };
 
 describe('query with dot notations', () => {
@@ -56,16 +61,19 @@ describe('query with dot notations', () => {
 
 describe('query with dot dot notations', () => {
   const textCases = [
-    { path: `$..string`, expected: [PAYLOAD.string] },
     { path: `$..notExist`, expected: [] },
-    { path: `$..hello.toto`, expected: ['123', '2501'] },
-    { path: `$..hello.hello..toto`, expected: ['123', '2501'] },
-    { path: `$..hello..toto`, expected: ['123', '123', '123', '2501', '2501', '2501'] },
+    // { path: `$..["nested"].value`, expected: ['123', '2501'] }, //TODO
+    { path: `$..nested.value`, expected: ['123', '2501'] },
+    { path: `$..nested["value"]`, expected: ['123', '2501'] },
+    { path: `$..nested.nested..value`, expected: ['123', '2501'] },
+    { path: `$..nested..value`, expected: ['123', '123', '123', '2501', '2501', '2501'] },
     {
-      path: `$..hello..*..toto`,
+      path: `$..nested..*..value`,
       expected: ['123', '123', '123', '123', '123', '2501', '2501', '2501', '2501', '2501'],
     },
     { path: `$..*.object`, expected: [{ test: '1' }] },
+    { path: `$..*.object..test`, expected: ['1'] },
+    { path: `$..*.object.test`, expected: ['1'] },
   ];
 
   test.each(textCases)('query(%s)', ({ path, expected }) => {
@@ -80,6 +88,7 @@ describe('query with bracket numeric value', () => {
     { path: `$.arrayOfNumber[1]`, expected: 2 },
     { path: `$.arrayOfNumber[1,3,5]`, expected: [2, 4, 6] },
     { path: `$.arrayOfNumber[10,11,12]`, expected: [] },
+    { path: `$.arrayOfNumber[10,1,12]`, expected: [2] },
     { path: `$.arrayOfNumber[10]`, expected: undefined },
     { path: `$.string[0]`, expected: PAYLOAD.string[0] },
   ];
@@ -98,6 +107,9 @@ describe('query with bracket string value', () => {
     // Different implementation depending on libraries
     { path: `$["string", "number"]`, expected: [PAYLOAD.string, PAYLOAD.number] },
     { path: `$["nestedObject"]["object"]`, expected: PAYLOAD.nestedObject.object },
+    { path: `$[nestedObject]`, expected: PAYLOAD.nestedObject },
+    { path: `$[*]`, expected: Object.values(PAYLOAD) },
+    { path: `$[*]["object"]`, expected: [PAYLOAD.nestedObject.object] },
   ];
 
   test.each(textCases)('query(%s)', ({ path, expected }) => {
@@ -130,3 +142,99 @@ describe('query with array slice', () => {
     expect(res).toEqual(expected);
   });
 });
+
+describe('query with comparators', () => {
+  const textCases = [
+    {
+      path: `$.arraySimpleObjects[?(@.number==2)].number`,
+      expected: [2],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number!=2)].number`,
+      expected: [5, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number==2)]..number`,
+      expected: [2],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.exist)].number`,
+      expected: [2],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>=5)].number`,
+      expected: [5, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>5)].number`,
+      expected: [7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number<=5)].number`,
+      expected: [2, 5],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number<5)].number`,
+      expected: [2],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number in [1,2])].number`,
+      expected: [2],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number nin [1,2])].number`,
+      expected: [5, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(1 in @.array)].number`,
+      expected: [2],
+    },
+  ];
+
+  test.each(textCases)('query(%s)', ({ path, expected }) => {
+    const res = query(PAYLOAD, path);
+
+    expect(res).toEqual(expected);
+  });
+});
+
+describe('query with logical expressions', () => {
+  const textCases = [
+    {
+      path: `$.arraySimpleObjects[?(@.number==2 || @.number==7)].number`,
+      expected: [2, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(4 in @.array && @.string=="B")].number`,
+      expected: [5],
+    },
+    {
+      path: `$.arraySimpleObjects[?( (4 in @.array && @.string=="B") || @.number==2 )].number`,
+      expected: [2, 5],
+    },
+    {
+      path: `$.arraySimpleObjects[?( !((4 in @.array && @.string=="B") || @.number==2) )].number`,
+      expected: [7],
+    },
+    {
+      path: `$.arraySimpleObjects[?( $.number==0 )].number`,
+      expected: [2, 5, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?($.number)].number`,
+      expected: [2, 5, 7],
+    },
+  ];
+
+  test.each(textCases)('query(%s)', ({ path, expected }) => {
+    const res = query(PAYLOAD, path);
+
+    expect(res).toEqual(expected);
+  });
+});
+
+// arraySimpleObjects: [
+//   { number: 2, string: 'A', exist: true, array: [1, 2, 3] },
+//   { number: 5, string: 'B', array: [4, 5, 6] },
+//   { number: 7, string: 'C', array: [4, 5, 6] },
+// ],
