@@ -1,11 +1,10 @@
-import { WILDCARD } from '../parser/Listener';
 import {
   ArraySlice,
-  LogicalExpression,
   Comparator,
   ComparatorArgument,
   FilterExpressionChild,
   Identifier,
+  LogicalExpression,
   NumericLiteral,
   ScriptExpression,
   StringLiteral,
@@ -15,8 +14,9 @@ import {
   SubscriptBracket,
   SubscriptDot,
   SubscriptDotDot,
+  Wildcard,
 } from '../parser/types';
-import { isArray, isNumber, isObject, isString, isUndefined } from './helper';
+import { isArray, isDefined, isNumber, isObject, isString, isUndefined } from './helper';
 
 export class Handler {
   rootPayload: unknown;
@@ -26,12 +26,8 @@ export class Handler {
   }
 
   handleIdentifier = (payload: unknown, tree: Identifier): unknown => {
-    if (!isObject(payload) && !isArray(payload)) {
+    if (!isObject(payload)) {
       return;
-    }
-
-    if (tree.value === WILDCARD) {
-      return Object.values(payload);
     }
 
     if (isArray(payload) || !isObject(payload) || !(tree.value in payload)) {
@@ -39,6 +35,14 @@ export class Handler {
     }
 
     return payload[tree.value];
+  };
+
+  handleWildcard = (payload: unknown, _tree: Wildcard): unknown[] => {
+    if (!isObject(payload) && !isArray(payload)) {
+      return [];
+    }
+
+    return Object.values(payload);
   };
 
   handleComparatorArgument = (payload: unknown, tree: ComparatorArgument): unknown => {
@@ -223,9 +227,9 @@ export class Handler {
     let results: unknown[] = [];
 
     for (const treeValue of tree.values) {
-      const res = this.handleSubscriptable(payload, treeValue);
-      if (!isUndefined(res)) {
-        results = results.concat(res);
+      const result = this.handleSubscriptable(payload, treeValue);
+      if (!isUndefined(result)) {
+        results = results.concat(result);
       }
     }
 
@@ -239,45 +243,89 @@ export class Handler {
       tree.value.values.length === 1 &&
       ['string_literal', 'numeric_literal', 'identifier'].includes(tree.value.values[0].type)
     ) {
-      return results.pop();
+      return this.handleSubscript(results.pop(), tree.next);
     }
 
-    return results;
+    return this.handleSubscript(results, tree.next);
   };
 
-  handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotDot): unknown[] => {
+  handleSubscriptDotdotRecursive = (payload: unknown, tree: SubscriptDotDot): unknown[] => {
     const treeValue = tree.value;
 
     switch (treeValue.type) {
       case 'subscriptables': {
         return this.handleSubscriptables(payload, treeValue);
       }
-      case 'identifier': {
+      case 'wildcard': {
         let results: unknown[] = [];
-        const identifierRes = this.handleIdentifier(payload, treeValue);
-        if (!isUndefined(identifierRes)) {
-          if (treeValue.value === WILDCARD) {
-            results = results.concat(identifierRes);
-          } else {
-            results.push(identifierRes);
-          }
-        }
+        const identifierRes = this.handleWildcard(payload, treeValue);
+        results = results.concat(identifierRes);
 
         if (isObject(payload)) {
           for (const value of Object.values(payload)) {
-            const res = this.handleSubscriptDotdot(value, tree);
-            results = results.concat(res);
+            const result = this.handleSubscriptDotdotRecursive(value, tree);
+            results = results.concat(result);
           }
         }
 
         if (isArray(payload)) {
           for (const value of payload) {
-            const res = this.handleSubscriptDotdot(value, tree);
-            results = results.concat(res);
+            const result = this.handleSubscriptDotdotRecursive(value, tree);
+            results = results.concat(result);
           }
         }
 
         return results;
+      }
+      case 'identifier': {
+        let results: unknown[] = [];
+        const identifierRes = this.handleIdentifier(payload, treeValue);
+        if (!isUndefined(identifierRes)) {
+          results.push(identifierRes);
+        }
+
+        if (isObject(payload)) {
+          for (const value of Object.values(payload)) {
+            const result = this.handleSubscriptDotdotRecursive(value, tree);
+            results = results.concat(result);
+          }
+        }
+
+        if (isArray(payload)) {
+          for (const value of payload) {
+            const result = this.handleSubscriptDotdotRecursive(value, tree);
+            results = results.concat(result);
+          }
+        }
+
+        return results;
+      }
+    }
+  };
+
+  handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotDot): unknown | unknown[] => {
+    const results = this.handleSubscriptDotdotRecursive(payload, tree);
+
+    if (!tree.next) {
+      return results;
+    }
+
+    const treeNext = tree.next;
+    switch (treeNext.subtype) {
+      case 'dot': {
+        return results
+          .map((item) => this.handleSubscriptDot(item, treeNext))
+          .filter(isDefined)
+          .flat();
+      }
+      case 'dotdot': {
+        if (treeNext.value.type === 'wildcard') {
+          return results.map((item) => this.handleSubscriptDotdot(item, treeNext)).flat();
+        }
+        return this.handleSubscriptDotdot(results, treeNext);
+      }
+      case 'bracket': {
+        return this.handleSubscriptBracket(results, treeNext);
       }
     }
   };
@@ -287,7 +335,17 @@ export class Handler {
       return;
     }
 
-    return this.handleIdentifier(payload, tree.value);
+    switch (tree.value.type) {
+      case 'identifier': {
+        const result = this.handleIdentifier(payload, tree.value);
+        return this.handleSubscript(result, tree.next);
+      }
+      case 'wildcard': {
+        return this.handleWildcard(payload, tree.value)
+          .map((item) => this.handleSubscript(item, tree.next))
+          .filter(isDefined);
+      }
+    }
   };
 
   handleSubscript = (payload: unknown, tree: Subscript | null): unknown => {
@@ -297,24 +355,13 @@ export class Handler {
 
     switch (tree.subtype) {
       case 'bracket': {
-        const result = this.handleSubscriptBracket(payload, tree);
-        return this.handleSubscript(result, tree.next);
+        return this.handleSubscriptBracket(payload, tree);
       }
       case 'dot': {
-        const result = this.handleSubscriptDot(payload, tree);
-        return this.handleSubscript(result, tree.next);
+        return this.handleSubscriptDot(payload, tree);
       }
       case 'dotdot': {
-        let resultsFinal: unknown[] = [];
-        const results = this.handleSubscriptDotdot(payload, tree);
-
-        for (const item of results) {
-          const res = this.handleSubscript(item, tree.next);
-          if (!isUndefined(res)) {
-            resultsFinal = resultsFinal.concat(res);
-          }
-        }
-        return resultsFinal;
+        return this.handleSubscriptDotdot(payload, tree);
       }
     }
   };

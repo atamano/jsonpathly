@@ -53,14 +53,14 @@ export type StartFunction = (start: number | null) => ArraySlice;
 export type SubscriptDot = {
   type: 'subscript';
   subtype: 'dot';
-  value: Identifier;
+  value: Identifier | Wildcard;
   next: Subscript | null;
 };
 
 export type SubscriptDotDot = {
   type: 'subscript';
   subtype: 'dotdot';
-  value: Identifier | Subscriptables;
+  value: Identifier | Wildcard | Subscriptables;
   next: Subscript | null;
 };
 
@@ -80,6 +80,10 @@ export type Subscriptable =
   | ScriptExpression;
 
 export type Subscript = SubscriptDot | SubscriptDotDot | SubscriptBracket;
+
+export type Wildcard = {
+  type: 'wildcard';
+};
 
 export type StringLiteral = {
   type: 'string_literal';
@@ -136,6 +140,7 @@ export type JsonPathItem =
   | Subscriptables
   | ArraySlice
   | StringLiteral
+  | Wildcard
   | Identifier
   | NumericLiteral
   | FilterExpression

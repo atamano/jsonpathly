@@ -29,9 +29,8 @@ import {
   Subscriptable,
   Subscriptables,
   Value,
+  Wildcard,
 } from './types';
-
-export const WILDCARD = '*';
 
 type StackType = Node | Node[];
 
@@ -51,8 +50,8 @@ const TYPE_CHECK_MAPPER = {
   script_expression_child: (node: StackType): node is ScriptExpressionChild =>
     'type' in node && typeof node.type === 'string' && ['value', 'current', 'root'].includes(node.type),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
-  identifier: (node: StackType): node is Identifier | Identifier =>
-    'type' in node && typeof node.type === 'string' && node.type === 'identifier',
+  identifierWildcard: (node: StackType): node is Identifier | Wildcard =>
+    'type' in node && typeof node.type === 'string' && ['identifier', 'wildcard'].includes(node.type),
   start_function: (node: StackType): node is StartFunction => typeof node === 'function',
   subscriptable: (node: StackType): node is Subscriptable => {
     return (
@@ -111,11 +110,11 @@ export default class Listener implements JSONPathListener {
   public exitSubscript(ctx: SubscriptContext): void {
     switch (true) {
       case !!ctx.SUBSCRIPT(): {
-        let node: Identifier;
+        let node: Identifier | Wildcard;
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
         if (ctx.subscriptableBareword()) {
-          node = this.popWithCheck('identifier', ctx);
+          node = this.popWithCheck('identifierWildcard', ctx);
         } else {
           throw new ValidationError('subscript child should be bareword', ctx);
         }
@@ -129,11 +128,11 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.RECURSIVE_DESCENT(): {
-        let node: Identifier | Subscriptables;
+        let node: Identifier | Wildcard | Subscriptables;
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
         if (ctx.subscriptableBareword()) {
-          node = this.popWithCheck('identifier', ctx);
+          node = this.popWithCheck('identifierWildcard', ctx);
         } else if (ctx.subscriptables()) {
           node = this.popWithCheck('subscriptables', ctx);
         } else {
@@ -199,7 +198,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.WILDCARD(): {
-        this.push({ type: 'identifier', value: WILDCARD });
+        this.push({ type: 'wildcard' });
         break;
       }
       case !!ctx.expression(): {
@@ -230,7 +229,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.WILDCARD(): {
-        this.push({ type: 'identifier', value: WILDCARD });
+        this.push({ type: 'wildcard' });
         break;
       }
       default: {

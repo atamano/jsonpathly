@@ -25,5 +25,6 @@ export const query = (payload: unknown, path: string, options?: Options): unknow
     if (!!options?.raiseExceptions) {
       throw e;
     }
+    console.log(e);
   }
 };

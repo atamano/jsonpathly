@@ -53,6 +53,9 @@ export function stringify(input: JsonPathItem | null): string {
     case 'identifier': {
       return input.value;
     }
+    case 'wildcard': {
+      return '*';
+    }
     case 'string_literal': {
       return `"${input.value}"`;
     }

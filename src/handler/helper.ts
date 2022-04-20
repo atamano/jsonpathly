@@ -19,3 +19,7 @@ export const isString = (item: unknown): item is string => {
 export const isUndefined = (item: unknown): item is undefined => {
   return typeof item === 'undefined';
 };
+
+export const isDefined = (item: unknown): item is undefined => {
+  return !isUndefined(item);
+};
