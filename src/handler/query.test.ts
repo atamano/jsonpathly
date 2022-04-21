@@ -146,6 +146,34 @@ describe('query with array slice', () => {
 describe('query with comparators', () => {
   const textCases = [
     {
+      path: `$.arraySimpleObjects[?(@.number=="2")]..number`,
+      expected: [],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>="5")].number`,
+      expected: [],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>"5")].number`,
+      expected: [],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number<="5")].number`,
+      expected: [],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number<"5")].number`,
+      expected: [],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number in "5")].number`,
+      expected: [],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number nin "5")].number`,
+      expected: [],
+    },
+    {
       path: `$.arraySimpleObjects[?(@.number==2)].number`,
       expected: [2],
     },
