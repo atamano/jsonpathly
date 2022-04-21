@@ -287,19 +287,17 @@ export class Handler {
       }
     }
 
-    if (['wildcard', 'identifier'].includes(treeValue.type)) {
-      if (isObject(payload)) {
-        for (const value of Object.values(payload)) {
-          const result = this.handleSubscriptDotdotRecursive(value, tree);
-          results = results.concat(result);
-        }
+    if (isObject(payload)) {
+      for (const value of Object.values(payload)) {
+        const result = this.handleSubscriptDotdotRecursive(value, tree);
+        results = results.concat(result);
       }
+    }
 
-      if (isArray(payload)) {
-        for (const value of payload) {
-          const result = this.handleSubscriptDotdotRecursive(value, tree);
-          results = results.concat(result);
-        }
+    if (isArray(payload)) {
+      for (const value of payload) {
+        const result = this.handleSubscriptDotdotRecursive(value, tree);
+        results = results.concat(result);
       }
     }
 

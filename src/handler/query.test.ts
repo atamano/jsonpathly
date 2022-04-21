@@ -62,7 +62,7 @@ describe('query with dot notations', () => {
 describe('query with dot dot notations', () => {
   const textCases = [
     { path: `$..notExist`, expected: [] },
-    // { path: `$..["nested"].value`, expected: ['123', '2501'] }, //TODO
+    { path: `$..["nested"].value`, expected: ['123', '2501'] },
     { path: `$..nested.value`, expected: ['123', '2501'] },
     { path: `$..nested["value"]`, expected: ['123', '2501'] },
     { path: `$..nested.nested..value`, expected: ['123', '2501'] },
