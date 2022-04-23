@@ -1,5 +1,7 @@
 # JsonPathly
 
+[![CircleCI](https://circleci.com/gh/atamano/jsonpathly/tree/master.svg?style=svg&circle-token=442d6d9d566a5ed1472048e669f0155ed44d6648)](https://circleci.com/gh/atamano/jsonpathly/tree/master)
+
 **A Javascript DSL for reading JSON documents.**
 
 ## Getting Started
