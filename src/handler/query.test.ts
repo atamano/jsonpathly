@@ -64,6 +64,7 @@ describe('query with dot dot notations', () => {
     { path: `$..notExist`, expected: [] },
     { path: `$..["nested"].value`, expected: ['123', '2501'] },
     { path: `$..[number, string]`, expected: [0, 'stringValue', 2, 'ABC', 5, 'BCD', 7, 'CDE'] },
+    { path: `$..arraySimpleObjects[*]["number", "string"]`, expected: [2, 'ABC', 5, 'BCD', 7, 'CDE'] },
     { path: `$..nested.value`, expected: ['123', '2501'] },
     { path: `$..nested["value"]`, expected: ['123', '2501'] },
     { path: `$..nested.nested..value`, expected: ['123', '2501'] },
@@ -122,6 +123,7 @@ describe('query with bracket string value', () => {
 
 describe('query with array slice', () => {
   const textCases = [
+    { path: `$.string[1:3]`, expected: [] },
     { path: `$.arrayOfNumber[1:3]`, expected: [2, 3] },
     { path: `$.arrayOfNumber[-1:]`, expected: [9] },
     { path: `$.arrayOfNumber[:3]`, expected: [1, 2, 3] },
@@ -223,6 +225,22 @@ describe('query with comparators', () => {
       expected: [],
     },
     {
+      path: `$[?(@.arrayOfNumber size 9)]`,
+      expected: [PAYLOAD],
+    },
+    {
+      path: `$[?(@.arrayOfNumber size "9")]`,
+      expected: [],
+    },
+    {
+      path: `$[?(@.arrayOfNumber size 8)]`,
+      expected: [],
+    },
+    {
+      path: `$[?(123 sizeof 9)]`,
+      expected: [],
+    },
+    {
       path: `$.arraySimpleObjects[?(@.number==2)].number`,
       expected: [2],
     },
@@ -273,6 +291,13 @@ describe('query with comparators', () => {
 
     expect(res).toEqual(expected);
   });
+});
+
+describe('query with script expressions', () => {
+  const t = () => {
+    query(PAYLOAD, '$.arraySimpleObjects[(@.length-1)]');
+  };
+  expect(t).toThrow(Error);
 });
 
 describe('query with logical expressions', () => {

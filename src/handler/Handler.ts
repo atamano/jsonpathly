@@ -71,32 +71,38 @@ export class Handler {
     const rightValue = this.handleComparatorArgument(payload, tree.right);
 
     switch (tree.operator) {
-      case 'sub': {
+      case 'subsetof': {
         if (!isArray(leftValue) || !isArray(rightValue)) {
           return false;
         }
         const itemsRight = new Set(rightValue);
         return leftValue.every((e) => itemsRight.has(e));
       }
-      case 'any': {
+      case 'anyof': {
         if (!isArray(leftValue) || !isArray(rightValue)) {
           return false;
         }
         const itemsRight = new Set(rightValue);
         return leftValue.some((e) => itemsRight.has(e));
       }
-      case 'non': {
+      case 'noneof': {
         if (!isArray(leftValue) || !isArray(rightValue)) {
           return false;
         }
         const itemsRight = new Set(rightValue);
         return !leftValue.some((e) => itemsRight.has(e));
       }
-      case 'siz': {
+      case 'sizeof': {
         if ((!isArray(leftValue) && !isString(leftValue)) || (!isArray(rightValue) && !isString(rightValue))) {
           return false;
         }
         return leftValue.length === rightValue.length;
+      }
+      case 'size': {
+        if ((!isArray(leftValue) && !isString(leftValue)) || !isNumber(rightValue)) {
+          return false;
+        }
+        return leftValue.length === rightValue;
       }
       case 'eq': {
         return leftValue === rightValue;
@@ -362,13 +368,10 @@ export class Handler {
         return this.handleSubscriptDotdot(results, treeNext);
       }
       case 'bracket': {
-        if (isSingleValueBracket(treeNext)) {
-          return results
-            .map((item) => this.handleSubscriptBracket(item, treeNext))
-            .filter(isDefined)
-            .flat();
-        }
-        return this.handleSubscriptBracket(results, treeNext);
+        return results
+          .map((item) => this.handleSubscriptBracket(item, treeNext))
+          .filter(isDefined)
+          .flat();
       }
     }
   };

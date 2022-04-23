@@ -53,7 +53,7 @@ try {
     // `$['nestedObject'].object["test"]`,
     // `$.arrayOfNumber[2::3]`,
     // `$..phoneNumbers[?(!(@.price < 30 && !@.type == "iPhone" && !@.number))]`,
-    `$..[number, string]`,
+    `$..arraySimpleObjects[*][number, string]`,
   ];
 
   for (const input of inputs) {

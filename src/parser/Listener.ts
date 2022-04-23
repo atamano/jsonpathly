@@ -372,19 +372,23 @@ export default class Listener implements JSONPathListener {
             break;
           }
           case !!ctx.SUB(): {
-            this.push({ type: 'comparator', operator: 'sub', left, right });
+            this.push({ type: 'comparator', operator: 'subsetof', left, right });
             break;
           }
           case !!ctx.ANY(): {
-            this.push({ type: 'comparator', operator: 'any', left, right });
+            this.push({ type: 'comparator', operator: 'anyof', left, right });
             break;
           }
           case !!ctx.NON(): {
-            this.push({ type: 'comparator', operator: 'non', left, right });
+            this.push({ type: 'comparator', operator: 'noneof', left, right });
             break;
           }
           case !!ctx.SIZ(): {
-            this.push({ type: 'comparator', operator: 'siz', left, right });
+            this.push({ type: 'comparator', operator: 'size', left, right });
+            break;
+          }
+          case !!ctx.SIZO(): {
+            this.push({ type: 'comparator', operator: 'sizeof', left, right });
             break;
           }
           default: {

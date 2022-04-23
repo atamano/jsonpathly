@@ -13,12 +13,13 @@ GT : '>' ;
 LE : '<=' ;
 LT : '<' ;
 NE : '!=' ;
-IN : 'in' ;
-NIN : 'nin' ;
-SUB : 'subsetof' ;
-ANY : 'anyof' ;
-NON : 'noneof' ;
-SIZ : 'sizeof' ;
+IN : ' in ' ;
+NIN : ' nin ' ;
+SUB : ' subsetof ' ;
+ANY : ' anyof ' ;
+NON : ' noneof ' ;
+SIZO : ' sizeof ' ;
+SIZ : ' size ' ;
 NOT : '!' ;
 OR : '||' ;
 
@@ -83,7 +84,7 @@ expression
    | expression AND expression
    | expression OR expression
    | PAREN_LEFT expression PAREN_RIGHT
-   | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | NON | SIZ ) filterarg
+   | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | SIZO| NON | SIZ ) filterarg
    | filterpath
    ;
 
