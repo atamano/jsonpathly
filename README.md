@@ -5,6 +5,8 @@
 
 **A Javascript DSL for reading JSON documents.**
 
+[Link to the Demo](https://atamano.github.io/jsonpathly-demo/)
+
 ## Getting Started
 
 JsonPath expressions always refer to a JSON structure in the same way as XPath expression are used in combination
