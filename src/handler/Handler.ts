@@ -260,7 +260,6 @@ export class Handler {
             results = results.concat(payload);
           }
         }
-        // Handle objects?
         return results;
       }
       case 'array_slice': {

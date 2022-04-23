@@ -3,6 +3,9 @@
         "^.+\\.(t|j)sx?$": "ts-jest"
     },
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "modulePathIgnorePatterns": [
+        "dist"
+    ],
     "moduleFileExtensions": [
         "ts",
         "tsx",
