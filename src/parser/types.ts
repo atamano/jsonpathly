@@ -43,7 +43,7 @@ export type ArraySlice = {
 
 export type Comparator = {
   type: 'comparator';
-  operator: 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge' | 'in' | 'nin';
+  operator: 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge' | 'in' | 'nin' | 'sub' | 'any' | 'non' | 'siz';
   left: ComparatorArgument;
   right: ComparatorArgument;
 };

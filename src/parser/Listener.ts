@@ -371,6 +371,22 @@ export default class Listener implements JSONPathListener {
             this.push({ type: 'comparator', operator: 'nin', left, right });
             break;
           }
+          case !!ctx.SUB(): {
+            this.push({ type: 'comparator', operator: 'sub', left, right });
+            break;
+          }
+          case !!ctx.ANY(): {
+            this.push({ type: 'comparator', operator: 'any', left, right });
+            break;
+          }
+          case !!ctx.NON(): {
+            this.push({ type: 'comparator', operator: 'non', left, right });
+            break;
+          }
+          case !!ctx.SIZ(): {
+            this.push({ type: 'comparator', operator: 'siz', left, right });
+            break;
+          }
           default: {
             throw new ValidationError('not handled comparator', ctx);
           }

@@ -15,6 +15,10 @@ LT : '<' ;
 NE : '!=' ;
 IN : 'in' ;
 NIN : 'nin' ;
+SUB : 'subsetof' ;
+ANY : 'anyof' ;
+NON : 'noneof' ;
+SIZ : 'sizeof' ;
 NOT : '!' ;
 OR : '||' ;
 
@@ -79,7 +83,7 @@ expression
    | expression AND expression
    | expression OR expression
    | PAREN_LEFT expression PAREN_RIGHT
-   | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN ) filterarg
+   | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | NON | SIZ ) filterarg
    | filterpath
    ;
 

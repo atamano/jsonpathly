@@ -71,6 +71,33 @@ export class Handler {
     const rightValue = this.handleComparatorArgument(payload, tree.right);
 
     switch (tree.operator) {
+      case 'sub': {
+        if (!isArray(leftValue) || !isArray(rightValue)) {
+          return false;
+        }
+        const itemsRight = new Set(rightValue);
+        return leftValue.every((e) => itemsRight.has(e));
+      }
+      case 'any': {
+        if (!isArray(leftValue) || !isArray(rightValue)) {
+          return false;
+        }
+        const itemsRight = new Set(rightValue);
+        return leftValue.some((e) => itemsRight.has(e));
+      }
+      case 'non': {
+        if (!isArray(leftValue) || !isArray(rightValue)) {
+          return false;
+        }
+        const itemsRight = new Set(rightValue);
+        return !leftValue.some((e) => itemsRight.has(e));
+      }
+      case 'siz': {
+        if ((!isArray(leftValue) && !isString(leftValue)) || (!isArray(rightValue) && !isString(rightValue))) {
+          return false;
+        }
+        return leftValue.length === rightValue.length;
+      }
       case 'eq': {
         return leftValue === rightValue;
       }
@@ -219,6 +246,12 @@ export class Handler {
             if (isValid) {
               results = results.concat(item);
             }
+          }
+        }
+        if (isObject(payload)) {
+          const isValid = this.handleFilterExpressionChild(payload, tree.value);
+          if (isValid) {
+            results = results.concat(payload);
           }
         }
         // Handle objects?

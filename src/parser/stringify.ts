@@ -9,6 +9,10 @@ const OPERATOR: Record<Comparator['operator'], string> = {
   ge: '>=',
   in: 'in',
   nin: 'nin',
+  sub: 'subsetof',
+  any: 'anyof',
+  non: 'noneof',
+  siz: 'sizeof',
 };
 
 const EXPR_OPERATOR: Record<LogicalExpression['operator'], string> = {

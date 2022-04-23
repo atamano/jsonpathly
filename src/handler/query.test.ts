@@ -34,9 +34,9 @@ const PAYLOAD = {
     ],
   },
   arraySimpleObjects: [
-    { number: 2, string: 'A', exist: true, array: [1, 2, 3] },
-    { number: 5, string: 'B', array: [4, 5, 6] },
-    { number: 7, string: 'C', array: [4, 5, 6] },
+    { number: 2, string: 'ABC', exist: true, array: [1, 2, 3] },
+    { number: 5, string: 'BCD', array: [4, 5, 6] },
+    { number: 7, string: 'CDE', array: [4, 5, 6] },
   ],
 };
 
@@ -63,6 +63,7 @@ describe('query with dot dot notations', () => {
   const textCases = [
     { path: `$..notExist`, expected: [] },
     { path: `$..["nested"].value`, expected: ['123', '2501'] },
+    { path: `$..[number, string]`, expected: [0, 'stringValue', 2, 'ABC', 5, 'BCD', 7, 'CDE'] },
     { path: `$..nested.value`, expected: ['123', '2501'] },
     { path: `$..nested["value"]`, expected: ['123', '2501'] },
     { path: `$..nested.nested..value`, expected: ['123', '2501'] },
@@ -174,6 +175,54 @@ describe('query with comparators', () => {
       expected: [],
     },
     {
+      path: `$[?([1,2,3] subsetof @.arrayOfNumber)]`,
+      expected: [PAYLOAD],
+    },
+    {
+      path: `$[?([10,3,3] subsetof @.arrayOfNumber)]`,
+      expected: [],
+    },
+    {
+      path: `$[?(123 subsetof @.arrayOfNumber)]`,
+      expected: [],
+    },
+    {
+      path: `$[?([10,11,2] anyof @.arrayOfNumber)]`,
+      expected: [PAYLOAD],
+    },
+    {
+      path: `$[?([10,11,12] anyof @.arrayOfNumber)]`,
+      expected: [],
+    },
+    {
+      path: `$[?(123 anyof @.arrayOfNumber)]`,
+      expected: [],
+    },
+    {
+      path: `$[?([10,11,12] noneof @.arrayOfNumber)]`,
+      expected: [PAYLOAD],
+    },
+    {
+      path: `$[?([10,11,1] noneof @.arrayOfNumber)]`,
+      expected: [],
+    },
+    {
+      path: `$[?(123 noneof @.arrayOfNumber)]`,
+      expected: [],
+    },
+    {
+      path: `$[?(@.arrayOfNumber sizeof @.arrayOfNumber)]`,
+      expected: [PAYLOAD],
+    },
+    {
+      path: `$[?(123 sizeof @.arrayOfNumber)]`,
+      expected: [],
+    },
+    {
+      path: `$[?([1,2,3,4,5,6,7,8,9,10] sizeof @.arrayOfNumber)]`,
+      expected: [],
+    },
+    {
       path: `$.arraySimpleObjects[?(@.number==2)].number`,
       expected: [2],
     },
@@ -233,15 +282,15 @@ describe('query with logical expressions', () => {
       expected: [2, 7],
     },
     {
-      path: `$.arraySimpleObjects[?(4 in @.array && @.string=="B")].number`,
+      path: `$.arraySimpleObjects[?(4 in @.array && @.string=="BCD")].number`,
       expected: [5],
     },
     {
-      path: `$.arraySimpleObjects[?( (4 in @.array && @.string=="B") || @.number==2 )].number`,
+      path: `$.arraySimpleObjects[?( (4 in @.array && @.string=="BCD") || @.number==2 )].number`,
       expected: [2, 5],
     },
     {
-      path: `$.arraySimpleObjects[?( !((4 in @.array && @.string=="B") || @.number==2) )].number`,
+      path: `$.arraySimpleObjects[?( !((4 in @.array && @.string=="BCD") || @.number==2) )].number`,
       expected: [7],
     },
     {
@@ -260,9 +309,3 @@ describe('query with logical expressions', () => {
     expect(res).toEqual(expected);
   });
 });
-
-// arraySimpleObjects: [
-//   { number: 2, string: 'A', exist: true, array: [1, 2, 3] },
-//   { number: 5, string: 'B', array: [4, 5, 6] },
-//   { number: 7, string: 'C', array: [4, 5, 6] },
-// ],
