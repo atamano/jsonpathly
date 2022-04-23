@@ -6,6 +6,9 @@
     "modulePathIgnorePatterns": [
         "dist"
     ],
+    "coveragePathIgnorePatterns": [
+        "parser/generated"
+    ],
     "moduleFileExtensions": [
         "ts",
         "tsx",

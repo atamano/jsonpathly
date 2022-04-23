@@ -1,3 +1,4 @@
+import { PathSyntaxError } from '../parser';
 import { query } from './query';
 
 const PAYLOAD = {
@@ -298,6 +299,29 @@ describe('query with script expressions', () => {
     query(PAYLOAD, '$.arraySimpleObjects[(@.length-1)]');
   };
   expect(t).toThrow(Error);
+});
+
+describe('query with bad path', () => {
+  const testCases = [
+    { path: 'bad', err: PathSyntaxError },
+    { path: '', err: PathSyntaxError },
+    { path: '$...bad', err: PathSyntaxError },
+    { path: '$.$', err: PathSyntaxError },
+    { path: `$["bad Quote']`, err: PathSyntaxError },
+    { path: `$[bad Quote']`, err: PathSyntaxError },
+    { path: `$\{bad\}`, err: PathSyntaxError },
+    { path: `@`, err: PathSyntaxError },
+    { path: `$[?(@.test == {'1': undefined})]`, err: PathSyntaxError },
+    { path: `$[1:2:3:4]`, err: PathSyntaxError },
+    { path: `$[[1:2:3]]`, err: PathSyntaxError },
+  ];
+
+  test.each(testCases)('error(%s)', ({ path, err }) => {
+    const t = () => {
+      query(PAYLOAD, path);
+    };
+    expect(t).toThrow(err);
+  });
 });
 
 describe('query with logical expressions', () => {
