@@ -401,9 +401,15 @@ export class Handler {
         return this.handleSubscript(result, tree.next);
       }
       case 'wildcard': {
-        return this.handleWildcard(payload)
+        const result = this.handleWildcard(payload);
+        if (!tree.next) {
+          return result;
+        }
+
+        return result
           .map((item) => this.handleSubscript(item, tree.next))
-          .filter(isDefined);
+          .filter(isDefined)
+          .flat();
       }
     }
   };
