@@ -3,17 +3,25 @@ import { Handler } from './Handler';
 
 type Options = {
   hideExceptions?: boolean;
+  returnArray?: boolean;
 };
 
 export const query = (payload: unknown, path: string, options?: Options): unknown => {
   try {
-    const tree = parse(path);
+    const { tree, isIndefinite } = parse(path);
     if (!tree) {
       return;
     }
 
     const handler = new Handler(payload);
     const result = handler.handleSubscript(payload, tree.next);
+
+    if (!isIndefinite && options?.returnArray) {
+      if (typeof result === 'undefined') {
+        return [];
+      }
+      return [result];
+    }
 
     return result;
   } catch (e) {

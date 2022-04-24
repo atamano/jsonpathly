@@ -68,9 +68,18 @@ type TypeGardReturn<K> = K extends (a: any) => a is infer T ? T : never;
 
 export default class Listener implements JSONPathListener {
   _stack: StackType[] = [];
+  _isIndefinite = false;
 
   public getTree(): Root | undefined {
     return this.popWithCheck('root', null);
+  }
+
+  public isIndefinite(): boolean {
+    return this._isIndefinite;
+  }
+
+  private setIsIndefinite(b: boolean): void {
+    this._isIndefinite = b;
   }
 
   private popWithCheck<T extends keyof typeof TYPE_CHECK_MAPPER>(
@@ -132,6 +141,7 @@ export default class Listener implements JSONPathListener {
           throw new ValidationError('recursive descent child should be either bareword or subscriptables', ctx);
         }
 
+        this.setIsIndefinite(true);
         this.push({
           type: 'subscript',
           subtype: 'dotdot',
@@ -177,6 +187,8 @@ export default class Listener implements JSONPathListener {
           const func: StartFunction = this.popWithCheck('startFunction', ctx);
           const start = ctx.NUMBER() ? Number.parseInt(ctx.NUMBER()!.text) : null;
 
+          this.setIsIndefinite(true);
+
           this.push(func(start));
         } else {
           const number = Number.parseInt(ctx.NUMBER()!.text);
@@ -187,16 +199,19 @@ export default class Listener implements JSONPathListener {
       }
       case !!ctx.sliceable(): {
         const func: StartFunction = this.popWithCheck('startFunction', ctx);
+        this.setIsIndefinite(true);
         this.push(func(null));
         break;
       }
       case !!ctx.WILDCARD(): {
+        this.setIsIndefinite(true);
         this.push({ type: 'wildcard' });
         break;
       }
       case !!ctx.expression(): {
         const expression = this.popWithCheck('filterExpressionChild', ctx);
 
+        this.setIsIndefinite(true);
         this.push({ type: 'filter_expression', value: expression });
         break;
       }
@@ -215,6 +230,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.WILDCARD(): {
+        this.setIsIndefinite(true);
         this.push({ type: 'wildcard' });
         break;
       }
@@ -283,6 +299,7 @@ export default class Listener implements JSONPathListener {
         step = null;
       }
     }
+    this.setIsIndefinite(true);
 
     this.push((start: number | null) => {
       return { type: 'array_slice', start, end, step };

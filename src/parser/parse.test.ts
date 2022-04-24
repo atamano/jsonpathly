@@ -58,12 +58,12 @@ describe('parse', () => {
   ];
 
   test.each(textCases)('parse(%s)', (input, expected) => {
-    const res = parse(input);
+    const { tree } = parse(input);
 
     if (expected) {
-      expect(stringify(res || null)).toEqual(expected);
+      expect(stringify(tree || null)).toEqual(expected);
     } else {
-      expect(stringify(res || null)).toEqual(input.replace(/'/g, '"'));
+      expect(stringify(tree || null)).toEqual(input.replace(/'/g, '"'));
     }
   });
 });

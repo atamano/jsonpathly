@@ -7,7 +7,12 @@ import { JSONPathParser } from './generated/JSONPathParser';
 import CustomJSONPathListener from './Listener';
 import { Root } from './types';
 
-export function parse(input: string): Root | undefined {
+type ParseResponse = {
+  tree: Root | undefined;
+  isIndefinite: boolean;
+};
+
+export function parse(input: string): ParseResponse {
   const inputStream = new ANTLRInputStream(input);
   const lexer = new JSONPathLexer(inputStream);
   const tokenStream = new CommonTokenStream(lexer);
@@ -32,5 +37,5 @@ export function parse(input: string): Root | undefined {
   const tree = parser.jsonpath();
   ParseTreeWalker.DEFAULT.walk(listener as JSONPathListener, tree);
 
-  return listener.getTree();
+  return { tree: listener.getTree(), isIndefinite: listener.isIndefinite() };
 }
