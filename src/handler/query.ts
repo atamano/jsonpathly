@@ -20,6 +20,7 @@ export const query = (payload: unknown, path: string, options?: Options): unknow
     if (!options?.hideExceptions) {
       throw e;
     }
+    // eslint-disable-next-line no-console
     console.log(e);
   }
 };

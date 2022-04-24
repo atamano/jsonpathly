@@ -14,7 +14,6 @@ import {
   SubscriptBracket,
   SubscriptDot,
   SubscriptDotDot,
-  Wildcard,
 } from '../parser/types';
 import { isArray, isDefined, isNumber, isObject, isString, isUndefined } from './helper';
 
@@ -44,7 +43,7 @@ export class Handler {
     return payload[tree.value];
   };
 
-  handleWildcard = (payload: unknown, _tree: Wildcard): unknown[] => {
+  handleWildcard = (payload: unknown): unknown[] => {
     if (!isObject(payload) && !isArray(payload)) {
       return [];
     }
@@ -254,7 +253,7 @@ export class Handler {
         return this.handleIdentifier(payload, tree);
       }
       case 'wildcard': {
-        return this.handleWildcard(payload, tree);
+        return this.handleWildcard(payload);
       }
       case 'string_literal': {
         return this.handleStringLiteral(payload, tree);
@@ -328,7 +327,7 @@ export class Handler {
         break;
       }
       case 'wildcard': {
-        const identifierRes = this.handleWildcard(payload, treeValue);
+        const identifierRes = this.handleWildcard(payload);
         results = results.concat(identifierRes);
         break;
       }
@@ -402,7 +401,7 @@ export class Handler {
         return this.handleSubscript(result, tree.next);
       }
       case 'wildcard': {
-        return this.handleWildcard(payload, tree.value)
+        return this.handleWildcard(payload)
           .map((item) => this.handleSubscript(item, tree.next))
           .filter(isDefined);
       }

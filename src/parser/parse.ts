@@ -15,11 +15,13 @@ export function parse(input: string): Root | undefined {
   parser.removeErrorListeners();
   parser.addErrorListener({
     syntaxError: <T>(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       _recognizer: Recognizer<T, any>,
       _offendingSymbol: T | undefined,
       line: number,
       charPositionInLine: number,
       msg: string,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       _e: RecognitionException | undefined,
     ): void => {
       throw new PathSyntaxError(line, charPositionInLine, msg);

@@ -333,7 +333,7 @@ describe('query with comparator operations', () => {
   });
 
   test('should throw exception on missing operator', () => {
-    const t = () => {
+    const t = (): void => {
       query(PAYLOAD, '$.arraySimpleObjects[?(@.number>3 4)]..number');
     };
     expect(t).toThrow(Error);
@@ -341,7 +341,7 @@ describe('query with comparator operations', () => {
 });
 
 describe('query with script expressions', () => {
-  const t = () => {
+  const t = (): void => {
     query(PAYLOAD, '$.arraySimpleObjects[(@.length-1)]');
   };
   expect(t).toThrow(Error);
@@ -363,7 +363,7 @@ describe('query with bad path', () => {
   ];
 
   test.each(testCases)('error(%s)', ({ path, err }) => {
-    const t = () => {
+    const t = (): void => {
       query(PAYLOAD, path);
     };
     expect(t).toThrow(err);

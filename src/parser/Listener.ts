@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { RuleContext } from 'antlr4ts/RuleContext';
 import { default as isPlainObjet } from 'lodash.isplainobject';
 import { ValidationError } from './errors';
@@ -34,13 +35,13 @@ import {
 type StackType = Node | Node[];
 
 const TYPE_CHECK_MAPPER = {
-  simple_object: (node: StackType): node is Record<string, unknown> => isPlainObjet(node),
-  simple_array: (node: StackType): node is unknown[] => Array.isArray(node),
+  simpleObject: (node: StackType): node is Record<string, unknown> => isPlainObjet(node),
+  simpleArray: (node: StackType): node is unknown[] => Array.isArray(node),
   root: (node: StackType): node is Root => 'type' in node && node.type === 'root',
   value: (node: StackType): node is Value => 'type' in node && node.type === 'value',
   operation: (node: StackType): node is Operation =>
     'type' in node && typeof node.type === 'string' && ['value', 'current', 'root', 'operation'].includes(node.type),
-  filter_expression_child: (node: StackType): node is FilterExpressionChild =>
+  filterExpressionChild: (node: StackType): node is FilterExpressionChild =>
     'type' in node &&
     typeof node.type === 'string' &&
     ['comparator', 'group_expression', 'negate_expression', 'logical_expression', 'current', 'root'].includes(
@@ -49,7 +50,7 @@ const TYPE_CHECK_MAPPER = {
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
   identifierWildcard: (node: StackType): node is Identifier | Wildcard =>
     'type' in node && typeof node.type === 'string' && ['identifier', 'wildcard'].includes(node.type),
-  start_function: (node: StackType): node is StartFunction => typeof node === 'function',
+  startFunction: (node: StackType): node is StartFunction => typeof node === 'function',
   subscriptable: (node: StackType): node is Subscriptable => {
     return (
       'type' in node &&
@@ -62,6 +63,7 @@ const TYPE_CHECK_MAPPER = {
   subscriptables: (node: StackType): node is Subscriptables => 'type' in node && node.type === 'subscriptables',
 } as const;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TypeGardReturn<K> = K extends (a: any) => a is infer T ? T : never;
 
 export default class Listener implements JSONPathListener {
@@ -80,8 +82,6 @@ export default class Listener implements JSONPathListener {
     if (typeof value !== 'undefined' && TYPE_CHECK_MAPPER[key](value)) {
       return value as TypeGardReturn<typeof TYPE_CHECK_MAPPER[T]>;
     }
-
-    console.log('GOT', value);
 
     throw new ValidationError(`bad type returned for ${key}`, ctx);
   }
@@ -174,7 +174,7 @@ export default class Listener implements JSONPathListener {
       }
       case !!ctx.NUMBER(): {
         if (ctx.sliceable()) {
-          const func: StartFunction = this.popWithCheck('start_function', ctx);
+          const func: StartFunction = this.popWithCheck('startFunction', ctx);
           const start = ctx.NUMBER() ? Number.parseInt(ctx.NUMBER()!.text) : null;
 
           this.push(func(start));
@@ -186,7 +186,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.sliceable(): {
-        const func: StartFunction = this.popWithCheck('start_function', ctx);
+        const func: StartFunction = this.popWithCheck('startFunction', ctx);
         this.push(func(null));
         break;
       }
@@ -195,7 +195,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.expression(): {
-        const expression = this.popWithCheck('filter_expression_child', ctx);
+        const expression = this.popWithCheck('filterExpressionChild', ctx);
 
         this.push({ type: 'filter_expression', value: expression });
         break;
@@ -248,8 +248,8 @@ export default class Listener implements JSONPathListener {
     const nodes: Subscriptable[] = [];
 
     for (let index = 0; index < ctx.subscriptable().length; index += 1) {
-      const subscriptable_node = this.popWithCheck('subscriptable', ctx);
-      nodes.unshift(subscriptable_node);
+      const subscriptableNode = this.popWithCheck('subscriptable', ctx);
+      nodes.unshift(subscriptableNode);
     }
 
     this.push({
@@ -292,7 +292,7 @@ export default class Listener implements JSONPathListener {
   public exitExpression(ctx: ExpressionContext): void {
     switch (true) {
       case !!ctx.NOT(): {
-        const value = this.popWithCheck('filter_expression_child', ctx);
+        const value = this.popWithCheck('filterExpressionChild', ctx);
 
         this.push({
           type: 'negate_expression',
@@ -301,21 +301,21 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.AND(): {
-        const right = this.popWithCheck('filter_expression_child', ctx);
-        const left = this.popWithCheck('filter_expression_child', ctx);
+        const right = this.popWithCheck('filterExpressionChild', ctx);
+        const left = this.popWithCheck('filterExpressionChild', ctx);
 
         this.push({ type: 'logical_expression', operator: 'and', left, right });
         break;
       }
       case !!ctx.OR(): {
-        const right = this.popWithCheck('filter_expression_child', ctx);
-        const left = this.popWithCheck('filter_expression_child', ctx);
+        const right = this.popWithCheck('filterExpressionChild', ctx);
+        const left = this.popWithCheck('filterExpressionChild', ctx);
 
         this.push({ type: 'logical_expression', operator: 'or', left, right });
         break;
       }
       case !!ctx.PAREN_LEFT(): {
-        const value = this.popWithCheck('filter_expression_child', ctx);
+        const value = this.popWithCheck('filterExpressionChild', ctx);
 
         this.push({ type: 'group_expression', value });
         break;
@@ -387,7 +387,7 @@ export default class Listener implements JSONPathListener {
   }
 
   public exitObj(ctx: ObjContext): void {
-    let obj: Record<string, unknown> = {};
+    const obj: Record<string, unknown> = {};
 
     for (const pairCtx of ctx.pair()) {
       const value = this.popWithCheck('value', ctx);
@@ -466,11 +466,11 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.array():
-        const value = this.popWithCheck('simple_array', ctx);
+        const value = this.popWithCheck('simpleArray', ctx);
         this.push({ type: 'value', subtype: 'array', value });
         break;
       case !!ctx.obj(): {
-        const value = this.popWithCheck('simple_object', ctx);
+        const value = this.popWithCheck('simpleObject', ctx);
         this.push({ type: 'value', subtype: 'object', value });
         break;
       }
