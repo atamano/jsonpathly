@@ -76,9 +76,6 @@ export function stringify(input: JsonPathItem | null): string {
     case 'filter_expression': {
       return '?(' + stringify(input.value) + ')';
     }
-    case 'script_expression': {
-      return '(' + stringify(input.left) + stringify(input.right) + ')';
-    }
     case 'group_expression': {
       return '(' + stringify(input.value) + ')';
     }

@@ -14,7 +14,6 @@ export type {
   NegateExpression,
   NumericLiteral,
   Root,
-  ScriptExpression,
   StringLiteral,
   Subscriptable,
   Subscriptables,

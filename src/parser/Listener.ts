@@ -23,7 +23,6 @@ import {
   Identifier,
   Node,
   Root,
-  ScriptExpressionChild,
   StartFunction,
   Subscript,
   Subscriptable,
@@ -47,8 +46,6 @@ const TYPE_CHECK_MAPPER = {
     ['comparator', 'group_expression', 'negate_expression', 'logical_expression', 'current', 'root'].includes(
       node.type,
     ),
-  script_expression_child: (node: StackType): node is ScriptExpressionChild =>
-    'type' in node && typeof node.type === 'string' && ['value', 'current', 'root'].includes(node.type),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
   identifierWildcard: (node: StackType): node is Identifier | Wildcard =>
     'type' in node && typeof node.type === 'string' && ['identifier', 'wildcard'].includes(node.type),
@@ -57,15 +54,9 @@ const TYPE_CHECK_MAPPER = {
     return (
       'type' in node &&
       typeof node.type === 'string' &&
-      [
-        'string_literal',
-        'identifier',
-        'numeric_literal',
-        'wildcard',
-        'filter_expression',
-        'script_expression',
-        'array_slice',
-      ].includes(node.type)
+      ['string_literal', 'identifier', 'numeric_literal', 'wildcard', 'filter_expression', 'array_slice'].includes(
+        node.type,
+      )
     );
   },
   subscriptables: (node: StackType): node is Subscriptables => 'type' in node && node.type === 'subscriptables',
@@ -205,13 +196,6 @@ export default class Listener implements JSONPathListener {
         const expression = this.popWithCheck('filter_expression_child', ctx);
 
         this.push({ type: 'filter_expression', value: expression });
-        break;
-      }
-      case !!ctx.filterarg(): {
-        const right = this.popWithCheck('script_expression_child', ctx);
-        const left = this.popWithCheck('script_expression_child', ctx);
-
-        this.push({ type: 'script_expression', left, right });
         break;
       }
       default: {

@@ -84,14 +84,7 @@ export type SubscriptBracket = {
   next: Subscript | null;
 };
 
-export type Subscriptable =
-  | Identifier
-  | Wildcard
-  | StringLiteral
-  | NumericLiteral
-  | FilterExpression
-  | ArraySlice
-  | ScriptExpression;
+export type Subscriptable = Identifier | Wildcard | StringLiteral | NumericLiteral | FilterExpression | ArraySlice;
 
 export type Subscript = SubscriptDot | SubscriptDotDot | SubscriptBracket;
 
@@ -124,15 +117,7 @@ export type FilterExpression = {
   value: FilterExpressionChild;
 };
 
-export type ScriptExpression = {
-  type: 'script_expression';
-  left: ScriptExpressionChild;
-  right: ScriptExpressionChild;
-};
-
 export type ComparatorArgument = Root | Current | Value;
-
-export type ScriptExpressionChild = Root | Current | Value;
 
 export type FilterExpressionChild =
   | Comparator
@@ -158,7 +143,6 @@ export type JsonPathItem =
   | Identifier
   | NumericLiteral
   | FilterExpression
-  | ScriptExpression
   | GroupExpression
   | LogicalExpression
   | Comparator;

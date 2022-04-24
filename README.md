@@ -3,6 +3,8 @@
 [![CircleCI](https://circleci.com/gh/atamano/jsonpathly/tree/master.svg?style=svg&circle-token=442d6d9d566a5ed1472048e669f0155ed44d6648)](https://circleci.com/gh/atamano/jsonpathly/tree/master)
 [![codecov](https://codecov.io/gh/atamano/jsonpathly/branch/master/graph/badge.svg?token=QSSZGZMULF)](https://codecov.io/gh/atamano/jsonpathly)
 
+## This project is currently under development
+
 **A Javascript DSL for reading JSON documents.**
 
 [Link to the Demo](https://atamano.github.io/jsonpathly-demo/)

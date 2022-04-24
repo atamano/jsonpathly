@@ -52,7 +52,6 @@ describe('parse', () => {
     [`$..book[0:2:1].title`, ''],
     [`$..book[?(@.author == 'J.R.R. Tolkien')].title`, ''],
     [`$..*`, ''],
-    [`$..phoneNumbers[(@.price.length-1)]`, ''],
   ];
 
   test.each(textCases)('parse(%s)', (input, expected) => {

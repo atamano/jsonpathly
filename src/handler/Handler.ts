@@ -6,7 +6,6 @@ import {
   Identifier,
   LogicalExpression,
   NumericLiteral,
-  ScriptExpression,
   StringLiteral,
   Subscript,
   Subscriptable,
@@ -225,10 +224,6 @@ export class Handler {
     return payload[tree.value];
   };
 
-  handleScriptExpression = (_payload: unknown, _tree: ScriptExpression): unknown => {
-    throw new Error('Script expressions not handles');
-  };
-
   handleSubscriptable = (payload: unknown, tree: Subscriptable): unknown => {
     switch (tree.type) {
       case 'identifier': {
@@ -264,9 +259,6 @@ export class Handler {
       }
       case 'array_slice': {
         return this.handleArraySlice(payload, tree);
-      }
-      case 'script_expression': {
-        return this.handleScriptExpression(payload, tree);
       }
     }
   };
