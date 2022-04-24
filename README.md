@@ -1,15 +1,30 @@
 # JsonPathly
 
-[![CircleCI](https://circleci.com/gh/atamano/jsonpathly/tree/master.svg?style=svg&circle-token=442d6d9d566a5ed1472048e669f0155ed44d6648)](https://circleci.com/gh/atamano/jsonpathly/tree/master)
+[![CircleCI](https://circleci.com/gh/atamano/jsonpathly/tree/master.svg?style=shield&circle-token=442d6d9d566a5ed1472048e669f0155ed44d6648)](https://circleci.com/gh/atamano/jsonpathly/tree/master)
 [![codecov](https://codecov.io/gh/atamano/jsonpathly/branch/master/graph/badge.svg?token=QSSZGZMULF)](https://codecov.io/gh/atamano/jsonpathly)
 
 ## This project is currently under development
 
-**A Javascript DSL for reading JSON documents.**
+**A Typescript DSL for reading JSON documents.**
 
 [Link to the Demo](https://atamano.github.io/jsonpathly-demo/)
 
 ## Getting Started
+
+```javascript
+import { query } from 'jsonpathly';
+
+const cities = [
+  { name: 'London', population: 8615246 },
+  { name: 'Berlin', population: 3517424 },
+  { name: 'Madrid', population: 3165235 },
+  { name: 'Rome', population: 2870528 },
+];
+
+const names = query(cities, '$..name');
+
+// [ "London", "Berlin", "Madrid", "Rome" ]
+```
 
 JsonPath expressions always refer to a JSON structure in the same way as XPath expression are used in combination
 with an XML document. The "root member object" in JsonPath is always referred to as `$` regardless if it is an
