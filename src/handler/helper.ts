@@ -20,6 +20,6 @@ export const isUndefined = (item: unknown): item is undefined => {
   return typeof item === 'undefined';
 };
 
-export const isDefined = (item: unknown): item is undefined => {
-  return !isUndefined(item);
+export const isDefined = (item: unknown): item is Exclude<typeof item, undefined> => {
+  return typeof item !== 'undefined';
 };

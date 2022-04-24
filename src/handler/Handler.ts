@@ -15,7 +15,7 @@ import {
   SubscriptDot,
   SubscriptDotDot,
 } from '../parser/types';
-import { isArray, isDefined, isNumber, isObject, isString, isUndefined } from './helper';
+import { isArray, isDefined, isNumber, isObject, isString } from './helper';
 
 const isSingleValueBracket = (tree: SubscriptBracket): boolean => {
   return (
@@ -199,10 +199,10 @@ export class Handler {
         return !this.handleFilterExpressionChild(payload, tree.value);
       }
       case 'root': {
-        return !isUndefined(this.handleSubscript(this.rootPayload, tree.next));
+        return isDefined(this.handleSubscript(this.rootPayload, tree.next));
       }
       case 'current': {
-        return !isUndefined(this.handleSubscript(payload, tree.next));
+        return isDefined(this.handleSubscript(payload, tree.next));
       }
     }
   };
@@ -291,7 +291,7 @@ export class Handler {
 
     for (const treeValue of tree.values) {
       const result = this.handleSubscriptable(payload, treeValue);
-      if (!isUndefined(result)) {
+      if (isDefined(result)) {
         results = results.concat(result);
       }
     }
@@ -333,7 +333,7 @@ export class Handler {
       }
       case 'identifier': {
         const identifierRes = this.handleIdentifier(payload, treeValue);
-        if (!isUndefined(identifierRes)) {
+        if (isDefined(identifierRes)) {
           results.push(identifierRes);
           break;
         }
