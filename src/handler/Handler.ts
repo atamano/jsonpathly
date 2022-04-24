@@ -1,7 +1,8 @@
+import { ValidationError } from '../parser';
 import {
   ArraySlice,
   Comparator,
-  ComparatorArgument,
+  ComparatorArgumentChild,
   FilterExpressionChild,
   Identifier,
   LogicalExpression,
@@ -51,7 +52,7 @@ export class Handler {
     return Object.values(payload);
   };
 
-  handleComparatorArgument = (payload: unknown, tree: ComparatorArgument): unknown => {
+  handleComparatorArgumentChild = (payload: unknown, tree: ComparatorArgumentChild): unknown => {
     switch (tree.type) {
       case 'root': {
         return this.handleSubscript(this.rootPayload, tree.next);
@@ -62,12 +63,35 @@ export class Handler {
       case 'value': {
         return tree.value;
       }
+      case 'operation': {
+        const left = this.handleComparatorArgumentChild(payload, tree.left);
+        const right = this.handleComparatorArgumentChild(payload, tree.right);
+
+        if (!isNumber(left) || !isNumber(right)) {
+          return;
+        }
+
+        switch (tree.operator) {
+          case 'plus': {
+            return left + right;
+          }
+          case 'minus': {
+            return left - right;
+          }
+          case '': {
+            if (right > 0) {
+              throw new ValidationError('bad syntax on comparator opertion', null);
+            }
+            return left + right;
+          }
+        }
+      }
     }
   };
 
   handleComparator = (payload: unknown, tree: Comparator): boolean => {
-    const leftValue = this.handleComparatorArgument(payload, tree.left);
-    const rightValue = this.handleComparatorArgument(payload, tree.right);
+    const leftValue = this.handleComparatorArgumentChild(payload, tree.left);
+    const rightValue = this.handleComparatorArgumentChild(payload, tree.right);
 
     switch (tree.operator) {
       case 'subsetof': {

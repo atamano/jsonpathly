@@ -18,7 +18,7 @@ import {
   ValueContext,
 } from './generated/JSONPathParser';
 import {
-  ComparatorArgument,
+  Operation,
   FilterExpressionChild,
   Identifier,
   Node,
@@ -38,8 +38,8 @@ const TYPE_CHECK_MAPPER = {
   simple_array: (node: StackType): node is unknown[] => Array.isArray(node),
   root: (node: StackType): node is Root => 'type' in node && node.type === 'root',
   value: (node: StackType): node is Value => 'type' in node && node.type === 'value',
-  comparator_argument: (node: StackType): node is ComparatorArgument =>
-    'type' in node && typeof node.type === 'string' && ['value', 'current', 'root'].includes(node.type),
+  operation: (node: StackType): node is Operation =>
+    'type' in node && typeof node.type === 'string' && ['value', 'current', 'root', 'operation'].includes(node.type),
   filter_expression_child: (node: StackType): node is FilterExpressionChild =>
     'type' in node &&
     typeof node.type === 'string' &&
@@ -80,6 +80,8 @@ export default class Listener implements JSONPathListener {
     if (typeof value !== 'undefined' && TYPE_CHECK_MAPPER[key](value)) {
       return value as TypeGardReturn<typeof TYPE_CHECK_MAPPER[T]>;
     }
+
+    console.log('GOT', value);
 
     throw new ValidationError(`bad type returned for ${key}`, ctx);
   }
@@ -319,8 +321,8 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.tryGetRuleContext(1, FilterargContext): {
-        const right = this.popWithCheck('comparator_argument', ctx);
-        const left = this.popWithCheck('comparator_argument', ctx);
+        const right = this.popWithCheck('operation', ctx);
+        const left = this.popWithCheck('operation', ctx);
 
         switch (true) {
           case !!ctx.EQ(): {
@@ -407,6 +409,42 @@ export default class Listener implements JSONPathListener {
     }
 
     this.push(array);
+  }
+
+  public exitFilterarg(ctx: FilterargContext): void {
+    switch (true) {
+      case !!ctx.tryGetRuleContext(1, FilterargContext): {
+        switch (true) {
+          case !!ctx.PLUS(): {
+            const right = this.popWithCheck('operation', ctx);
+            const left = this.popWithCheck('operation', ctx);
+            this.push({ type: 'operation', operator: 'plus', left, right });
+            break;
+          }
+          case !!ctx.MINUS(): {
+            const right = this.popWithCheck('operation', ctx);
+            const left = this.popWithCheck('operation', ctx);
+            this.push({ type: 'operation', operator: 'minus', left, right });
+            break;
+          }
+          default: {
+            // no operator occures when right value is negative, it should be validated at runtime
+            const right = this.popWithCheck('operation', ctx);
+            const left = this.popWithCheck('operation', ctx);
+            this.push({ type: 'operation', operator: '', left, right });
+            break;
+          }
+        }
+      }
+      case !!ctx.value: {
+        const left = this.popWithCheck('operation', ctx);
+        this.push(left);
+      }
+      case !!ctx.filterpath: {
+        const left = this.popWithCheck('operation', ctx);
+        this.push(left);
+      }
+    }
   }
 
   public exitValue(ctx: ValueContext): void {

@@ -57,8 +57,8 @@ export type Comparator = {
     | 'noneof'
     | 'size'
     | 'sizeof';
-  left: ComparatorArgument;
-  right: ComparatorArgument;
+  left: Operation;
+  right: Operation;
 };
 
 export type StartFunction = (start: number | null) => ArraySlice;
@@ -117,7 +117,14 @@ export type FilterExpression = {
   value: FilterExpressionChild;
 };
 
-export type ComparatorArgument = Root | Current | Value;
+export type ComparatorArgumentChild = Root | Current | Value | Operation;
+
+export type Operation = {
+  type: 'operation';
+  operator: 'plus' | 'minus' | '';
+  left: ComparatorArgumentChild;
+  right: ComparatorArgumentChild;
+};
 
 export type FilterExpressionChild =
   | Comparator
@@ -145,6 +152,7 @@ export type JsonPathItem =
   | FilterExpression
   | GroupExpression
   | LogicalExpression
+  | Operation
   | Comparator;
 
 export type Node = unknown[] | Record<string, unknown> | StartFunction | JsonPathItem;

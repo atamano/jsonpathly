@@ -1,4 +1,4 @@
-import { LogicalExpression, Comparator, JsonPathItem } from './types';
+import { LogicalExpression, Comparator, JsonPathItem, Operation } from './types';
 
 const OPERATOR: Record<Comparator['operator'], string> = {
   eq: '==',
@@ -14,6 +14,12 @@ const OPERATOR: Record<Comparator['operator'], string> = {
   noneof: 'noneof',
   sizeof: 'sizeof',
   size: 'size',
+};
+
+const COMP_OPERATOR: Record<Operation['operator'], string> = {
+  plus: '+',
+  minus: '-',
+  '': '-',
 };
 
 const EXPR_OPERATOR: Record<LogicalExpression['operator'], string> = {
@@ -78,6 +84,9 @@ export function stringify(input: JsonPathItem | null): string {
     }
     case 'group_expression': {
       return '(' + stringify(input.value) + ')';
+    }
+    case 'operation': {
+      return stringify(input.left) + ' ' + COMP_OPERATOR[input.operator] + ' ' + stringify(input.right);
     }
     case 'comparator': {
       return stringify(input.left) + ` ${OPERATOR[input.operator]} ` + stringify(input.right);

@@ -37,6 +37,10 @@ PAREN_LEFT : '(' ;
 PAREN_RIGHT : ')' ;
 QUESTION : '?' ;
 
+MINUS: '- ';
+PLUS: '+';
+
+
 jsonpath
    : ROOT_VALUE subscript? EOF
    ;
@@ -48,6 +52,7 @@ filterpath
 filterarg
    : filterpath
    | value
+   | filterarg ( PLUS | MINUS )? filterarg
    ;
 
 subscript

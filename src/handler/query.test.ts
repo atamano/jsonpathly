@@ -294,6 +294,52 @@ describe('query with comparators', () => {
   });
 });
 
+describe('query with comparator operations', () => {
+  const textCases = [
+    {
+      path: `$.arraySimpleObjects[?(@.number>$.number+3)]..number`,
+      expected: [5, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>$.number+6)]..number`,
+      expected: [7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number + 2 >$.number + 8)]..number`,
+      expected: [7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>3+10-8+1)]..number`,
+      expected: [7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>3 + 10 - 8 + 1)]..number`,
+      expected: [7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number - 1 > @.number)]..number`,
+      expected: [],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number + 1 > @.number)]..number`,
+      expected: [2, 5, 7],
+    },
+  ];
+
+  test.each(textCases)('query(%s)', ({ path, expected }) => {
+    const res = query(PAYLOAD, path);
+
+    expect(res).toEqual(expected);
+  });
+
+  test('should throw exception on missing operator', () => {
+    const t = () => {
+      query(PAYLOAD, '$.arraySimpleObjects[?(@.number>3 4)]..number');
+    };
+    expect(t).toThrow(Error);
+  });
+});
+
 describe('query with script expressions', () => {
   const t = () => {
     query(PAYLOAD, '$.arraySimpleObjects[(@.length-1)]');
