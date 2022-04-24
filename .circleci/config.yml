@@ -1,31 +1,41 @@
 version: 2.1
 orbs:
-  codecov: codecov/codecov@1.0.2
+  codecov: codecov/codecov@1.0.5
 jobs:
   build:
     docker:
-      - image: circleci/node:12.13.0
-
-    working_directory: ~/repo
+      - image: circleci/node:12
+    steps:
+      - test
+      - store-coverage-data
+      - upload-coverage
+commands:
+  store-coverage-data:
+    steps:
+      - store_artifacts:
+          path: coverage
+  test:
     steps:
       - checkout
-      - run:
-          name: update-npm
-          command: "sudo npm install -g npm@latest"
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
-          name: install-dependencies
-          command: npm install
+          name: install-dependancies
+          command: npm ci
       - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
           paths:
-            - ./node_modules
+            - $HOME/.npm
       - run:
-          name: test
-          command: npm run test
-      - run:
-          name: coverage
-          command: npm run coverage
+          name: unit test
+          command: |
+            npm run ci:test
+  upload-coverage:
+    steps:
       - codecov/upload:
-          file: coverage/*.json
+          file: coverage/coverage-final.json
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build

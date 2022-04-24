@@ -404,3 +404,26 @@ describe('query with logical expressions', () => {
     expect(res).toEqual(expected);
   });
 });
+
+describe('query with return array option', () => {
+  const textCases = [
+    {
+      path: `$.number`,
+      expected: [PAYLOAD.number],
+    },
+    {
+      path: `$.string`,
+      expected: [PAYLOAD.string],
+    },
+    {
+      path: `$.notExist`,
+      expected: [],
+    },
+  ];
+
+  test.each(textCases)('query(%s)', ({ path, expected }) => {
+    const res = query(PAYLOAD, path, { returnArray: true });
+
+    expect(res).toEqual(expected);
+  });
+});

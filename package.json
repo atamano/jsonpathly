@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest --config jestconfig.json",
-    "coverage": "jest --config jestconfig.json --coverage",
+    "ci:test": "jest --config jestconfig.json --runInBand --ci --coverage --coverageDirectory=coverage",
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "eslint src --ext .ts",
