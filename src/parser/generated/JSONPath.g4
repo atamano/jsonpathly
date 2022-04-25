@@ -1,9 +1,9 @@
 grammar JSONPath;
 
 CURRENT_VALUE : '@' ;
-RECURSIVE_DESCENT : '..' ;
+DOTDOT : '..' ;
 ROOT_VALUE : '$' ;
-SUBSCRIPT : '.' ;
+DOT : '.' ;
 WILDCARD : '*' ;
 
 AND : '&&' ;
@@ -40,13 +40,8 @@ QUESTION : '?' ;
 MINUS: '- ';
 PLUS: '+';
 
-
 jsonpath
    : ROOT_VALUE subscript? EOF
-   ;
-
-filterpath
-   : ( ROOT_VALUE | CURRENT_VALUE ) subscript?
    ;
 
 filterarg
@@ -56,31 +51,53 @@ filterarg
    ;
 
 subscript
-   : RECURSIVE_DESCENT ( subscriptableBareword | subscriptables ) subscript?
-   | SUBSCRIPT ( subscriptableBareword | NUMBER ) subscript?
-   | subscriptables subscript?
+   : DOTDOT dotdotContent subscript?
+   | DOT dotContent subscript?
+   | bracket subscript?
    ;
 
-subscriptables
-   : BRACKET_LEFT subscriptable ( COMMA subscriptable )* BRACKET_RIGHT
-   ;
-
-subscriptableBareword
+dotdotContent
    : IDENTIFIER
    | WILDCARD
+   | bracket
    ;
 
-subscriptable
-   : STRING
-   | NUMBER sliceable?
-   | sliceable
+dotContent
+   : IDENTIFIER
    | WILDCARD
-   | QUESTION PAREN_LEFT expression PAREN_RIGHT
+   | NUMBER
+   ;
+
+bracket
+   : BRACKET_LEFT bracketContent BRACKET_RIGHT
+   ;
+
+bracketContent
+   : unions
+   | indexes
+   | NUMBER
+   | STRING
+   | slices
+   | WILDCARD
+   | filterExpression
    | IDENTIFIER
    ;
 
-sliceable
-   : COLON ( NUMBER )? ( COLON ( NUMBER )? )?
+filterExpression
+   : QUESTION PAREN_LEFT expression PAREN_RIGHT
+   ;
+
+indexes
+   : NUMBER ( COMMA NUMBER )+
+   ;
+
+unions
+   : STRING ( COMMA STRING )+
+   | IDENTIFIER ( COMMA IDENTIFIER )+
+   ;
+
+slices
+   : NUMBER? COLON NUMBER? ( COLON ( NUMBER )? )?
    ;
 
 expression
@@ -90,6 +107,10 @@ expression
    | PAREN_LEFT expression PAREN_RIGHT
    | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | SIZO| NON | SIZ ) filterarg
    | filterpath
+   ;
+
+filterpath
+   : ( ROOT_VALUE | CURRENT_VALUE ) subscript?
    ;
 
 IDENTIFIER

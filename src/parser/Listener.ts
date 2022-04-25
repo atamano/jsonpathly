@@ -5,35 +5,41 @@ import { JSONPathValidationError } from './errors';
 import { JSONPathListener } from './generated/JSONPathListener';
 import {
   ArrayContext,
+  BracketContentContext,
+  DotContentContext,
+  DotdotContentContext,
   ExpressionContext,
   FilterargContext,
+  FilterExpressionContext,
   FilterpathContext,
+  IndexesContext,
   JsonpathContext,
   JSONPathParser,
   ObjContext,
-  SliceableContext,
-  SubscriptableBarewordContext,
-  SubscriptableContext,
-  SubscriptablesContext,
+  SlicesContext,
   SubscriptContext,
+  UnionsContext,
   ValueContext,
 } from './generated/JSONPathParser';
 import {
-  Operation,
-  FilterExpressionChild,
+  FilterExpression,
   Identifier,
-  Node,
-  Root,
-  StartFunction,
-  Subscript,
-  Subscriptable,
-  Subscriptables,
-  Value,
-  Wildcard,
+  Indexes,
   NumericLiteral,
+  Operation,
+  Root,
+  Slices,
+  StringLiteral,
+  Subscript,
+  SubscriptBracket,
+  SubscriptDot,
+  SubscriptDotDot,
+  Unions,
+  Value,
 } from './types';
 
-type StackType = Node | Node[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type StackType = any;
 
 const TYPE_CHECK_MAPPER = {
   simpleObject: (node: StackType): node is Record<string, unknown> => isPlainObjet(node),
@@ -42,26 +48,30 @@ const TYPE_CHECK_MAPPER = {
   value: (node: StackType): node is Value => 'type' in node && node.type === 'value',
   operation: (node: StackType): node is Operation =>
     'type' in node && typeof node.type === 'string' && ['value', 'current', 'root', 'operation'].includes(node.type),
-  filterExpressionChild: (node: StackType): node is FilterExpressionChild =>
-    'type' in node &&
-    typeof node.type === 'string' &&
-    ['comparator', 'group_expression', 'negate_expression', 'logical_expression', 'current', 'root'].includes(
-      node.type,
-    ),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
-  identifierWildcard: (node: StackType): node is Identifier | Wildcard =>
-    'type' in node && typeof node.type === 'string' && ['identifier', 'wildcard'].includes(node.type),
-  startFunction: (node: StackType): node is StartFunction => typeof node === 'function',
-  subscriptable: (node: StackType): node is Subscriptable => {
-    return (
-      'type' in node &&
-      typeof node.type === 'string' &&
-      ['string_literal', 'identifier', 'numeric_literal', 'wildcard', 'filter_expression', 'array_slice'].includes(
-        node.type,
-      )
-    );
-  },
-  subscriptables: (node: StackType): node is Subscriptables => 'type' in node && node.type === 'subscriptables',
+  unions: (node: StackType): node is Unions => 'type' in node && node.type === 'unions',
+  indexes: (node: StackType): node is Indexes => 'type' in node && node.type === 'indexes',
+  slices: (node: StackType): node is Slices => 'type' in node && node.type === 'slices',
+  filterExpression: (node: StackType): node is FilterExpression => 'type' in node && node.type === 'filterExpression',
+  dotContent: (node: StackType): node is SubscriptDot['value'] =>
+    'type' in node && ['identifier', 'numericLiteral', 'wildcard'].includes(node.type),
+  dotdotContent: (node: StackType): node is SubscriptDotDot['value'] =>
+    'type' in node && ['identifier', 'wildcard', 'subscript'].includes(node.type),
+  bracketContent: (node: StackType): node is SubscriptBracket['value'] =>
+    'type' in node &&
+    [
+      'identifier',
+      'wildcard',
+      'numericLiteral',
+      'stringLiteral',
+      'filterExpression',
+      'slices',
+      'unions',
+      'indexes',
+    ].includes(node.type),
+  expressionContent: (node: StackType): node is FilterExpression['value'] =>
+    'type' in node &&
+    ['comparator', 'groupExpression', 'logicalExpression', 'negateExpression', 'current', 'root'].includes(node.type),
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -105,89 +115,95 @@ export default class Listener implements JSONPathListener {
       const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
       this.push({ type: 'root', next });
-    } else {
-      throw new JSONPathValidationError('root value not found', ctx);
     }
   }
 
-  public exitSubscript(ctx: SubscriptContext): void {
+  public exitBracketContent(ctx: BracketContentContext): void {
     switch (true) {
-      case !!ctx.SUBSCRIPT(): {
-        let node: Identifier | Wildcard | NumericLiteral;
-        const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
+      case !!ctx.IDENTIFIER(): {
+        const text = ctx.IDENTIFIER()!.text;
 
-        switch (true) {
-          case !!ctx.subscriptableBareword(): {
-            node = this.popWithCheck('identifierWildcard', ctx);
-            break;
-          }
-          case !!ctx.NUMBER(): {
-            const number = Number.parseInt(ctx.NUMBER()!.text);
+        this.push({ type: 'identifier', value: text });
+        break;
+      }
+      case !!ctx.WILDCARD(): {
+        this.push({ type: 'wildcard' });
+        break;
+      }
+      case !!ctx.unions(): {
+        const value = this.popWithCheck('unions', ctx);
 
-            node = {
-              type: 'numeric_literal',
-              value: number,
-            };
-            break;
-          }
-          default: {
-            throw new JSONPathValidationError('subscript child should be bareword', ctx);
-          }
-        }
+        this.push(value);
+        break;
+      }
+      case !!ctx.indexes(): {
+        const value = this.popWithCheck('indexes', ctx);
+
+        this.push(value);
+        break;
+      }
+      case !!ctx.slices(): {
+        const value = this.popWithCheck('slices', ctx);
+
+        this.push(value);
+        break;
+      }
+      case !!ctx.STRING(): {
+        const value = ctx.STRING()!.text.slice(1, -1);
+
+        this.push({ type: 'stringLiteral', value });
+        break;
+      }
+      case !!ctx.NUMBER(): {
+        const number = Number.parseInt(ctx.NUMBER()!.text);
 
         this.push({
-          type: 'subscript',
-          subtype: 'dot',
-          next,
-          value: node,
+          type: 'numericLiteral',
+          value: number,
         });
         break;
       }
-      case !!ctx.RECURSIVE_DESCENT(): {
-        let node: Identifier | Wildcard | Subscriptables;
-        const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
+      case !!ctx.filterExpression(): {
+        const value = this.popWithCheck('filterExpression', ctx);
 
-        if (ctx.subscriptableBareword()) {
-          node = this.popWithCheck('identifierWildcard', ctx);
-        } else if (ctx.subscriptables()) {
-          node = this.popWithCheck('subscriptables', ctx);
-        } else {
-          throw new JSONPathValidationError('recursive descent child should be either bareword or subscriptables', ctx);
-        }
-
-        this.setIsIndefinite(true);
-        this.push({
-          type: 'subscript',
-          subtype: 'dotdot',
-          next,
-          value: node,
-        });
+        this.push(value);
         break;
       }
-      case !!ctx.subscriptables(): {
-        const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
-        const node = this.popWithCheck('subscriptables', ctx);
+    }
+  }
+
+  public exitDotdotContent(ctx: DotdotContentContext): void {
+    this.setIsIndefinite(true);
+
+    switch (true) {
+      case !!ctx.WILDCARD(): {
+        this.push({ type: 'wildcard' });
+        break;
+      }
+      case !!ctx.IDENTIFIER(): {
+        const value = ctx.IDENTIFIER()!.text;
+
+        this.push({ type: 'identifier', value });
+        break;
+      }
+      case !!ctx.bracket(): {
+        const value = this.popWithCheck('bracketContent', ctx);
 
         this.push({
           type: 'subscript',
           subtype: 'bracket',
-          next,
-          value: node,
+          next: null,
+          value,
         });
         break;
-      }
-      default: {
-        throw new JSONPathValidationError('not handled subscript', ctx);
       }
     }
   }
 
-  public exitSubscriptable(ctx: SubscriptableContext): void {
+  public exitDotContent(ctx: DotContentContext): void {
     switch (true) {
-      case !!ctx.STRING(): {
-        const text = ctx.STRING()!.text.slice(1, -1);
-
-        this.push({ type: 'string_literal', value: text });
+      case !!ctx.WILDCARD(): {
+        this.push({ type: 'wildcard' });
         break;
       }
       case !!ctx.IDENTIFIER(): {
@@ -197,59 +213,54 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.NUMBER(): {
-        if (ctx.sliceable()) {
-          const func: StartFunction = this.popWithCheck('startFunction', ctx);
-          const start = ctx.NUMBER() ? Number.parseInt(ctx.NUMBER()!.text) : null;
+        const number = Number.parseInt(ctx.NUMBER()!.text);
 
-          this.setIsIndefinite(true);
-
-          this.push(func(start));
-        } else {
-          const number = Number.parseInt(ctx.NUMBER()!.text);
-
-          this.push({ type: 'numeric_literal', value: number });
-        }
+        this.push({
+          type: 'numericLiteral',
+          value: number,
+        });
         break;
-      }
-      case !!ctx.sliceable(): {
-        const func: StartFunction = this.popWithCheck('startFunction', ctx);
-        this.setIsIndefinite(true);
-        this.push(func(null));
-        break;
-      }
-      case !!ctx.WILDCARD(): {
-        this.setIsIndefinite(true);
-        this.push({ type: 'wildcard' });
-        break;
-      }
-      case !!ctx.expression(): {
-        const expression = this.popWithCheck('filterExpressionChild', ctx);
-
-        this.setIsIndefinite(true);
-        this.push({ type: 'filter_expression', value: expression });
-        break;
-      }
-      default: {
-        throw new JSONPathValidationError('not handled subscriptable', ctx);
       }
     }
   }
 
-  public exitSubscriptableBareword(ctx: SubscriptableBarewordContext): void {
+  public exitSubscript(ctx: SubscriptContext): void {
     switch (true) {
-      case !!ctx.IDENTIFIER(): {
-        const text = ctx.IDENTIFIER()!.text;
+      case !!ctx.DOT(): {
+        const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
+        const value = this.popWithCheck('dotContent', ctx);
 
-        this.push({ type: 'identifier', value: text });
+        this.push({
+          type: 'subscript',
+          subtype: 'dot',
+          next,
+          value,
+        });
         break;
       }
-      case !!ctx.WILDCARD(): {
-        this.setIsIndefinite(true);
-        this.push({ type: 'wildcard' });
+      case !!ctx.DOTDOT(): {
+        const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
+        const value = this.popWithCheck('dotdotContent', ctx);
+
+        this.push({
+          type: 'subscript',
+          subtype: 'dotdot',
+          value,
+          next,
+        });
         break;
       }
-      default: {
-        throw new JSONPathValidationError('bad subsriptable bareword', ctx);
+      case !!ctx.bracket(): {
+        const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
+        const value = this.popWithCheck('bracketContent', ctx);
+
+        this.push({
+          type: 'subscript',
+          subtype: 'bracket',
+          next,
+          value,
+        });
+        break;
       }
     }
   }
@@ -274,85 +285,140 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitSubscriptables(ctx: SubscriptablesContext): void {
-    const nodes: Subscriptable[] = [];
+  public exitUnions(ctx: UnionsContext): void {
+    const nodes: (StringLiteral | Identifier)[] = [];
 
-    for (let index = 0; index < ctx.subscriptable().length; index += 1) {
-      const subscriptableNode = this.popWithCheck('subscriptable', ctx);
-      nodes.unshift(subscriptableNode);
+    this.setIsIndefinite(true);
+
+    for (let index = 0; index < ctx.IDENTIFIER().length; index += 1) {
+      const value = ctx.IDENTIFIER(index)!.text;
+
+      nodes.push({
+        type: 'identifier',
+        value,
+      });
     }
 
-    if (nodes.length > 1) {
-      this.setIsIndefinite(true);
+    for (let index = 0; index < ctx.STRING().length; index += 1) {
+      const value = ctx.STRING(index)!.text.slice(1, -1);
+
+      nodes.push({
+        type: 'stringLiteral',
+        value,
+      });
     }
 
     this.push({
-      type: 'subscriptables',
+      type: 'unions',
       values: nodes,
     });
   }
 
-  public exitSliceable(ctx: SliceableContext): void {
+  public exitIndexes(ctx: IndexesContext): void {
+    const nodes: NumericLiteral[] = [];
+
+    this.setIsIndefinite(true);
+
+    for (let index = 0; index < ctx.NUMBER().length; index += 1) {
+      const number = Number.parseInt(ctx.NUMBER(index)!.text);
+
+      nodes.push({
+        type: 'numericLiteral',
+        value: number,
+      });
+    }
+
+    this.push({
+      type: 'indexes',
+      values: nodes,
+    });
+  }
+
+  public exitSlices(ctx: SlicesContext): void {
+    let start: number | null = null;
     let end: number | null = null;
     let step: number | null = null;
 
     const number0 = ctx.tryGetToken(JSONPathParser.NUMBER, 0);
     const number1 = ctx.tryGetToken(JSONPathParser.NUMBER, 1);
+    const number2 = ctx.tryGetToken(JSONPathParser.NUMBER, 2);
+
+    const colon0 = ctx.tryGetToken(JSONPathParser.COLON, 0);
     const colon1 = ctx.tryGetToken(JSONPathParser.COLON, 1);
 
-    if (number0) {
-      if (colon1) {
-        if (number1) {
-          end = Number.parseInt(ctx.NUMBER(0).text);
-          step = Number.parseInt(ctx.NUMBER(1).text);
-        } else if (number0.sourceInterval.a < colon1.sourceInterval.a) {
-          end = Number.parseInt(ctx.NUMBER(0).text);
-          step = null;
-        } else {
-          end = null;
-          step = Number.parseInt(ctx.NUMBER(0).text);
-        }
-      } else {
-        end = Number.parseInt(ctx.NUMBER(0).text);
-        step = null;
-      }
+    if (colon1 && number2) {
+      step = Number.parseInt(ctx.NUMBER(2).text);
+    } else if (colon1 && number1 && number1.sourceInterval.a > colon1.sourceInterval.a) {
+      step = Number.parseInt(ctx.NUMBER(1).text);
+    } else if (colon1 && number0 && number0.sourceInterval.a > colon1.sourceInterval.a) {
+      step = Number.parseInt(ctx.NUMBER(0).text);
     }
+
+    if (!colon1 && colon0 && number1 && number1.sourceInterval.a > colon0.sourceInterval.a) {
+      end = Number.parseInt(ctx.NUMBER(1).text);
+    } else if (!colon1 && colon0 && !number1 && number0 && number0.sourceInterval.a > colon0.sourceInterval.a) {
+      end = Number.parseInt(ctx.NUMBER(0).text);
+    } else if (colon1 && colon0 && number1 && number1.sourceInterval.a < colon1.sourceInterval.a) {
+      end = Number.parseInt(ctx.NUMBER(1).text);
+    } else if (
+      colon1 &&
+      colon0 &&
+      number0 &&
+      number0.sourceInterval.a > colon0.sourceInterval.a &&
+      number0.sourceInterval.a < colon1.sourceInterval.a
+    ) {
+      end = Number.parseInt(ctx.NUMBER(0).text);
+    }
+
+    if (!colon0 && number0) {
+      start = Number.parseInt(ctx.NUMBER(0).text);
+    } else if (colon0 && number0 && number0.sourceInterval.a < colon0.sourceInterval.a) {
+      start = Number.parseInt(ctx.NUMBER(0).text);
+    }
+
+    this.push({ type: 'slices', start, end, step });
+  }
+
+  public exitFilterExpression(ctx: FilterExpressionContext): void {
+    const value = this.popWithCheck('expressionContent', ctx);
+
     this.setIsIndefinite(true);
 
-    this.push((start: number | null) => {
-      return { type: 'array_slice', start, end, step };
+    this.push({
+      type: 'filterExpression',
+      value,
     });
   }
 
   public exitExpression(ctx: ExpressionContext): void {
     switch (true) {
       case !!ctx.NOT(): {
-        const value = this.popWithCheck('filterExpressionChild', ctx);
+        const value = this.popWithCheck('expressionContent', ctx);
 
         this.push({
-          type: 'negate_expression',
+          type: 'negateExpression',
           value,
         });
         break;
       }
       case !!ctx.AND(): {
-        const right = this.popWithCheck('filterExpressionChild', ctx);
-        const left = this.popWithCheck('filterExpressionChild', ctx);
+        const right = this.popWithCheck('expressionContent', ctx);
+        const left = this.popWithCheck('expressionContent', ctx);
 
-        this.push({ type: 'logical_expression', operator: 'and', left, right });
+        this.push({ type: 'logicalExpression', operator: 'and', left, right });
         break;
       }
       case !!ctx.OR(): {
-        const right = this.popWithCheck('filterExpressionChild', ctx);
-        const left = this.popWithCheck('filterExpressionChild', ctx);
+        const right = this.popWithCheck('expressionContent', ctx);
+        const left = this.popWithCheck('expressionContent', ctx);
 
-        this.push({ type: 'logical_expression', operator: 'or', left, right });
+        this.push({ type: 'logicalExpression', operator: 'or', left, right });
         break;
       }
       case !!ctx.PAREN_LEFT(): {
-        const value = this.popWithCheck('filterExpressionChild', ctx);
+        const value = this.popWithCheck('expressionContent', ctx);
 
-        this.push({ type: 'group_expression', value });
+        this.push({ type: 'groupExpression', value });
         break;
       }
       case !!ctx.tryGetRuleContext(1, FilterargContext): {
@@ -412,9 +478,6 @@ export default class Listener implements JSONPathListener {
             this.push({ type: 'comparator', operator: 'sizeof', left, right });
             break;
           }
-          default: {
-            throw new JSONPathValidationError('not handled comparator', ctx);
-          }
         }
         break;
       }
@@ -466,6 +529,7 @@ export default class Listener implements JSONPathListener {
             // no operator occures when right value is negative, it should be validated at runtime
             const right = this.popWithCheck('operation', ctx);
             const left = this.popWithCheck('operation', ctx);
+
             this.push({ type: 'operation', operator: '', left, right });
             break;
           }
@@ -522,9 +586,6 @@ export default class Listener implements JSONPathListener {
       case !!ctx.NULL(): {
         this.push({ type: 'value', value: null, subtype: 'null' });
         break;
-      }
-      default: {
-        throw new JSONPathValidationError('not handled value', ctx);
       }
     }
   }

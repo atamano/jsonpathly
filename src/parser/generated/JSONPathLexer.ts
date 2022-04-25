@@ -17,9 +17,9 @@ import * as Utils from "antlr4ts/misc/Utils";
 
 export class JSONPathLexer extends Lexer {
 	public static readonly CURRENT_VALUE = 1;
-	public static readonly RECURSIVE_DESCENT = 2;
+	public static readonly DOTDOT = 2;
 	public static readonly ROOT_VALUE = 3;
-	public static readonly SUBSCRIPT = 4;
+	public static readonly DOT = 4;
 	public static readonly WILDCARD = 5;
 	public static readonly AND = 6;
 	public static readonly EQ = 7;
@@ -67,13 +67,13 @@ export class JSONPathLexer extends Lexer {
 	];
 
 	public static readonly ruleNames: string[] = [
-		"CURRENT_VALUE", "RECURSIVE_DESCENT", "ROOT_VALUE", "SUBSCRIPT", "WILDCARD", 
-		"AND", "EQ", "GE", "GT", "LE", "LT", "NE", "IN", "NIN", "SUB", "ANY", 
-		"NON", "SIZO", "SIZ", "NOT", "OR", "TRUE", "FALSE", "NULL", "BRACE_LEFT", 
-		"BRACE_RIGHT", "BRACKET_LEFT", "BRACKET_RIGHT", "COLON", "COMMA", "PAREN_LEFT", 
-		"PAREN_RIGHT", "QUESTION", "MINUS", "PLUS", "IDENTIFIER", "STRING", "ESC_SINGLE", 
-		"ESC_DOUBLE", "UNICODE", "HEX", "SAFECODEPOINT_SINGLE", "SAFECODEPOINT_DOUBLE", 
-		"NUMBER", "INT", "EXP", "WS",
+		"CURRENT_VALUE", "DOTDOT", "ROOT_VALUE", "DOT", "WILDCARD", "AND", "EQ", 
+		"GE", "GT", "LE", "LT", "NE", "IN", "NIN", "SUB", "ANY", "NON", "SIZO", 
+		"SIZ", "NOT", "OR", "TRUE", "FALSE", "NULL", "BRACE_LEFT", "BRACE_RIGHT", 
+		"BRACKET_LEFT", "BRACKET_RIGHT", "COLON", "COMMA", "PAREN_LEFT", "PAREN_RIGHT", 
+		"QUESTION", "MINUS", "PLUS", "IDENTIFIER", "STRING", "ESC_SINGLE", "ESC_DOUBLE", 
+		"UNICODE", "HEX", "SAFECODEPOINT_SINGLE", "SAFECODEPOINT_DOUBLE", "NUMBER", 
+		"INT", "EXP", "WS",
 	];
 
 	private static readonly _LITERAL_NAMES: Array<string | undefined> = [
@@ -84,9 +84,9 @@ export class JSONPathLexer extends Lexer {
 		"'- '", "'+'",
 	];
 	private static readonly _SYMBOLIC_NAMES: Array<string | undefined> = [
-		undefined, "CURRENT_VALUE", "RECURSIVE_DESCENT", "ROOT_VALUE", "SUBSCRIPT", 
-		"WILDCARD", "AND", "EQ", "GE", "GT", "LE", "LT", "NE", "IN", "NIN", "SUB", 
-		"ANY", "NON", "SIZO", "SIZ", "NOT", "OR", "TRUE", "FALSE", "NULL", "BRACE_LEFT", 
+		undefined, "CURRENT_VALUE", "DOTDOT", "ROOT_VALUE", "DOT", "WILDCARD", 
+		"AND", "EQ", "GE", "GT", "LE", "LT", "NE", "IN", "NIN", "SUB", "ANY", 
+		"NON", "SIZO", "SIZ", "NOT", "OR", "TRUE", "FALSE", "NULL", "BRACE_LEFT", 
 		"BRACE_RIGHT", "BRACKET_LEFT", "BRACKET_RIGHT", "COLON", "COMMA", "PAREN_LEFT", 
 		"PAREN_RIGHT", "QUESTION", "MINUS", "PLUS", "IDENTIFIER", "STRING", "NUMBER", 
 		"WS",

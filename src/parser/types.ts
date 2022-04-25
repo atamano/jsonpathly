@@ -18,24 +18,24 @@ export type ValueNull = { type: 'value'; value: null; subtype: 'null' };
 export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | ValueArray | ValueObject;
 
 export type NegateExpression = {
-  type: 'negate_expression';
-  value: FilterExpressionChild;
+  type: 'negateExpression';
+  value: FilterExpressionContent;
 };
 
 export type GroupExpression = {
-  type: 'group_expression';
-  value: FilterExpressionChild;
+  type: 'groupExpression';
+  value: FilterExpressionContent;
 };
 
 export type LogicalExpression = {
-  type: 'logical_expression';
+  type: 'logicalExpression';
   operator: 'or' | 'and';
-  left: FilterExpressionChild;
-  right: FilterExpressionChild;
+  left: FilterExpressionContent;
+  right: FilterExpressionContent;
 };
 
-export type ArraySlice = {
-  type: 'array_slice';
+export type Slices = {
+  type: 'slices';
   start: number | null;
   end: number | null;
   step: number | null;
@@ -61,8 +61,6 @@ export type Comparator = {
   right: Operation;
 };
 
-export type StartFunction = (start: number | null) => ArraySlice;
-
 export type SubscriptDot = {
   type: 'subscript';
   subtype: 'dot';
@@ -73,18 +71,16 @@ export type SubscriptDot = {
 export type SubscriptDotDot = {
   type: 'subscript';
   subtype: 'dotdot';
-  value: Identifier | Wildcard | Subscriptables;
+  value: Identifier | Wildcard | SubscriptBracket;
   next: Subscript | null;
 };
 
 export type SubscriptBracket = {
   type: 'subscript';
   subtype: 'bracket';
-  value: Subscriptables;
+  value: Identifier | Wildcard | StringLiteral | NumericLiteral | FilterExpression | Slices | Unions | Indexes;
   next: Subscript | null;
 };
-
-export type Subscriptable = Identifier | Wildcard | StringLiteral | NumericLiteral | FilterExpression | ArraySlice;
 
 export type Subscript = SubscriptDot | SubscriptDotDot | SubscriptBracket;
 
@@ -93,7 +89,7 @@ export type Wildcard = {
 };
 
 export type StringLiteral = {
-  type: 'string_literal';
+  type: 'stringLiteral';
   value: string;
 };
 
@@ -103,30 +99,21 @@ export type Identifier = {
 };
 
 export type NumericLiteral = {
-  type: 'numeric_literal';
+  type: 'numericLiteral';
   value: number;
 };
 
-export type Subscriptables = {
-  type: 'subscriptables';
-  values: Subscriptable[];
+export type Indexes = {
+  type: 'indexes';
+  values: NumericLiteral[];
 };
 
-export type FilterExpression = {
-  type: 'filter_expression';
-  value: FilterExpressionChild;
+export type Unions = {
+  type: 'unions';
+  values: StringLiteral[] | Identifier[];
 };
 
-export type ComparatorArgumentChild = Root | Current | Value | Operation;
-
-export type Operation = {
-  type: 'operation';
-  operator: 'plus' | 'minus' | '';
-  left: ComparatorArgumentChild;
-  right: ComparatorArgumentChild;
-};
-
-export type FilterExpressionChild =
+export type FilterExpressionContent =
   | Comparator
   | GroupExpression
   | LogicalExpression
@@ -134,25 +121,16 @@ export type FilterExpressionChild =
   | Current
   | Root;
 
-export type JsonPathItem =
-  | Value
-  | Root
-  | Current
-  | NegateExpression
-  | SubscriptDot
-  | SubscriptDotDot
-  | SubscriptBracket
-  | Subscriptable
-  | Subscriptables
-  | ArraySlice
-  | StringLiteral
-  | Wildcard
-  | Identifier
-  | NumericLiteral
-  | FilterExpression
-  | GroupExpression
-  | LogicalExpression
-  | Operation
-  | Comparator;
+export type FilterExpression = {
+  type: 'filterExpression';
+  value: FilterExpressionContent;
+};
 
-export type Node = unknown[] | Record<string, unknown> | StartFunction | JsonPathItem;
+export type OperationContent = Root | Current | Value | Operation;
+
+export type Operation = {
+  type: 'operation';
+  operator: 'plus' | 'minus' | '';
+  left: OperationContent;
+  right: OperationContent;
+};

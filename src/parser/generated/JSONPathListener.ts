@@ -4,14 +4,18 @@
 import { ParseTreeListener } from "antlr4ts/tree/ParseTreeListener";
 
 import { JsonpathContext } from "./JSONPathParser";
-import { FilterpathContext } from "./JSONPathParser";
 import { FilterargContext } from "./JSONPathParser";
 import { SubscriptContext } from "./JSONPathParser";
-import { SubscriptablesContext } from "./JSONPathParser";
-import { SubscriptableBarewordContext } from "./JSONPathParser";
-import { SubscriptableContext } from "./JSONPathParser";
-import { SliceableContext } from "./JSONPathParser";
+import { DotdotContentContext } from "./JSONPathParser";
+import { DotContentContext } from "./JSONPathParser";
+import { BracketContext } from "./JSONPathParser";
+import { BracketContentContext } from "./JSONPathParser";
+import { FilterExpressionContext } from "./JSONPathParser";
+import { IndexesContext } from "./JSONPathParser";
+import { UnionsContext } from "./JSONPathParser";
+import { SlicesContext } from "./JSONPathParser";
 import { ExpressionContext } from "./JSONPathParser";
+import { FilterpathContext } from "./JSONPathParser";
 import { JsonContext } from "./JSONPathParser";
 import { ObjContext } from "./JSONPathParser";
 import { PairContext } from "./JSONPathParser";
@@ -36,17 +40,6 @@ export interface JSONPathListener extends ParseTreeListener {
 	exitJsonpath?: (ctx: JsonpathContext) => void;
 
 	/**
-	 * Enter a parse tree produced by `JSONPathParser.filterpath`.
-	 * @param ctx the parse tree
-	 */
-	enterFilterpath?: (ctx: FilterpathContext) => void;
-	/**
-	 * Exit a parse tree produced by `JSONPathParser.filterpath`.
-	 * @param ctx the parse tree
-	 */
-	exitFilterpath?: (ctx: FilterpathContext) => void;
-
-	/**
 	 * Enter a parse tree produced by `JSONPathParser.filterarg`.
 	 * @param ctx the parse tree
 	 */
@@ -69,48 +62,92 @@ export interface JSONPathListener extends ParseTreeListener {
 	exitSubscript?: (ctx: SubscriptContext) => void;
 
 	/**
-	 * Enter a parse tree produced by `JSONPathParser.subscriptables`.
+	 * Enter a parse tree produced by `JSONPathParser.dotdotContent`.
 	 * @param ctx the parse tree
 	 */
-	enterSubscriptables?: (ctx: SubscriptablesContext) => void;
+	enterDotdotContent?: (ctx: DotdotContentContext) => void;
 	/**
-	 * Exit a parse tree produced by `JSONPathParser.subscriptables`.
+	 * Exit a parse tree produced by `JSONPathParser.dotdotContent`.
 	 * @param ctx the parse tree
 	 */
-	exitSubscriptables?: (ctx: SubscriptablesContext) => void;
+	exitDotdotContent?: (ctx: DotdotContentContext) => void;
 
 	/**
-	 * Enter a parse tree produced by `JSONPathParser.subscriptableBareword`.
+	 * Enter a parse tree produced by `JSONPathParser.dotContent`.
 	 * @param ctx the parse tree
 	 */
-	enterSubscriptableBareword?: (ctx: SubscriptableBarewordContext) => void;
+	enterDotContent?: (ctx: DotContentContext) => void;
 	/**
-	 * Exit a parse tree produced by `JSONPathParser.subscriptableBareword`.
+	 * Exit a parse tree produced by `JSONPathParser.dotContent`.
 	 * @param ctx the parse tree
 	 */
-	exitSubscriptableBareword?: (ctx: SubscriptableBarewordContext) => void;
+	exitDotContent?: (ctx: DotContentContext) => void;
 
 	/**
-	 * Enter a parse tree produced by `JSONPathParser.subscriptable`.
+	 * Enter a parse tree produced by `JSONPathParser.bracket`.
 	 * @param ctx the parse tree
 	 */
-	enterSubscriptable?: (ctx: SubscriptableContext) => void;
+	enterBracket?: (ctx: BracketContext) => void;
 	/**
-	 * Exit a parse tree produced by `JSONPathParser.subscriptable`.
+	 * Exit a parse tree produced by `JSONPathParser.bracket`.
 	 * @param ctx the parse tree
 	 */
-	exitSubscriptable?: (ctx: SubscriptableContext) => void;
+	exitBracket?: (ctx: BracketContext) => void;
 
 	/**
-	 * Enter a parse tree produced by `JSONPathParser.sliceable`.
+	 * Enter a parse tree produced by `JSONPathParser.bracketContent`.
 	 * @param ctx the parse tree
 	 */
-	enterSliceable?: (ctx: SliceableContext) => void;
+	enterBracketContent?: (ctx: BracketContentContext) => void;
 	/**
-	 * Exit a parse tree produced by `JSONPathParser.sliceable`.
+	 * Exit a parse tree produced by `JSONPathParser.bracketContent`.
 	 * @param ctx the parse tree
 	 */
-	exitSliceable?: (ctx: SliceableContext) => void;
+	exitBracketContent?: (ctx: BracketContentContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `JSONPathParser.filterExpression`.
+	 * @param ctx the parse tree
+	 */
+	enterFilterExpression?: (ctx: FilterExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by `JSONPathParser.filterExpression`.
+	 * @param ctx the parse tree
+	 */
+	exitFilterExpression?: (ctx: FilterExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `JSONPathParser.indexes`.
+	 * @param ctx the parse tree
+	 */
+	enterIndexes?: (ctx: IndexesContext) => void;
+	/**
+	 * Exit a parse tree produced by `JSONPathParser.indexes`.
+	 * @param ctx the parse tree
+	 */
+	exitIndexes?: (ctx: IndexesContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `JSONPathParser.unions`.
+	 * @param ctx the parse tree
+	 */
+	enterUnions?: (ctx: UnionsContext) => void;
+	/**
+	 * Exit a parse tree produced by `JSONPathParser.unions`.
+	 * @param ctx the parse tree
+	 */
+	exitUnions?: (ctx: UnionsContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `JSONPathParser.slices`.
+	 * @param ctx the parse tree
+	 */
+	enterSlices?: (ctx: SlicesContext) => void;
+	/**
+	 * Exit a parse tree produced by `JSONPathParser.slices`.
+	 * @param ctx the parse tree
+	 */
+	exitSlices?: (ctx: SlicesContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `JSONPathParser.expression`.
@@ -122,6 +159,17 @@ export interface JSONPathListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitExpression?: (ctx: ExpressionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `JSONPathParser.filterpath`.
+	 * @param ctx the parse tree
+	 */
+	enterFilterpath?: (ctx: FilterpathContext) => void;
+	/**
+	 * Exit a parse tree produced by `JSONPathParser.filterpath`.
+	 * @param ctx the parse tree
+	 */
+	exitFilterpath?: (ctx: FilterpathContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `JSONPathParser.json`.

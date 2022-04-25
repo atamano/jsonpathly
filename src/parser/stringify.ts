@@ -1,4 +1,24 @@
-import { LogicalExpression, Comparator, JsonPathItem, Operation } from './types';
+import {
+  LogicalExpression,
+  Comparator,
+  Operation,
+  Current,
+  FilterExpression,
+  GroupExpression,
+  Identifier,
+  Indexes,
+  NegateExpression,
+  NumericLiteral,
+  Root,
+  Slices,
+  StringLiteral,
+  SubscriptBracket,
+  SubscriptDot,
+  SubscriptDotDot,
+  Unions,
+  Value,
+  Wildcard,
+} from './types';
 
 const OPERATOR: Record<Comparator['operator'], string> = {
   eq: '==',
@@ -27,6 +47,27 @@ const EXPR_OPERATOR: Record<LogicalExpression['operator'], string> = {
   or: '||',
 };
 
+type JsonPathItem =
+  | Root
+  | Current
+  | Value
+  | NegateExpression
+  | GroupExpression
+  | LogicalExpression
+  | Slices
+  | Comparator
+  | SubscriptDot
+  | SubscriptDotDot
+  | SubscriptBracket
+  | Wildcard
+  | StringLiteral
+  | Identifier
+  | NumericLiteral
+  | Indexes
+  | Unions
+  | FilterExpression
+  | Operation;
+
 export function stringify(input: JsonPathItem | null): string {
   if (input === null) {
     return '';
@@ -39,21 +80,13 @@ export function stringify(input: JsonPathItem | null): string {
     case 'current': {
       return '@' + stringify(input.next);
     }
-    case 'subscriptables': {
-      return input.values.map(stringify).join(', ');
-    }
     case 'subscript': {
       switch (input.subtype) {
         case 'dot': {
           return '.' + stringify(input.value) + stringify(input.next);
         }
         case 'dotdot': {
-          let res = '';
-          if (input.value.type === 'subscriptables') {
-            res = `[${stringify(input.value)}]`;
-          } else {
-            res = stringify(input.value);
-          }
+          const res = stringify(input.value);
           return '..' + res + stringify(input.next);
         }
         case 'bracket': {
@@ -67,22 +100,28 @@ export function stringify(input: JsonPathItem | null): string {
     case 'wildcard': {
       return '*';
     }
-    case 'string_literal': {
+    case 'indexes': {
+      return input.values.map(stringify).join(', ');
+    }
+    case 'unions': {
+      return input.values.map(stringify).join(', ');
+    }
+    case 'stringLiteral': {
       return `"${input.value}"`;
     }
-    case 'numeric_literal': {
+    case 'numericLiteral': {
       return `${input.value}`;
     }
-    case 'negate_expression': {
+    case 'negateExpression': {
       return '!' + stringify(input.value);
     }
     case 'value': {
       return JSON.stringify(input.value);
     }
-    case 'filter_expression': {
+    case 'filterExpression': {
       return '?(' + stringify(input.value) + ')';
     }
-    case 'group_expression': {
+    case 'groupExpression': {
       return '(' + stringify(input.value) + ')';
     }
     case 'operation': {
@@ -91,10 +130,10 @@ export function stringify(input: JsonPathItem | null): string {
     case 'comparator': {
       return stringify(input.left) + ` ${OPERATOR[input.operator]} ` + stringify(input.right);
     }
-    case 'logical_expression': {
+    case 'logicalExpression': {
       return stringify(input.left) + ` ${EXPR_OPERATOR[input.operator]} ` + stringify(input.right);
     }
-    case 'array_slice': {
+    case 'slices': {
       return `${input.start !== null ? input.start : ''}:${input.end !== null ? input.end : ''}${
         input.step !== null ? ':' + input.step : ''
       }`;
