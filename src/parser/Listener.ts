@@ -127,6 +127,8 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.WILDCARD(): {
+        this.setIsIndefinite(true);
+
         this.push({ type: 'wildcard' });
         break;
       }
@@ -203,6 +205,8 @@ export default class Listener implements JSONPathListener {
   public exitDotContent(ctx: DotContentContext): void {
     switch (true) {
       case !!ctx.WILDCARD(): {
+        this.setIsIndefinite(true);
+
         this.push({ type: 'wildcard' });
         break;
       }
