@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { RuleContext } from 'antlr4ts/RuleContext';
 import { default as isPlainObjet } from 'lodash.isplainobject';
-import { ValidationError } from './errors';
+import { JSONPathValidationError } from './errors';
 import { JSONPathListener } from './generated/JSONPathListener';
 import {
   ArrayContext,
@@ -92,7 +92,7 @@ export default class Listener implements JSONPathListener {
       return value as TypeGardReturn<typeof TYPE_CHECK_MAPPER[T]>;
     }
 
-    throw new ValidationError(`bad type returned for ${key}`, ctx);
+    throw new JSONPathValidationError(`bad type returned for ${key}`, ctx);
   }
 
   private push(node: StackType): void {
@@ -105,7 +105,7 @@ export default class Listener implements JSONPathListener {
 
       this.push({ type: 'root', next });
     } else {
-      throw new ValidationError('root value not found', ctx);
+      throw new JSONPathValidationError('root value not found', ctx);
     }
   }
 
@@ -118,7 +118,7 @@ export default class Listener implements JSONPathListener {
         if (ctx.subscriptableBareword()) {
           node = this.popWithCheck('identifierWildcard', ctx);
         } else {
-          throw new ValidationError('subscript child should be bareword', ctx);
+          throw new JSONPathValidationError('subscript child should be bareword', ctx);
         }
 
         this.push({
@@ -138,7 +138,7 @@ export default class Listener implements JSONPathListener {
         } else if (ctx.subscriptables()) {
           node = this.popWithCheck('subscriptables', ctx);
         } else {
-          throw new ValidationError('recursive descent child should be either bareword or subscriptables', ctx);
+          throw new JSONPathValidationError('recursive descent child should be either bareword or subscriptables', ctx);
         }
 
         this.setIsIndefinite(true);
@@ -163,7 +163,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       default: {
-        throw new ValidationError('not handled subscript', ctx);
+        throw new JSONPathValidationError('not handled subscript', ctx);
       }
     }
   }
@@ -216,7 +216,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       default: {
-        throw new ValidationError('not handled subscriptable', ctx);
+        throw new JSONPathValidationError('not handled subscriptable', ctx);
       }
     }
   }
@@ -235,7 +235,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       default: {
-        throw new ValidationError('bad subsriptable bareword', ctx);
+        throw new JSONPathValidationError('bad subsriptable bareword', ctx);
       }
     }
   }
@@ -255,7 +255,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       default: {
-        throw new ValidationError('bad filter path', ctx);
+        throw new JSONPathValidationError('bad filter path', ctx);
       }
     }
   }
@@ -395,7 +395,7 @@ export default class Listener implements JSONPathListener {
             break;
           }
           default: {
-            throw new ValidationError('not handled comparator', ctx);
+            throw new JSONPathValidationError('not handled comparator', ctx);
           }
         }
         break;
@@ -504,7 +504,7 @@ export default class Listener implements JSONPathListener {
         break;
       }
       default: {
-        throw new ValidationError('not handled value', ctx);
+        throw new JSONPathValidationError('not handled value', ctx);
       }
     }
   }

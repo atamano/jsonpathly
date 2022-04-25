@@ -1,12 +1,12 @@
-import { parse } from '../parser';
+import { parse } from '../parser/parse';
 import { Handler } from './Handler';
 
-type Options = {
+export type JSONPathOptions = {
   hideExceptions?: boolean;
   returnArray?: boolean;
 };
 
-export const query = (payload: unknown, path: string, options?: Options): unknown => {
+export const query = (payload: unknown, path: string, options?: JSONPathOptions): unknown => {
   try {
     const { tree, isIndefinite } = parse(path);
     if (!tree) {

@@ -1,4 +1,4 @@
-import { PathSyntaxError } from '../parser';
+import { JSONPathSyntaxError } from '../parser/errors';
 import { query } from './query';
 
 const PAYLOAD = {
@@ -349,17 +349,17 @@ describe('query with script expressions', () => {
 
 describe('query with bad path', () => {
   const testCases = [
-    { path: 'bad', err: PathSyntaxError },
-    { path: '', err: PathSyntaxError },
-    { path: '$...bad', err: PathSyntaxError },
-    { path: '$.$', err: PathSyntaxError },
-    { path: `$["bad Quote']`, err: PathSyntaxError },
-    { path: `$[bad Quote']`, err: PathSyntaxError },
-    { path: `$\{bad\}`, err: PathSyntaxError },
-    { path: `@`, err: PathSyntaxError },
-    { path: `$[?(@.test == {'1': undefined})]`, err: PathSyntaxError },
-    { path: `$[1:2:3:4]`, err: PathSyntaxError },
-    { path: `$[[1:2:3]]`, err: PathSyntaxError },
+    { path: 'bad', err: JSONPathSyntaxError },
+    { path: '', err: JSONPathSyntaxError },
+    { path: '$...bad', err: JSONPathSyntaxError },
+    { path: '$.$', err: JSONPathSyntaxError },
+    { path: `$["bad Quote']`, err: JSONPathSyntaxError },
+    { path: `$[bad Quote']`, err: JSONPathSyntaxError },
+    { path: `$\{bad\}`, err: JSONPathSyntaxError },
+    { path: `@`, err: JSONPathSyntaxError },
+    { path: `$[?(@.test == {'1': undefined})]`, err: JSONPathSyntaxError },
+    { path: `$[1:2:3:4]`, err: JSONPathSyntaxError },
+    { path: `$[[1:2:3]]`, err: JSONPathSyntaxError },
   ];
 
   test.each(testCases)('error(%s)', ({ path, err }) => {

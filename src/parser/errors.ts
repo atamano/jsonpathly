@@ -1,6 +1,6 @@
 import { RuleContext } from 'antlr4ts/RuleContext';
 
-export class PathSyntaxError extends Error {
+export class JSONPathSyntaxError extends Error {
   line: number;
   charPositionInLine: number;
   msg: string;
@@ -13,7 +13,7 @@ export class PathSyntaxError extends Error {
   }
 }
 
-export class ValidationError extends Error {
+export class JSONPathValidationError extends Error {
   rule: RuleContext | null;
 
   constructor(msg: string, rule: RuleContext | null) {

@@ -1,4 +1,4 @@
-import { ValidationError } from '../parser';
+import { JSONPathValidationError } from '../parser/errors';
 import {
   ArraySlice,
   Comparator,
@@ -79,7 +79,7 @@ export class Handler {
           }
           case '': {
             if (right > 0) {
-              throw new ValidationError('bad syntax on comparator opertion', null);
+              throw new JSONPathValidationError('bad syntax on comparator opertion', null);
             }
             return left + right;
           }

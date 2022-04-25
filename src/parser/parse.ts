@@ -1,6 +1,6 @@
 import { ANTLRInputStream, CommonTokenStream, RecognitionException, Recognizer } from 'antlr4ts';
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker';
-import { PathSyntaxError } from './errors';
+import { JSONPathSyntaxError } from './errors';
 import { JSONPathLexer } from './generated/JSONPathLexer';
 import { JSONPathListener } from './generated/JSONPathListener';
 import { JSONPathParser } from './generated/JSONPathParser';
@@ -29,7 +29,7 @@ export function parse(input: string): ParseResponse {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       _e: RecognitionException | undefined,
     ): void => {
-      throw new PathSyntaxError(line, charPositionInLine, msg);
+      throw new JSONPathSyntaxError(line, charPositionInLine, msg);
     },
   });
   const listener = new CustomJSONPathListener();
