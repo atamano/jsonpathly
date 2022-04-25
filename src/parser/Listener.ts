@@ -268,6 +268,10 @@ export default class Listener implements JSONPathListener {
       nodes.unshift(subscriptableNode);
     }
 
+    if (nodes.length > 1) {
+      this.setIsIndefinite(true);
+    }
+
     this.push({
       type: 'subscriptables',
       values: nodes,
