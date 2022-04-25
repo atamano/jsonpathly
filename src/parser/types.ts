@@ -66,7 +66,7 @@ export type StartFunction = (start: number | null) => ArraySlice;
 export type SubscriptDot = {
   type: 'subscript';
   subtype: 'dot';
-  value: Identifier | Wildcard;
+  value: Identifier | NumericLiteral | Wildcard;
   next: Subscript | null;
 };
 

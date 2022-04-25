@@ -57,7 +57,7 @@ filterarg
 
 subscript
    : RECURSIVE_DESCENT ( subscriptableBareword | subscriptables ) subscript?
-   | SUBSCRIPT subscriptableBareword subscript?
+   | SUBSCRIPT ( subscriptableBareword | NUMBER ) subscript?
    | subscriptables subscript?
    ;
 

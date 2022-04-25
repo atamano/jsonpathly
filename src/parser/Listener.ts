@@ -30,6 +30,7 @@ import {
   Subscriptables,
   Value,
   Wildcard,
+  NumericLiteral,
 } from './types';
 
 type StackType = Node | Node[];
@@ -112,13 +113,26 @@ export default class Listener implements JSONPathListener {
   public exitSubscript(ctx: SubscriptContext): void {
     switch (true) {
       case !!ctx.SUBSCRIPT(): {
-        let node: Identifier | Wildcard;
+        let node: Identifier | Wildcard | NumericLiteral;
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
-        if (ctx.subscriptableBareword()) {
-          node = this.popWithCheck('identifierWildcard', ctx);
-        } else {
-          throw new JSONPathValidationError('subscript child should be bareword', ctx);
+        switch (true) {
+          case !!ctx.subscriptableBareword(): {
+            node = this.popWithCheck('identifierWildcard', ctx);
+            break;
+          }
+          case !!ctx.NUMBER(): {
+            const number = Number.parseInt(ctx.NUMBER()!.text);
+
+            node = {
+              type: 'numeric_literal',
+              value: number,
+            };
+            break;
+          }
+          default: {
+            throw new JSONPathValidationError('subscript child should be bareword', ctx);
+          }
         }
 
         this.push({

@@ -46,6 +46,7 @@ describe('query with dot notations', () => {
     { path: `$.string`, expected: PAYLOAD.string },
     { path: `$.number`, expected: PAYLOAD.number },
     { path: `$.arrayOfNumber`, expected: PAYLOAD.arrayOfNumber },
+    { path: `$.arrayOfNumber.2`, expected: PAYLOAD.arrayOfNumber[2] },
     { path: `$.nestedObject`, expected: PAYLOAD.nestedObject },
     { path: `$.nestedObject.object`, expected: PAYLOAD.nestedObject.object },
     { path: `$.nestedObject.object.test`, expected: PAYLOAD.nestedObject.object.test },

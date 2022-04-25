@@ -401,6 +401,13 @@ export class Handler {
         const result = this.handleIdentifier(payload, tree.value);
         return this.handleSubscript(result, tree.next);
       }
+      case 'numeric_literal': {
+        if (!isArray(payload)) {
+          return;
+        }
+        const result = this.handleNumericLiteral(payload, tree.value);
+        return this.handleSubscript(result, tree.next);
+      }
       case 'wildcard': {
         const result = this.handleWildcard(payload);
         if (!tree.next) {
