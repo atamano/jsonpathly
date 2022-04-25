@@ -391,12 +391,11 @@ export class Handler {
   };
 
   handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
-    if (!isObject(payload)) {
-      return;
-    }
-
     switch (tree.value.type) {
       case 'identifier': {
+        if (!isObject(payload)) {
+          return;
+        }
         const result = this.handleIdentifier(payload, tree.value);
         return this.handleSubscript(result, tree.next);
       }
