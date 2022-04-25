@@ -19,7 +19,7 @@ const OPERATOR: Record<Comparator['operator'], string> = {
 const COMP_OPERATOR: Record<Operation['operator'], string> = {
   plus: '+',
   minus: '-',
-  '': '-',
+  '': '',
 };
 
 const EXPR_OPERATOR: Record<LogicalExpression['operator'], string> = {

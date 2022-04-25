@@ -460,10 +460,12 @@ export default class Listener implements JSONPathListener {
       case !!ctx.value: {
         const left = this.popWithCheck('operation', ctx);
         this.push(left);
+        break;
       }
       case !!ctx.filterpath: {
         const left = this.popWithCheck('operation', ctx);
         this.push(left);
+        break;
       }
     }
   }

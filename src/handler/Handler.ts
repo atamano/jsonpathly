@@ -208,12 +208,14 @@ export class Handler {
   };
 
   handleNumericLiteral = (payload: unknown, tree: NumericLiteral): unknown => {
-    if (isArray(payload) && tree.value < payload.length) {
-      return payload[tree.value];
+    if (!isArray(payload) && !isString(payload)) {
+      return;
     }
 
-    if (isString(payload) && tree.value < payload.length) {
-      return payload[tree.value];
+    const index = tree.value < 0 && payload.length ? payload.length + (tree.value % payload.length) : tree.value;
+
+    if (index < payload.length) {
+      return payload[index];
     }
   };
 

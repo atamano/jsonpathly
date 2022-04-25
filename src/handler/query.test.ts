@@ -88,6 +88,7 @@ describe('query with dot dot notations', () => {
 
 describe('query with bracket numeric value', () => {
   const textCases = [
+    { path: `$.arrayOfNumber[-1]`, expected: 9 },
     { path: `$.arrayOfNumber[1]`, expected: 2 },
     { path: `$.arrayOfNumber[1,3,5]`, expected: [2, 4, 6] },
     { path: `$.arrayOfNumber[10,11,12]`, expected: [] },
