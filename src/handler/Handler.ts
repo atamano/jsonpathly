@@ -15,7 +15,7 @@ import {
   SubscriptDotDot,
   Unions,
 } from '../parser/types';
-import { isArray, isDefined, isNumber, isObject, isString } from './helper';
+import { isArray, isDefined, isNumber, isPlainObject, isString } from './helper';
 
 export class Handler {
   rootPayload: unknown;
@@ -25,7 +25,7 @@ export class Handler {
   }
 
   handleIdentifier = (payload: unknown, tree: Identifier): unknown => {
-    if (!isObject(payload)) {
+    if (!isPlainObject(payload)) {
       return;
     }
 
@@ -37,7 +37,7 @@ export class Handler {
   };
 
   handleWildcard = (payload: unknown): unknown[] => {
-    if (!isObject(payload) && !isArray(payload)) {
+    if (!isPlainObject(payload) && !isArray(payload)) {
       return [];
     }
 
@@ -248,7 +248,7 @@ export class Handler {
   };
 
   handleStringLiteral = (payload: unknown, tree: StringLiteral): unknown => {
-    if (!isObject(payload) || !(tree.value in payload)) {
+    if (!isPlainObject(payload) || !(tree.value in payload)) {
       return;
     }
 
@@ -256,7 +256,7 @@ export class Handler {
   };
 
   handleUnions = (payload: unknown, tree: Unions): unknown => {
-    if (!isObject(payload)) {
+    if (!isPlainObject(payload)) {
       return [];
     }
 
@@ -307,7 +307,7 @@ export class Handler {
             }
           }
         }
-        if (isObject(payload)) {
+        if (isPlainObject(payload)) {
           const isValid = this.handleFilterExpressionContent(payload, tree.value);
           if (isValid) {
             results = results.concat(payload);
@@ -368,7 +368,7 @@ export class Handler {
       }
     }
 
-    if (isObject(payload)) {
+    if (isPlainObject(payload)) {
       for (const value of Object.values(payload)) {
         const result = this.handleSubscriptDotdotRecursive(value, tree);
         results = results.concat(result);
@@ -421,7 +421,7 @@ export class Handler {
   handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
     switch (tree.value.type) {
       case 'identifier': {
-        if (!isObject(payload)) {
+        if (!isPlainObject(payload)) {
           return;
         }
         const result = this.handleIdentifier(payload, tree.value);

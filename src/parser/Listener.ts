@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { RuleContext } from 'antlr4ts/RuleContext';
-import { default as isPlainObjet } from 'lodash.isplainobject';
 import { JSONPathValidationError } from './errors';
 import { JSONPathListener } from './generated/JSONPathListener';
 import {
@@ -42,7 +41,7 @@ import {
 type StackType = any;
 
 const TYPE_CHECK_MAPPER = {
-  simpleObject: (node: StackType): node is Record<string, unknown> => isPlainObjet(node),
+  simpleObject: (node: StackType): node is object => typeof node === 'object',
   simpleArray: (node: StackType): node is unknown[] => Array.isArray(node),
   root: (node: StackType): node is Root => 'type' in node && node.type === 'root',
   value: (node: StackType): node is Value => 'type' in node && node.type === 'value',

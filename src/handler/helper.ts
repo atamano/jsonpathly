@@ -1,11 +1,19 @@
-import { default as isPlainObject } from 'lodash.isplainobject';
-
 export const isArray = (item: unknown): item is unknown[] => {
   return Array.isArray(item);
 };
 
-export const isObject = (item: unknown): item is Record<string, unknown> => {
-  return isPlainObject(item);
+// https://github.com/reduxjs/redux/blob/master/src/utils/isPlainObject.ts
+export const isPlainObject = (item: unknown): item is Record<string, unknown> => {
+  if (typeof item !== 'object' || item === null) {
+    return false;
+  }
+
+  let proto = item;
+  while (Object.getPrototypeOf(proto) !== null) {
+    proto = Object.getPrototypeOf(proto);
+  }
+
+  return Object.getPrototypeOf(item) === proto;
 };
 
 export const isNumber = (item: unknown): item is number => {
