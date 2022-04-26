@@ -466,6 +466,34 @@ describe('query with return array option', () => {
   });
 });
 
+describe('query with regexp operator', () => {
+  const REG_PAYLOAD = ['Hello World !', 'hello Earth !', 'Good Morning'];
+  const textCases = [
+    {
+      path: `$[?(@ =~ /hello/i )]`,
+      expected: [REG_PAYLOAD[0], REG_PAYLOAD[1]],
+    },
+    {
+      path: `$[?(@ =~ /World/g )]`,
+      expected: [REG_PAYLOAD[0]],
+    },
+    {
+      path: `$[?(@ =~ /bad/g )]`,
+      expected: [],
+    },
+    {
+      path: `$[?(@ =~ /.*/g )]`,
+      expected: REG_PAYLOAD,
+    },
+  ];
+
+  test.each(textCases)('query(%s)', ({ path, expected }) => {
+    const res = query(REG_PAYLOAD, path);
+
+    expect(res).toEqual(expected);
+  });
+});
+
 describe('query with hide exception option', () => {
   const testCases = [
     { path: '$.bad', expected: [], options: { returnArray: true, hideExceptions: true } },

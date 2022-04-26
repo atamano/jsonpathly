@@ -13,6 +13,7 @@ GT : '>' ;
 LE : '<=' ;
 LT : '<' ;
 NE : '!=' ;
+REG : '=~' ;
 IN : ' in ' ;
 NIN : ' nin ' ;
 SUB : ' subsetof ' ;
@@ -40,6 +41,8 @@ QUESTION : '?' ;
 MINUS_SP: '- ';
 PLUS: '+';
 DIV: '/';
+
+REGEX_EXPR: '/'.*?'/'([gimy])*;
 
 jsonpath
    : ROOT_VALUE subscript? EOF
@@ -109,6 +112,7 @@ expression
    | expression AND expression
    | expression OR expression
    | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | SIZO| NON | SIZ ) filterarg
+   | filterarg REG REGEX_EXPR
    | filterpath
    ;
 

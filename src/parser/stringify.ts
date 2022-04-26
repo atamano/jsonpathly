@@ -29,6 +29,7 @@ const OPERATOR: Record<Comparator['operator'], string> = {
   gt: '>',
   ge: '>=',
   in: 'in',
+  reg: '=~',
   nin: 'nin',
   subsetof: 'subsetof',
   anyof: 'anyof',

@@ -422,6 +422,22 @@ export default class Listener implements JSONPathListener {
         this.push({ type: 'groupExpression', value });
         break;
       }
+      case !!ctx.REGEX_EXPR(): {
+        const right = ctx.REGEX_EXPR()!.text;
+        const left = this.popWithCheck('operationContent', ctx);
+
+        this.push({
+          type: 'comparator',
+          operator: 'reg',
+          left,
+          right: {
+            type: 'value',
+            value: right,
+            subtype: 'regex',
+          },
+        });
+        break;
+      }
       case !!ctx.tryGetRuleContext(1, FilterargContext): {
         const right = this.popWithCheck('operationContent', ctx);
         const left = this.popWithCheck('operationContent', ctx);

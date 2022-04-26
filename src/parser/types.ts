@@ -14,8 +14,9 @@ export type ValueString = { type: 'value'; value: string; subtype: 'string' };
 export type ValueBoolean = { type: 'value'; value: boolean; subtype: 'boolean' };
 export type ValueNumber = { type: 'value'; value: number; subtype: 'number' };
 export type ValueNull = { type: 'value'; value: null; subtype: 'null' };
+export type ValueRegex = { type: 'value'; value: string; subtype: 'regex' };
 
-export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | ValueArray | ValueObject;
+export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | ValueArray | ValueObject | ValueRegex;
 
 export type NotExpression = {
   type: 'notExpression';
@@ -46,25 +47,27 @@ export type Slices = {
   step: number | null;
 };
 
-export type Comparator = {
-  type: 'comparator';
-  operator:
-    | 'eq'
-    | 'ne'
-    | 'lt'
-    | 'le'
-    | 'gt'
-    | 'ge'
-    | 'in'
-    | 'nin'
-    | 'subsetof'
-    | 'anyof'
-    | 'noneof'
-    | 'size'
-    | 'sizeof';
-  left: Operation;
-  right: Operation;
-};
+export type Comparator =
+  | {
+      type: 'comparator';
+      operator:
+        | 'eq'
+        | 'ne'
+        | 'lt'
+        | 'le'
+        | 'gt'
+        | 'ge'
+        | 'in'
+        | 'nin'
+        | 'subsetof'
+        | 'anyof'
+        | 'noneof'
+        | 'size'
+        | 'sizeof';
+      left: Operation;
+      right: Operation;
+    }
+  | { type: 'comparator'; operator: 'reg'; left: Operation; right: ValueRegex };
 
 export type SubscriptDotContent = Identifier | NumericLiteral | Wildcard;
 

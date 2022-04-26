@@ -174,6 +174,15 @@ export class Handler {
         }
         return false;
       }
+      case 'reg': {
+        if (isString(leftValue) && isString(rightValue)) {
+          const flags = rightValue.replace(/.*\/([gimy]*)$/, '$1');
+          const pattern = rightValue.replace(new RegExp('^/(.*?)/' + flags + '$'), '$1');
+
+          return !!leftValue.match(new RegExp(pattern, flags));
+        }
+        return false;
+      }
     }
   };
 
