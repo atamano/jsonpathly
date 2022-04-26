@@ -10,9 +10,6 @@ export type JSONPathOptions = {
 export const query = (payload: unknown, path: string, options?: JSONPathOptions): unknown => {
   try {
     const { tree, isIndefinite } = parse(path);
-    if (!tree) {
-      return;
-    }
 
     const handler = new Handler(payload);
     const result = handler.handleSubscript(payload, tree.next);

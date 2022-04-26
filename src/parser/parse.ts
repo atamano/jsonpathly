@@ -8,7 +8,7 @@ import CustomJSONPathListener from './Listener';
 import { Root } from './types';
 
 type ParseResponse = {
-  tree: Root | undefined;
+  tree: Root;
   isIndefinite: boolean;
 };
 

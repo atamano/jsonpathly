@@ -193,11 +193,14 @@ export class JSONPathParser extends Parser {
 			this.state = 49;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case JSONPathParser.CURRENT_VALUE:
-			case JSONPathParser.ROOT_VALUE:
+			case JSONPathParser.PAREN_LEFT:
 				{
 				this.state = 43;
-				this.filterpath();
+				this.match(JSONPathParser.PAREN_LEFT);
+				this.state = 44;
+				this.filterarg(0);
+				this.state = 45;
+				this.match(JSONPathParser.PAREN_RIGHT);
 				}
 				break;
 			case JSONPathParser.TRUE:
@@ -208,18 +211,15 @@ export class JSONPathParser extends Parser {
 			case JSONPathParser.STRING:
 			case JSONPathParser.NUMBER:
 				{
-				this.state = 44;
+				this.state = 47;
 				this.value();
 				}
 				break;
-			case JSONPathParser.PAREN_LEFT:
+			case JSONPathParser.CURRENT_VALUE:
+			case JSONPathParser.ROOT_VALUE:
 				{
-				this.state = 45;
-				this.match(JSONPathParser.PAREN_LEFT);
-				this.state = 46;
-				this.filterarg(0);
-				this.state = 47;
-				this.match(JSONPathParser.PAREN_RIGHT);
+				this.state = 48;
+				this.filterpath();
 				}
 				break;
 			default:
@@ -244,8 +244,8 @@ export class JSONPathParser extends Parser {
 						_localctx = new FilterargContext(_parentctx, _parentState);
 						this.pushNewRecursionContext(_localctx, _startState, JSONPathParser.RULE_filterarg);
 						this.state = 51;
-						if (!(this.precpred(this._ctx, 2))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 2)");
+						if (!(this.precpred(this._ctx, 4))) {
+							throw this.createFailedPredicateException("this.precpred(this._ctx, 4)");
 						}
 						this.state = 52;
 						_la = this._input.LA(1);
@@ -260,7 +260,7 @@ export class JSONPathParser extends Parser {
 							this.consume();
 						}
 						this.state = 53;
-						this.filterarg(3);
+						this.filterarg(5);
 						}
 						break;
 
@@ -269,8 +269,8 @@ export class JSONPathParser extends Parser {
 						_localctx = new FilterargContext(_parentctx, _parentState);
 						this.pushNewRecursionContext(_localctx, _startState, JSONPathParser.RULE_filterarg);
 						this.state = 54;
-						if (!(this.precpred(this._ctx, 1))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 1)");
+						if (!(this.precpred(this._ctx, 3))) {
+							throw this.createFailedPredicateException("this.precpred(this._ctx, 3)");
 						}
 						this.state = 56;
 						this._errHandler.sync(this);
@@ -293,7 +293,7 @@ export class JSONPathParser extends Parser {
 						}
 
 						this.state = 58;
-						this.filterarg(2);
+						this.filterarg(4);
 						}
 						break;
 					}
@@ -1261,10 +1261,10 @@ export class JSONPathParser extends Parser {
 	private filterarg_sempred(_localctx: FilterargContext, predIndex: number): boolean {
 		switch (predIndex) {
 		case 0:
-			return this.precpred(this._ctx, 2);
+			return this.precpred(this._ctx, 4);
 
 		case 1:
-			return this.precpred(this._ctx, 1);
+			return this.precpred(this._ctx, 3);
 		}
 		return true;
 	}
@@ -1313,12 +1313,12 @@ export class JSONPathParser extends Parser {
 		"\x03\x02\x02\x02\x1C\xAD\x03\x02\x02\x02\x1E\xBC\x03\x02\x02\x02 \xBE" +
 		"\x03\x02\x02\x02\"\xCF\x03\x02\x02\x02$\xD8\x03\x02\x02\x02&(\x07\x05" +
 		"\x02\x02\')\x05\x06\x04\x02(\'\x03\x02\x02\x02()\x03\x02\x02\x02)*\x03" +
-		"\x02\x02\x02*+\x07\x02\x02\x03+\x03\x03\x02\x02\x02,-\b\x03\x01\x02-4" +
-		"\x05\x1A\x0E\x02.4\x05$\x13\x02/0\x07!\x02\x0201\x05\x04\x03\x0212\x07" +
-		"\"\x02\x0224\x03\x02\x02\x023,\x03\x02\x02\x023.\x03\x02\x02\x023/\x03" +
-		"\x02\x02\x024?\x03\x02\x02\x0256\f\x04\x02\x0267\t\x02\x02\x027>\x05\x04" +
-		"\x03\x058:\f\x03\x02\x029;\t\x03\x02\x02:9\x03\x02\x02\x02:;\x03\x02\x02" +
-		"\x02;<\x03\x02\x02\x02<>\x05\x04\x03\x04=5\x03\x02\x02\x02=8\x03\x02\x02" +
+		"\x02\x02\x02*+\x07\x02\x02\x03+\x03\x03\x02\x02\x02,-\b\x03\x01\x02-." +
+		"\x07!\x02\x02./\x05\x04\x03\x02/0\x07\"\x02\x0204\x03\x02\x02\x0214\x05" +
+		"$\x13\x0224\x05\x1A\x0E\x023,\x03\x02\x02\x0231\x03\x02\x02\x0232\x03" +
+		"\x02\x02\x024?\x03\x02\x02\x0256\f\x06\x02\x0267\t\x02\x02\x027>\x05\x04" +
+		"\x03\x078:\f\x05\x02\x029;\t\x03\x02\x02:9\x03\x02\x02\x02:;\x03\x02\x02" +
+		"\x02;<\x03\x02\x02\x02<>\x05\x04\x03\x06=5\x03\x02\x02\x02=8\x03\x02\x02" +
 		"\x02>A\x03\x02\x02\x02?=\x03\x02\x02\x02?@\x03\x02\x02\x02@\x05\x03\x02" +
 		"\x02\x02A?\x03\x02\x02\x02BC\x07\x04\x02\x02CE\x05\b\x05\x02DF\x05\x06" +
 		"\x04\x02ED\x03\x02\x02\x02EF\x03\x02\x02\x02FQ\x03\x02\x02\x02GH\x07\x06" +
@@ -1416,12 +1416,6 @@ export class JsonpathContext extends ParserRuleContext {
 
 
 export class FilterargContext extends ParserRuleContext {
-	public filterpath(): FilterpathContext | undefined {
-		return this.tryGetRuleContext(0, FilterpathContext);
-	}
-	public value(): ValueContext | undefined {
-		return this.tryGetRuleContext(0, ValueContext);
-	}
 	public PAREN_LEFT(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.PAREN_LEFT, 0); }
 	public filterarg(): FilterargContext[];
 	public filterarg(i: number): FilterargContext;
@@ -1437,6 +1431,12 @@ export class FilterargContext extends ParserRuleContext {
 	public DIV(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.DIV, 0); }
 	public PLUS(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.PLUS, 0); }
 	public MINUS_SP(): TerminalNode | undefined { return this.tryGetToken(JSONPathParser.MINUS_SP, 0); }
+	public value(): ValueContext | undefined {
+		return this.tryGetRuleContext(0, ValueContext);
+	}
+	public filterpath(): FilterpathContext | undefined {
+		return this.tryGetRuleContext(0, FilterpathContext);
+	}
 	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
 		super(parent, invokingState);
 	}

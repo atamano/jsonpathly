@@ -26,7 +26,6 @@ import {
   Identifier,
   Indexes,
   NumericLiteral,
-  Operation,
   OperationContent,
   Root,
   Slices,
@@ -47,7 +46,6 @@ const TYPE_CHECK_MAPPER = {
   simpleArray: (node: StackType): node is unknown[] => Array.isArray(node),
   root: (node: StackType): node is Root => 'type' in node && node.type === 'root',
   value: (node: StackType): node is Value => 'type' in node && node.type === 'value',
-  operation: (node: StackType): node is Operation => 'type' in node && node.type === 'operation',
   operationContent: (node: StackType): node is OperationContent =>
     'type' in node &&
     typeof node.type === 'string' &&
@@ -85,7 +83,7 @@ export default class Listener implements JSONPathListener {
   _stack: StackType[] = [];
   _isIndefinite = false;
 
-  public getTree(): Root | undefined {
+  public getTree(): Root {
     return this.popWithCheck('root', null);
   }
 
@@ -107,6 +105,7 @@ export default class Listener implements JSONPathListener {
       return value as TypeGardReturn<typeof TYPE_CHECK_MAPPER[T]>;
     }
 
+    /* istanbul ignore next */
     throw new JSONPathValidationError(`bad type returned for ${key}`, ctx);
   }
 
@@ -287,9 +286,6 @@ export default class Listener implements JSONPathListener {
         this.push({ type: 'current', next: next });
         break;
       }
-      default: {
-        throw new JSONPathValidationError('bad filter path', ctx);
-      }
     }
   }
 
@@ -378,9 +374,7 @@ export default class Listener implements JSONPathListener {
       end = Number.parseInt(ctx.NUMBER(0).text);
     }
 
-    if (!colon0 && number0) {
-      start = Number.parseInt(ctx.NUMBER(0).text);
-    } else if (colon0 && number0 && number0.sourceInterval.a < colon0.sourceInterval.a) {
+    if (colon0 && number0 && number0.sourceInterval.a < colon0.sourceInterval.a) {
       start = Number.parseInt(ctx.NUMBER(0).text);
     }
 
@@ -554,20 +548,19 @@ export default class Listener implements JSONPathListener {
             break;
           }
         }
+        break;
       }
-      case !!ctx.tryGetRuleContext(0, FilterargContext): {
-        if (!!ctx.PAREN_LEFT()) {
-          const value = this.popWithCheck('operationContent', ctx);
-          this.push({ type: 'groupOperation', value });
-          break;
-        }
+      case !!ctx.PAREN_LEFT(): {
+        const value = this.popWithCheck('operationContent', ctx);
+        this.push({ type: 'groupOperation', value });
+        break;
       }
-      case !!ctx.value: {
+      case !!ctx.value(): {
         const left = this.popWithCheck('operationContent', ctx);
         this.push(left);
         break;
       }
-      case !!ctx.filterpath: {
+      case !!ctx.filterpath(): {
         const left = this.popWithCheck('operationContent', ctx);
         this.push(left);
         break;

@@ -46,11 +46,11 @@ jsonpath
    ;
 
 filterarg
-   : filterpath
-   | value
-   | PAREN_LEFT filterarg PAREN_RIGHT
+   : PAREN_LEFT filterarg PAREN_RIGHT
    | filterarg ( STAR | DIV ) filterarg
    | filterarg ( PLUS | MINUS_SP )? filterarg
+   | value
+   | filterpath
    ;
 
 subscript

@@ -160,6 +160,18 @@ describe('query with comparators', () => {
       expected: [],
     },
     {
+      path: `$.arraySimpleObjects[?(@.number*2==@.number+@.number)]..number`,
+      expected: [2, 5, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@)]..number`,
+      expected: [2, 5, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?($)]..number`,
+      expected: [2, 5, 7],
+    },
+    {
       path: `$.arraySimpleObjects[?(@.number>="5")].number`,
       expected: [],
     },
