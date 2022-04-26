@@ -1,3 +1,4 @@
+import { isUndefined } from './helper';
 import { parse } from '../parser/parse';
 import { Handler } from './Handler';
 
@@ -17,7 +18,7 @@ export const query = (payload: unknown, path: string, options?: JSONPathOptions)
     const result = handler.handleSubscript(payload, tree.next);
 
     if (!isIndefinite && options?.returnArray) {
-      if (typeof result === 'undefined') {
+      if (isUndefined(result)) {
         return [];
       }
       return [result];
@@ -28,7 +29,9 @@ export const query = (payload: unknown, path: string, options?: JSONPathOptions)
     if (!options?.hideExceptions) {
       throw e;
     }
-    // eslint-disable-next-line no-console
-    console.log(e);
+
+    if (options?.returnArray) {
+      return [];
+    }
   }
 };

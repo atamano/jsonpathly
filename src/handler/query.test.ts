@@ -51,6 +51,7 @@ describe('query with dot notations', () => {
     { path: `$.nestedObject.object`, expected: PAYLOAD.nestedObject.object },
     { path: `$.nestedObject.object.test`, expected: PAYLOAD.nestedObject.object.test },
     { path: `$.*`, expected: Object.values(PAYLOAD) },
+    { path: `$.*.object.test`, expected: ['1'] },
     { path: `$.nestedObject.*`, expected: Object.values(PAYLOAD.nestedObject) },
   ];
 
@@ -96,6 +97,9 @@ describe('query with bracket numeric value', () => {
     { path: `$.arrayOfNumber[10,1,12]`, expected: [2] },
     { path: `$.arrayOfNumber[10]`, expected: undefined },
     { path: `$.string[0]`, expected: PAYLOAD.string[0] },
+    { path: `$.string[0,1,2]`, expected: [] },
+    { path: `$.number[0]`, expected: undefined },
+    { path: `$.number.0`, expected: undefined },
   ];
 
   test.each(textCases)('query(%s)', ({ path, expected }) => {
@@ -311,6 +315,10 @@ describe('query with comparator operations', () => {
       expected: [7],
     },
     {
+      path: `$.arraySimpleObjects[?(@.number>$.number+7-10/0)]..number`,
+      expected: [],
+    },
+    {
       path: `$.arraySimpleObjects[?(@.number>$.number+2+2*2)]..number`,
       expected: [7],
     },
@@ -426,6 +434,10 @@ describe('query with return array option', () => {
       expected: [PAYLOAD.number],
     },
     {
+      path: `$.*`,
+      expected: Object.values(PAYLOAD),
+    },
+    {
       path: `$.string`,
       expected: [PAYLOAD.string],
     },
@@ -437,6 +449,30 @@ describe('query with return array option', () => {
 
   test.each(textCases)('query(%s)', ({ path, expected }) => {
     const res = query(PAYLOAD, path, { returnArray: true });
+
+    expect(res).toEqual(expected);
+  });
+});
+
+describe('query with hide exception option', () => {
+  const testCases = [
+    { path: '$.bad', expected: [], options: { returnArray: true, hideExceptions: true } },
+    { path: 'bad', expected: [], options: { returnArray: true, hideExceptions: true } },
+    { path: 'bad', expected: undefined, options: { hideExceptions: true } },
+    { path: '', expected: undefined, options: { hideExceptions: true } },
+    { path: '$...bad', expected: undefined, options: { hideExceptions: true } },
+    { path: '$.$', expected: undefined, options: { hideExceptions: true } },
+    { path: `$["bad Quote']`, expected: undefined, options: { hideExceptions: true } },
+    { path: `$[bad Quote']`, expected: undefined, options: { hideExceptions: true } },
+    { path: `$\{bad\}`, expected: undefined, options: { hideExceptions: true } },
+    { path: `@`, expected: undefined, options: { hideExceptions: true } },
+    { path: `$[?(@.test == {'1': { hideExceptions: true }})]`, expected: undefined, options: { hideExceptions: true } },
+    { path: `$[1:2:3:4]`, expected: undefined, options: { hideExceptions: true } },
+    { path: `$[[1:2:3]]`, expected: undefined, options: { hideExceptions: true } },
+  ];
+
+  test.each(testCases)('error(%s)', ({ path, expected, options }) => {
+    const res = query(PAYLOAD, path, options);
 
     expect(res).toEqual(expected);
   });
