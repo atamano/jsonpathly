@@ -1,10 +1,11 @@
 {
   "name": "jsonpathly",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Query json with jsonpath expressions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "generate": "antlr4ts ./src/parser/generated/JSONPath.g4",
     "test": "jest --config jestconfig.json",
     "ci:test": "jest --config jestconfig.json --runInBand --ci --coverage --coverageDirectory=coverage",
     "build": "tsc",
@@ -22,7 +23,7 @@
   },
   "keywords": [
     "jsonpath",
-    "json-path",
+    "typescript",
     "json",
     "path"
   ],

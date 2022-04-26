@@ -29,7 +29,7 @@ export class Handler {
       return;
     }
 
-    if (isArray(payload) || !isObject(payload) || !(tree.value in payload)) {
+    if (!(tree.value in payload)) {
       return;
     }
 
@@ -55,6 +55,9 @@ export class Handler {
       case 'value': {
         return tree.value;
       }
+      case 'groupOperation': {
+        return this.handleOperationContent(payload, tree.value);
+      }
       case 'operation': {
         const left = this.handleOperationContent(payload, tree.left);
         const right = this.handleOperationContent(payload, tree.right);
@@ -69,6 +72,15 @@ export class Handler {
           }
           case 'minus': {
             return left - right;
+          }
+          case 'div': {
+            if (right === 0) {
+              return;
+            }
+            return left / right;
+          }
+          case 'multi': {
+            return left * right;
           }
           case '': {
             if (right > 0) {
@@ -141,6 +153,7 @@ export class Handler {
         if (!isNumber(leftValue) || !isNumber(rightValue)) {
           return false;
         }
+
         return leftValue > rightValue;
       }
       case 'ge': {
@@ -188,7 +201,7 @@ export class Handler {
       case 'groupExpression': {
         return this.handleFilterExpressionContent(payload, tree.value);
       }
-      case 'negateExpression': {
+      case 'notExpression': {
         return !this.handleFilterExpressionContent(payload, tree.value);
       }
       case 'root': {

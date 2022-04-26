@@ -307,6 +307,18 @@ describe('query with comparator operations', () => {
       expected: [7],
     },
     {
+      path: `$.arraySimpleObjects[?(@.number>$.number+7-10/10)]..number`,
+      expected: [7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>$.number+2+2*2)]..number`,
+      expected: [7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number>$.number+(2+2)*2)]..number`,
+      expected: [],
+    },
+    {
       path: `$.arraySimpleObjects[?(@.number + 2 >$.number + 8)]..number`,
       expected: [7],
     },

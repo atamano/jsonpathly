@@ -27,13 +27,14 @@ import {
   Indexes,
   NumericLiteral,
   Operation,
+  OperationContent,
   Root,
   Slices,
   StringLiteral,
   Subscript,
-  SubscriptBracket,
-  SubscriptDot,
-  SubscriptDotDot,
+  SubscriptBracketContent,
+  SubscriptDotContent,
+  SubscriptDotDotContent,
   Unions,
   Value,
 } from './types';
@@ -46,18 +47,21 @@ const TYPE_CHECK_MAPPER = {
   simpleArray: (node: StackType): node is unknown[] => Array.isArray(node),
   root: (node: StackType): node is Root => 'type' in node && node.type === 'root',
   value: (node: StackType): node is Value => 'type' in node && node.type === 'value',
-  operation: (node: StackType): node is Operation =>
-    'type' in node && typeof node.type === 'string' && ['value', 'current', 'root', 'operation'].includes(node.type),
+  operation: (node: StackType): node is Operation => 'type' in node && node.type === 'operation',
+  operationContent: (node: StackType): node is OperationContent =>
+    'type' in node &&
+    typeof node.type === 'string' &&
+    ['value', 'current', 'root', 'groupOperation', 'operation'].includes(node.type),
   subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
   unions: (node: StackType): node is Unions => 'type' in node && node.type === 'unions',
   indexes: (node: StackType): node is Indexes => 'type' in node && node.type === 'indexes',
   slices: (node: StackType): node is Slices => 'type' in node && node.type === 'slices',
   filterExpression: (node: StackType): node is FilterExpression => 'type' in node && node.type === 'filterExpression',
-  dotContent: (node: StackType): node is SubscriptDot['value'] =>
+  dotContent: (node: StackType): node is SubscriptDotContent =>
     'type' in node && ['identifier', 'numericLiteral', 'wildcard'].includes(node.type),
-  dotdotContent: (node: StackType): node is SubscriptDotDot['value'] =>
+  dotdotContent: (node: StackType): node is SubscriptDotDotContent =>
     'type' in node && ['identifier', 'wildcard', 'subscript'].includes(node.type),
-  bracketContent: (node: StackType): node is SubscriptBracket['value'] =>
+  bracketContent: (node: StackType): node is SubscriptBracketContent =>
     'type' in node &&
     [
       'identifier',
@@ -71,7 +75,7 @@ const TYPE_CHECK_MAPPER = {
     ].includes(node.type),
   expressionContent: (node: StackType): node is FilterExpression['value'] =>
     'type' in node &&
-    ['comparator', 'groupExpression', 'logicalExpression', 'negateExpression', 'current', 'root'].includes(node.type),
+    ['comparator', 'groupExpression', 'logicalExpression', 'notExpression', 'current', 'root'].includes(node.type),
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,7 +130,7 @@ export default class Listener implements JSONPathListener {
         this.push({ type: 'identifier', value: text });
         break;
       }
-      case !!ctx.WILDCARD(): {
+      case !!ctx.STAR(): {
         this.setIsIndefinite(true);
 
         this.push({ type: 'wildcard' });
@@ -178,7 +182,7 @@ export default class Listener implements JSONPathListener {
     this.setIsIndefinite(true);
 
     switch (true) {
-      case !!ctx.WILDCARD(): {
+      case !!ctx.STAR(): {
         this.push({ type: 'wildcard' });
         break;
       }
@@ -204,7 +208,7 @@ export default class Listener implements JSONPathListener {
 
   public exitDotContent(ctx: DotContentContext): void {
     switch (true) {
-      case !!ctx.WILDCARD(): {
+      case !!ctx.STAR(): {
         this.setIsIndefinite(true);
 
         this.push({ type: 'wildcard' });
@@ -400,7 +404,7 @@ export default class Listener implements JSONPathListener {
         const value = this.popWithCheck('expressionContent', ctx);
 
         this.push({
-          type: 'negateExpression',
+          type: 'notExpression',
           value,
         });
         break;
@@ -426,8 +430,8 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.tryGetRuleContext(1, FilterargContext): {
-        const right = this.popWithCheck('operation', ctx);
-        const left = this.popWithCheck('operation', ctx);
+        const right = this.popWithCheck('operationContent', ctx);
+        const left = this.popWithCheck('operationContent', ctx);
 
         switch (true) {
           case !!ctx.EQ(): {
@@ -517,35 +521,54 @@ export default class Listener implements JSONPathListener {
     switch (true) {
       case !!ctx.tryGetRuleContext(1, FilterargContext): {
         switch (true) {
+          case !!ctx.STAR(): {
+            const right = this.popWithCheck('operationContent', ctx);
+            const left = this.popWithCheck('operationContent', ctx);
+            this.push({ type: 'operation', operator: 'multi', left, right });
+            break;
+          }
+          case !!ctx.DIV(): {
+            const right = this.popWithCheck('operationContent', ctx);
+            const left = this.popWithCheck('operationContent', ctx);
+            this.push({ type: 'operation', operator: 'div', left, right });
+            break;
+          }
           case !!ctx.PLUS(): {
-            const right = this.popWithCheck('operation', ctx);
-            const left = this.popWithCheck('operation', ctx);
+            const right = this.popWithCheck('operationContent', ctx);
+            const left = this.popWithCheck('operationContent', ctx);
             this.push({ type: 'operation', operator: 'plus', left, right });
             break;
           }
-          case !!ctx.MINUS(): {
-            const right = this.popWithCheck('operation', ctx);
-            const left = this.popWithCheck('operation', ctx);
+          case !!ctx.MINUS_SP(): {
+            const right = this.popWithCheck('operationContent', ctx);
+            const left = this.popWithCheck('operationContent', ctx);
             this.push({ type: 'operation', operator: 'minus', left, right });
             break;
           }
           default: {
             // no operator occures when right value is negative, it should be validated at runtime
-            const right = this.popWithCheck('operation', ctx);
-            const left = this.popWithCheck('operation', ctx);
+            const right = this.popWithCheck('operationContent', ctx);
+            const left = this.popWithCheck('operationContent', ctx);
 
             this.push({ type: 'operation', operator: '', left, right });
             break;
           }
         }
       }
+      case !!ctx.tryGetRuleContext(0, FilterargContext): {
+        if (!!ctx.PAREN_LEFT()) {
+          const value = this.popWithCheck('operationContent', ctx);
+          this.push({ type: 'groupOperation', value });
+          break;
+        }
+      }
       case !!ctx.value: {
-        const left = this.popWithCheck('operation', ctx);
+        const left = this.popWithCheck('operationContent', ctx);
         this.push(left);
         break;
       }
       case !!ctx.filterpath: {
-        const left = this.popWithCheck('operation', ctx);
+        const left = this.popWithCheck('operationContent', ctx);
         this.push(left);
         break;
       }

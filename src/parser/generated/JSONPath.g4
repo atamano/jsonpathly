@@ -4,7 +4,7 @@ CURRENT_VALUE : '@' ;
 DOTDOT : '..' ;
 ROOT_VALUE : '$' ;
 DOT : '.' ;
-WILDCARD : '*' ;
+STAR : '*' ;
 
 AND : '&&' ;
 EQ : '==' ;
@@ -37,8 +37,9 @@ PAREN_LEFT : '(' ;
 PAREN_RIGHT : ')' ;
 QUESTION : '?' ;
 
-MINUS: '- ';
+MINUS_SP: '- ';
 PLUS: '+';
+DIV: '/';
 
 jsonpath
    : ROOT_VALUE subscript? EOF
@@ -47,7 +48,9 @@ jsonpath
 filterarg
    : filterpath
    | value
-   | filterarg ( PLUS | MINUS )? filterarg
+   | PAREN_LEFT filterarg PAREN_RIGHT
+   | filterarg ( STAR | DIV ) filterarg
+   | filterarg ( PLUS | MINUS_SP )? filterarg
    ;
 
 subscript
@@ -58,13 +61,13 @@ subscript
 
 dotdotContent
    : IDENTIFIER
-   | WILDCARD
+   | STAR
    | bracket
    ;
 
 dotContent
    : IDENTIFIER
-   | WILDCARD
+   | STAR
    | NUMBER
    ;
 
@@ -78,7 +81,7 @@ bracketContent
    | NUMBER
    | STRING
    | slices
-   | WILDCARD
+   | STAR
    | filterExpression
    | IDENTIFIER
    ;
@@ -102,9 +105,9 @@ slices
 
 expression
    : NOT expression
+   | PAREN_LEFT expression PAREN_RIGHT
    | expression AND expression
    | expression OR expression
-   | PAREN_LEFT expression PAREN_RIGHT
    | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | SIZO| NON | SIZ ) filterarg
    | filterpath
    ;
@@ -153,7 +156,6 @@ STRING
    : '"' (ESC_DOUBLE | SAFECODEPOINT_DOUBLE)* '"'
    | '\'' (ESC_SINGLE | SAFECODEPOINT_SINGLE)* '\''
    ;
-
 
 fragment ESC_SINGLE
    : '\\' (['\\/bfnrt] | UNICODE)

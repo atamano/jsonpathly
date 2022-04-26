@@ -7,7 +7,7 @@ import {
   GroupExpression,
   Identifier,
   Indexes,
-  NegateExpression,
+  NotExpression,
   NumericLiteral,
   Root,
   Slices,
@@ -18,6 +18,7 @@ import {
   Unions,
   Value,
   Wildcard,
+  GroupOperation,
 } from './types';
 
 const OPERATOR: Record<Comparator['operator'], string> = {
@@ -39,6 +40,8 @@ const OPERATOR: Record<Comparator['operator'], string> = {
 const COMP_OPERATOR: Record<Operation['operator'], string> = {
   plus: '+',
   minus: '-',
+  multi: '*',
+  div: '/',
   '': '',
 };
 
@@ -51,7 +54,8 @@ type JsonPathItem =
   | Root
   | Current
   | Value
-  | NegateExpression
+  | NotExpression
+  | GroupOperation
   | GroupExpression
   | LogicalExpression
   | Slices
@@ -112,7 +116,7 @@ export function stringify(input: JsonPathItem | null): string {
     case 'numericLiteral': {
       return `${input.value}`;
     }
-    case 'negateExpression': {
+    case 'notExpression': {
       return '!' + stringify(input.value);
     }
     case 'value': {
@@ -120,6 +124,9 @@ export function stringify(input: JsonPathItem | null): string {
     }
     case 'filterExpression': {
       return '?(' + stringify(input.value) + ')';
+    }
+    case 'groupOperation': {
+      return '(' + stringify(input.value) + ')';
     }
     case 'groupExpression': {
       return '(' + stringify(input.value) + ')';

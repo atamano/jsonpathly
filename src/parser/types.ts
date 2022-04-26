@@ -17,14 +17,19 @@ export type ValueNull = { type: 'value'; value: null; subtype: 'null' };
 
 export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | ValueArray | ValueObject;
 
-export type NegateExpression = {
-  type: 'negateExpression';
+export type NotExpression = {
+  type: 'notExpression';
   value: FilterExpressionContent;
 };
 
 export type GroupExpression = {
   type: 'groupExpression';
   value: FilterExpressionContent;
+};
+
+export type GroupOperation = {
+  type: 'groupOperation';
+  value: OperationContent;
 };
 
 export type LogicalExpression = {
@@ -61,24 +66,38 @@ export type Comparator = {
   right: Operation;
 };
 
+export type SubscriptDotContent = Identifier | NumericLiteral | Wildcard;
+
 export type SubscriptDot = {
   type: 'subscript';
   subtype: 'dot';
-  value: Identifier | NumericLiteral | Wildcard;
+  value: SubscriptDotContent;
   next: Subscript | null;
 };
+
+export type SubscriptDotDotContent = Identifier | Wildcard | SubscriptBracket;
 
 export type SubscriptDotDot = {
   type: 'subscript';
   subtype: 'dotdot';
-  value: Identifier | Wildcard | SubscriptBracket;
+  value: SubscriptDotDotContent;
   next: Subscript | null;
 };
+
+export type SubscriptBracketContent =
+  | Identifier
+  | Wildcard
+  | StringLiteral
+  | NumericLiteral
+  | FilterExpression
+  | Slices
+  | Unions
+  | Indexes;
 
 export type SubscriptBracket = {
   type: 'subscript';
   subtype: 'bracket';
-  value: Identifier | Wildcard | StringLiteral | NumericLiteral | FilterExpression | Slices | Unions | Indexes;
+  value: SubscriptBracketContent;
   next: Subscript | null;
 };
 
@@ -113,24 +132,18 @@ export type Unions = {
   values: StringLiteral[] | Identifier[];
 };
 
-export type FilterExpressionContent =
-  | Comparator
-  | GroupExpression
-  | LogicalExpression
-  | NegateExpression
-  | Current
-  | Root;
+export type FilterExpressionContent = Comparator | GroupExpression | LogicalExpression | NotExpression | Current | Root;
 
 export type FilterExpression = {
   type: 'filterExpression';
   value: FilterExpressionContent;
 };
 
-export type OperationContent = Root | Current | Value | Operation;
+export type OperationContent = Root | Current | Value | GroupOperation | Operation;
 
 export type Operation = {
   type: 'operation';
-  operator: 'plus' | 'minus' | '';
+  operator: 'plus' | 'minus' | 'multi' | 'div' | '';
   left: OperationContent;
   right: OperationContent;
 };
