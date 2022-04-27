@@ -1,15 +1,15 @@
 {
   "name": "jsonpathly",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Query json with jsonpath expressions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "generate": "antlr4ts ./src/parser/generated/JSONPath.g4",
+    "generate": "antlr4ts ./src/parser/generated/JSONPath.g4 && npm format",
     "test": "jest --config jestconfig.json",
     "ci:test": "jest --config jestconfig.json --runInBand --ci --coverage --coverageDirectory=coverage",
     "build": "tsc",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint src --ext .ts",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
