@@ -42,21 +42,28 @@ const PAYLOAD = {
 };
 
 describe('query with dot notations', () => {
+  const DOT_PAYLOAD = {
+    string: 'string',
+    array: [1, 2, 3, 4],
+    nested: {
+      object: 1,
+    },
+  };
   const textCases = [
-    { path: `$.string`, expected: PAYLOAD.string },
-    { path: `$.number`, expected: PAYLOAD.number },
-    { path: `$.arrayOfNumber`, expected: PAYLOAD.arrayOfNumber },
-    { path: `$.arrayOfNumber.2`, expected: PAYLOAD.arrayOfNumber[2] },
-    { path: `$.nestedObject`, expected: PAYLOAD.nestedObject },
-    { path: `$.nestedObject.object`, expected: PAYLOAD.nestedObject.object },
-    { path: `$.nestedObject.object.test`, expected: PAYLOAD.nestedObject.object.test },
-    { path: `$.*`, expected: Object.values(PAYLOAD) },
-    { path: `$.*.object.test`, expected: ['1'] },
-    { path: `$.nestedObject.*`, expected: Object.values(PAYLOAD.nestedObject) },
+    { payload: DOT_PAYLOAD, path: `$.string`, expected: DOT_PAYLOAD.string },
+    { payload: DOT_PAYLOAD, path: `$.array.2`, expected: DOT_PAYLOAD.array[2] },
+    { payload: DOT_PAYLOAD, path: `$.array.10`, expected: undefined },
+    { payload: DOT_PAYLOAD, path: `$.array.-1`, expected: DOT_PAYLOAD.array[3] },
+    { payload: DOT_PAYLOAD, path: `$.nested.object`, expected: DOT_PAYLOAD.nested.object },
+    { payload: DOT_PAYLOAD, path: `$.*`, expected: Object.values(DOT_PAYLOAD) },
+    { payload: DOT_PAYLOAD, path: `$.*.object`, expected: [1] },
+    { payload: DOT_PAYLOAD, path: `$.nested.*`, expected: Object.values(DOT_PAYLOAD.nested) },
+    { payload: DOT_PAYLOAD, path: `$.bad`, expected: undefined },
+    { payload: [DOT_PAYLOAD], path: `$.string`, expected: undefined },
   ];
 
-  test.each(textCases)('query(%s)', ({ path, expected }) => {
-    const res = query(PAYLOAD, path);
+  test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+    const res = query(payload, path);
 
     expect(res).toEqual(expected);
   });

@@ -8,8 +8,8 @@ export type Current = {
   next: Subscript | null;
 };
 
-export type ValueObject = { type: 'value'; value: Record<string, Value>; subtype: 'object' };
-export type ValueArray = { type: 'value'; value: string[] | number[]; subtype: 'array' };
+export type ValueObject = { type: 'value'; value: Record<string, unknown>; subtype: 'object' };
+export type ValueArray = { type: 'value'; value: unknown[]; subtype: 'array' };
 export type ValueString = { type: 'value'; value: string; subtype: 'string' };
 export type ValueBoolean = { type: 'value'; value: boolean; subtype: 'boolean' };
 export type ValueNumber = { type: 'value'; value: number; subtype: 'number' };
@@ -64,10 +64,10 @@ export type Comparator =
         | 'noneof'
         | 'size'
         | 'sizeof';
-      left: Operation;
-      right: Operation;
+      left: OperationContent;
+      right: OperationContent;
     }
-  | { type: 'comparator'; operator: 'reg'; left: Operation; right: ValueRegex };
+  | { type: 'comparator'; operator: 'reg'; left: OperationContent; right: ValueRegex };
 
 export type SubscriptDotContent = Identifier | NumericLiteral | Wildcard;
 
@@ -132,7 +132,7 @@ export type Indexes = {
 
 export type Unions = {
   type: 'unions';
-  values: StringLiteral[] | Identifier[];
+  values: (StringLiteral | Identifier)[];
 };
 
 export type FilterExpressionContent = Comparator | GroupExpression | LogicalExpression | NotExpression | Current | Root;
@@ -150,3 +150,25 @@ export type Operation = {
   left: OperationContent;
   right: OperationContent;
 };
+
+export type JsonPathElement =
+  | Root
+  | Current
+  | Value
+  | NotExpression
+  | GroupOperation
+  | GroupExpression
+  | LogicalExpression
+  | Slices
+  | Comparator
+  | SubscriptDot
+  | SubscriptDotDot
+  | SubscriptBracket
+  | Wildcard
+  | StringLiteral
+  | Identifier
+  | NumericLiteral
+  | Indexes
+  | Unions
+  | FilterExpression
+  | Operation;

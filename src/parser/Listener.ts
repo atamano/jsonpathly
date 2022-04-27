@@ -24,6 +24,7 @@ import {
   FilterExpression,
   Identifier,
   Indexes,
+  JsonPathElement,
   NumericLiteral,
   OperationContent,
   Root,
@@ -37,28 +38,24 @@ import {
   Value,
 } from './types';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type StackType = any;
-
 const TYPE_CHECK_MAPPER = {
-  simpleObject: (node: StackType): node is object => typeof node === 'object',
-  simpleArray: (node: StackType): node is unknown[] => Array.isArray(node),
-  root: (node: StackType): node is Root => 'type' in node && node.type === 'root',
-  value: (node: StackType): node is Value => 'type' in node && node.type === 'value',
-  operationContent: (node: StackType): node is OperationContent =>
+  root: (node: JsonPathElement): node is Root => 'type' in node && node.type === 'root',
+  value: (node: JsonPathElement): node is Value => 'type' in node && node.type === 'value',
+  operationContent: (node: JsonPathElement): node is OperationContent =>
     'type' in node &&
     typeof node.type === 'string' &&
     ['value', 'current', 'root', 'groupOperation', 'operation'].includes(node.type),
-  subscript: (node: StackType): node is Subscript => 'type' in node && node.type === 'subscript',
-  unions: (node: StackType): node is Unions => 'type' in node && node.type === 'unions',
-  indexes: (node: StackType): node is Indexes => 'type' in node && node.type === 'indexes',
-  slices: (node: StackType): node is Slices => 'type' in node && node.type === 'slices',
-  filterExpression: (node: StackType): node is FilterExpression => 'type' in node && node.type === 'filterExpression',
-  dotContent: (node: StackType): node is SubscriptDotContent =>
+  subscript: (node: JsonPathElement): node is Subscript => 'type' in node && node.type === 'subscript',
+  unions: (node: JsonPathElement): node is Unions => 'type' in node && node.type === 'unions',
+  indexes: (node: JsonPathElement): node is Indexes => 'type' in node && node.type === 'indexes',
+  slices: (node: JsonPathElement): node is Slices => 'type' in node && node.type === 'slices',
+  filterExpression: (node: JsonPathElement): node is FilterExpression =>
+    'type' in node && node.type === 'filterExpression',
+  dotContent: (node: JsonPathElement): node is SubscriptDotContent =>
     'type' in node && ['identifier', 'numericLiteral', 'wildcard'].includes(node.type),
-  dotdotContent: (node: StackType): node is SubscriptDotDotContent =>
+  dotdotContent: (node: JsonPathElement): node is SubscriptDotDotContent =>
     'type' in node && ['identifier', 'wildcard', 'subscript'].includes(node.type),
-  bracketContent: (node: StackType): node is SubscriptBracketContent =>
+  bracketContent: (node: JsonPathElement): node is SubscriptBracketContent =>
     'type' in node &&
     [
       'identifier',
@@ -70,7 +67,7 @@ const TYPE_CHECK_MAPPER = {
       'unions',
       'indexes',
     ].includes(node.type),
-  expressionContent: (node: StackType): node is FilterExpression['value'] =>
+  expressionContent: (node: JsonPathElement): node is FilterExpression['value'] =>
     'type' in node &&
     ['comparator', 'groupExpression', 'logicalExpression', 'notExpression', 'current', 'root'].includes(node.type),
 } as const;
@@ -79,7 +76,7 @@ const TYPE_CHECK_MAPPER = {
 type TypeGardReturn<K> = K extends (a: any) => a is infer T ? T : never;
 
 export default class Listener implements JSONPathListener {
-  _stack: StackType[] = [];
+  _stack: JsonPathElement[] = [];
   _isIndefinite = false;
 
   public getTree(): Root {
@@ -108,7 +105,7 @@ export default class Listener implements JSONPathListener {
     throw new JSONPathValidationError(`bad type returned for ${key}`, ctx);
   }
 
-  private push(node: StackType): void {
+  private push(node: JsonPathElement): void {
     this._stack.push(node);
   }
 
@@ -511,7 +508,7 @@ export default class Listener implements JSONPathListener {
       obj[key] = value.value;
     }
 
-    this.push(obj);
+    this.push({ type: 'value', subtype: 'object', value: obj });
   }
 
   public exitArray(ctx: ArrayContext): void {
@@ -523,7 +520,7 @@ export default class Listener implements JSONPathListener {
       array.unshift(value.value);
     }
 
-    this.push(array);
+    this.push({ type: 'value', subtype: 'array', value: array });
   }
 
   public exitFilterarg(ctx: FilterargContext): void {
@@ -602,12 +599,12 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.array():
-        const value = this.popWithCheck('simpleArray', ctx);
-        this.push({ type: 'value', subtype: 'array', value });
+        const value = this.popWithCheck('value', ctx);
+        this.push(value);
         break;
       case !!ctx.obj(): {
-        const value = this.popWithCheck('simpleObject', ctx);
-        this.push({ type: 'value', subtype: 'object', value });
+        const value = this.popWithCheck('value', ctx);
+        this.push(value);
         break;
       }
       case !!ctx.TRUE(): {

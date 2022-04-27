@@ -1,25 +1,4 @@
-import {
-  LogicalExpression,
-  Comparator,
-  Operation,
-  Current,
-  FilterExpression,
-  GroupExpression,
-  Identifier,
-  Indexes,
-  NotExpression,
-  NumericLiteral,
-  Root,
-  Slices,
-  StringLiteral,
-  SubscriptBracket,
-  SubscriptDot,
-  SubscriptDotDot,
-  Unions,
-  Value,
-  Wildcard,
-  GroupOperation,
-} from './types';
+import { Comparator, JsonPathElement, LogicalExpression, Operation } from './types';
 
 const OPERATOR: Record<Comparator['operator'], string> = {
   eq: '==',
@@ -51,29 +30,7 @@ const EXPR_OPERATOR: Record<LogicalExpression['operator'], string> = {
   or: '||',
 };
 
-type JsonPathItem =
-  | Root
-  | Current
-  | Value
-  | NotExpression
-  | GroupOperation
-  | GroupExpression
-  | LogicalExpression
-  | Slices
-  | Comparator
-  | SubscriptDot
-  | SubscriptDotDot
-  | SubscriptBracket
-  | Wildcard
-  | StringLiteral
-  | Identifier
-  | NumericLiteral
-  | Indexes
-  | Unions
-  | FilterExpression
-  | Operation;
-
-export function stringify(input: JsonPathItem | null): string {
+export function stringify(input: JsonPathElement | null): string {
   if (input === null) {
     return '';
   }
