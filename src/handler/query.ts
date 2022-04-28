@@ -7,14 +7,14 @@ export type JSONPathOptions = {
   returnArray?: boolean;
 };
 
-export const query = (payload: unknown, path: string, options?: JSONPathOptions): unknown => {
+export const query = (payload: unknown, path: string, options: JSONPathOptions = {}): unknown => {
   try {
     const { tree, isIndefinite } = parse(path);
 
     const handler = new Handler(payload);
     const result = handler.handleSubscript(payload, tree.next);
 
-    if (!isIndefinite && options?.returnArray) {
+    if (!isIndefinite && options.returnArray) {
       if (isUndefined(result)) {
         return [];
       }
@@ -23,11 +23,11 @@ export const query = (payload: unknown, path: string, options?: JSONPathOptions)
 
     return result;
   } catch (e) {
-    if (!options?.hideExceptions) {
+    if (!options.hideExceptions) {
       throw e;
     }
 
-    if (options?.returnArray) {
+    if (!!options.returnArray) {
       return [];
     }
   }

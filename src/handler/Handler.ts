@@ -14,8 +14,31 @@ import {
   BracketMemberContent,
   DotDot,
   Unions,
+  JsonPathElement,
 } from '../parser/types';
 import { isArray, isDefined, isNumber, isPlainObject, isString } from './helper';
+
+const isIndefinite = (item: JsonPathElement | null): boolean => {
+  if (!item) {
+    return false;
+  }
+
+  if (['dotdot', 'bracketExpression', 'wildcard'].includes(item.type)) {
+    return true;
+  }
+
+  if ('value' in item && isPlainObject(item.value) && 'type' in item && item.type !== 'value') {
+    if (isIndefinite(item.value)) {
+      return true;
+    }
+  }
+
+  if (item.type === 'subscript') {
+    return isIndefinite(item.next);
+  }
+
+  return false;
+};
 
 export class Handler {
   rootPayload: unknown;
@@ -397,8 +420,11 @@ export class Handler {
 
     for (const item of payload) {
       const res = this.handleSubscript(item, tree);
-      if (isDefined(res)) {
+
+      if (isDefined(res) && isIndefinite(tree)) {
         results = results.concat(res);
+      } else if (isDefined(res)) {
+        results.push(res);
       }
     }
 

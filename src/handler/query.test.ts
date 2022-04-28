@@ -112,6 +112,9 @@ describe('query with dot dot notations', () => {
       },
     };
     const textCases = [
+      { payload: { store: { book: [1, 2, 3] } }, path: `$.*.book`, expected: [[1, 2, 3]] },
+      { payload: { store: { book: [1, 2, 3] } }, path: `$..*..book`, expected: [[1, 2, 3]] },
+      { payload: { store: { book: [1, 2, 3] } }, path: `$..*..book[*]`, expected: [1, 2, 3] },
       { payload: PAYLOAD, path: `$..*.nested..nested`, expected: [2, 3, []] },
       { payload: PAYLOAD, path: `$..*..*[0].nested`, expected: [2] },
       { payload: PAYLOAD, path: `$..*..*[10].nested`, expected: [] },
@@ -369,6 +372,10 @@ describe('query with comparators', () => {
       expected: [PAYLOAD],
     },
     {
+      path: `$[?(@.arrayOfNumber sizeof 123)]`,
+      expected: [],
+    },
+    {
       path: `$[?(123 sizeof @.arrayOfNumber)]`,
       expected: [],
     },
@@ -382,6 +389,10 @@ describe('query with comparators', () => {
     },
     {
       path: `$[?(@.arrayOfNumber size "9")]`,
+      expected: [],
+    },
+    {
+      path: `$[?(123 size 9)]`,
       expected: [],
     },
     {

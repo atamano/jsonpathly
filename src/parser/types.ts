@@ -155,7 +155,6 @@ export type JsonPathElement =
   | ValueNumber
   | ValueNull
   | ValueRegex
-  | Value
   | Root
   | Current
   | NotExpression
@@ -164,14 +163,9 @@ export type JsonPathElement =
   | LogicalExpression
   | Slices
   | Comparator
-  | OperationContent
-  | DotContent
   | Dot
-  | DotDotContent
   | DotDot
-  | BracketMemberContent
   | BracketMember
-  | BracketExpressionContent
   | BracketExpression
   | Subscript
   | Wildcard
@@ -180,6 +174,5 @@ export type JsonPathElement =
   | NumericLiteral
   | Indexes
   | Unions
-  | FilterExpressionContent
   | FilterExpression
   | Operation;
