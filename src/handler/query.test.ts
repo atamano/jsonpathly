@@ -280,9 +280,9 @@ describe('query with comparators', () => {
   const PAYLOAD = {
     arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     arraySimpleObjects: [
-      { number: 2, string: 'ABC', exist: true, array: [1, 2, 3] },
-      { number: 5, string: 'BCD', array: [4, 5, 6] },
-      { number: 7, string: 'CDE', array: [4, 5, 6] },
+      { number: 2, string: 'ABC', exist: true, array: [1, 2, 3], str: '123' },
+      { number: 5, string: 'BCD', array: [4, 5, 6], str: '' },
+      { number: 7, string: 'CDE', array: [4, 5, 6], arr: [] },
     ],
   };
 
@@ -374,6 +374,18 @@ describe('query with comparators', () => {
     {
       path: `$[?(@.arrayOfNumber sizeof 123)]`,
       expected: [],
+    },
+    {
+      path: `$[?(@.arrayOfNumber empty)]`,
+      expected: [],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.arr empty)]`,
+      expected: [PAYLOAD.arraySimpleObjects[2]],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.str empty)]`,
+      expected: [PAYLOAD.arraySimpleObjects[1]],
     },
     {
       path: `$[?(123 sizeof @.arrayOfNumber)]`,

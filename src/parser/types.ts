@@ -67,7 +67,8 @@ export type Comparator =
       left: OperationContent;
       right: OperationContent;
     }
-  | { type: 'comparator'; operator: 'reg'; left: OperationContent; right: ValueRegex };
+  | { type: 'comparator'; operator: 'reg'; left: OperationContent; right: ValueRegex }
+  | { type: 'comparator'; operator: 'empty'; left: OperationContent; right: null };
 
 export type DotContent = Identifier | NumericLiteral | Wildcard;
 

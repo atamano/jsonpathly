@@ -21,6 +21,7 @@ ANY : ' anyof ' ;
 NON : ' noneof ' ;
 SIZO : ' sizeof ' ;
 SIZ : ' size ' ;
+EMPT : ' empty' ;
 NOT : '!' ;
 OR : '||' ;
 
@@ -116,6 +117,7 @@ expression
    | expression OR expression
    | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | SIZO| NON | SIZ ) filterarg
    | filterarg REG regex
+   | filterarg EMPT
    | filterpath
    ;
 

@@ -118,6 +118,14 @@ export class Handler {
 
   private handleComparator = (payload: unknown, tree: Comparator): boolean => {
     const leftValue = this.handleOperationContent(payload, tree.left);
+
+    if (tree.operator === 'empty') {
+      if (!isArray(leftValue) && !isString(leftValue)) {
+        return false;
+      }
+      return leftValue.length === 0;
+    }
+
     const rightValue = this.handleOperationContent(payload, tree.right);
 
     switch (tree.operator) {

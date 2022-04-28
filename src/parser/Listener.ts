@@ -470,6 +470,11 @@ export default class Listener implements JSONPathListener {
         });
         break;
       }
+      case !!ctx.EMPT(): {
+        const left = this.popWithCheck('operationContent', ctx);
+        this.push({ type: 'comparator', operator: 'empty', left, right: null });
+        break;
+      }
       case !!ctx.tryGetRuleContext(1, FilterargContext): {
         const right = this.popWithCheck('operationContent', ctx);
         const left = this.popWithCheck('operationContent', ctx);

@@ -71,3 +71,4 @@ Filters are logical expressions used to filter arrays. A typical filter would be
 | noneof   | left has no intersection with right [?(@.sizes noneof ['M', 'L'])]  |
 | sizeof   | size of left (array or string) should match right (array or string) |
 | size     | size of left (array or string) should match right (number)          |
+| empty    | left (array or string) should be empty                              |
