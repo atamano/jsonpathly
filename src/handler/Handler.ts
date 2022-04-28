@@ -1,4 +1,4 @@
-import { JSONPathValidationError } from '../parser/errors';
+import { JSONPathSyntaxError } from '../parser/errors';
 import {
   Comparator,
   FilterExpressionContent,
@@ -10,9 +10,9 @@ import {
   Slices,
   StringLiteral,
   Subscript,
-  SubscriptBracket,
-  SubscriptDot,
-  SubscriptDotDot,
+  BracketExpressionContent,
+  BracketMemberContent,
+  DotDot,
   Unions,
 } from '../parser/types';
 import { isArray, isDefined, isNumber, isPlainObject, isString } from './helper';
@@ -24,7 +24,7 @@ export class Handler {
     this.rootPayload = rootPayload;
   }
 
-  handleIdentifier = (payload: unknown, tree: Identifier): unknown => {
+  private handleIdentifier = (payload: unknown, tree: Identifier): unknown => {
     if (!isPlainObject(payload)) {
       return;
     }
@@ -36,7 +36,7 @@ export class Handler {
     return payload[tree.value];
   };
 
-  handleWildcard = (payload: unknown): unknown[] => {
+  private handleWildcard = (payload: unknown): unknown[] => {
     if (!isPlainObject(payload) && !isArray(payload)) {
       return [];
     }
@@ -44,7 +44,7 @@ export class Handler {
     return Object.values(payload);
   };
 
-  handleOperationContent = (payload: unknown, tree: OperationContent): unknown => {
+  private handleOperationContent = (payload: unknown, tree: OperationContent): unknown => {
     switch (tree.type) {
       case 'root': {
         return this.handleSubscript(this.rootPayload, tree.next);
@@ -84,7 +84,7 @@ export class Handler {
           }
           case '': {
             if (right > 0) {
-              throw new JSONPathValidationError('bad syntax on comparator opertion', null);
+              throw new JSONPathSyntaxError(0, 0, 'Missing operator in operation');
             }
             return left + right;
           }
@@ -93,7 +93,7 @@ export class Handler {
     }
   };
 
-  handleComparator = (payload: unknown, tree: Comparator): boolean => {
+  private handleComparator = (payload: unknown, tree: Comparator): boolean => {
     const leftValue = this.handleOperationContent(payload, tree.left);
     const rightValue = this.handleOperationContent(payload, tree.right);
 
@@ -176,17 +176,15 @@ export class Handler {
       }
       case 'reg': {
         if (isString(leftValue) && isString(rightValue)) {
-          const flags = rightValue.replace(/.*\/([gimy]*)$/, '$1');
-          const pattern = rightValue.replace(new RegExp('^/(.*?)/' + flags + '$'), '$1');
-
-          return !!leftValue.match(new RegExp(pattern, flags));
+          const value = rightValue.slice(1, -1);
+          return !!leftValue.match(new RegExp(value, tree.right.opts));
         }
         return false;
       }
     }
   };
 
-  handleLogicalExpression = (payload: unknown, tree: LogicalExpression): boolean => {
+  private handleLogicalExpression = (payload: unknown, tree: LogicalExpression): boolean => {
     const leftValue = this.handleFilterExpressionContent(payload, tree.left);
     const rightValue = this.handleFilterExpressionContent(payload, tree.right);
     switch (tree.operator) {
@@ -199,7 +197,7 @@ export class Handler {
     }
   };
 
-  handleFilterExpressionContent = (payload: unknown, tree: FilterExpressionContent): boolean => {
+  private handleFilterExpressionContent = (payload: unknown, tree: FilterExpressionContent): boolean => {
     switch (tree.type) {
       case 'logicalExpression': {
         return this.handleLogicalExpression(payload, tree);
@@ -222,7 +220,7 @@ export class Handler {
     }
   };
 
-  handleNumericLiteral = (payload: unknown, tree: NumericLiteral): unknown => {
+  private handleNumericLiteral = (payload: unknown, tree: NumericLiteral): unknown => {
     if (!isArray(payload) && !isString(payload)) {
       return;
     }
@@ -234,7 +232,7 @@ export class Handler {
     }
   };
 
-  handleSlices = (payload: unknown, tree: Slices): unknown[] => {
+  private handleSlices = (payload: unknown, tree: Slices): unknown[] => {
     const results = [];
 
     if (!isArray(payload)) {
@@ -256,7 +254,7 @@ export class Handler {
     return results;
   };
 
-  handleStringLiteral = (payload: unknown, tree: StringLiteral): unknown => {
+  private handleStringLiteral = (payload: unknown, tree: StringLiteral): unknown => {
     if (!isPlainObject(payload) || !(tree.value in payload)) {
       return;
     }
@@ -264,7 +262,7 @@ export class Handler {
     return payload[tree.value];
   };
 
-  handleUnions = (payload: unknown, tree: Unions): unknown => {
+  private handleUnions = (payload: unknown, tree: Unions): unknown[] => {
     if (!isPlainObject(payload)) {
       return [];
     }
@@ -283,7 +281,7 @@ export class Handler {
       .filter(isDefined);
   };
 
-  handleIndexes = (payload: unknown, tree: Indexes): unknown => {
+  private handleIndexes = (payload: unknown, tree: Indexes): unknown[] => {
     if (!isArray(payload)) {
       return [];
     }
@@ -291,76 +289,23 @@ export class Handler {
     return tree.values.map((value) => this.handleNumericLiteral(payload, value)).filter(isDefined);
   };
 
-  handleBracketContent = (payload: unknown, tree: SubscriptBracket['value']): unknown => {
-    switch (tree.type) {
-      case 'identifier': {
-        return this.handleIdentifier(payload, tree);
-      }
-      case 'wildcard': {
-        return this.handleWildcard(payload);
-      }
-      case 'stringLiteral': {
-        return this.handleStringLiteral(payload, tree);
-      }
-      case 'numericLiteral': {
-        return this.handleNumericLiteral(payload, tree);
-      }
-      case 'filterExpression': {
-        let results: unknown[] = [];
-
-        if (isArray(payload)) {
-          for (const item of payload) {
-            const isValid = this.handleFilterExpressionContent(item, tree.value);
-            if (isValid) {
-              results = results.concat(item);
-            }
-          }
-        }
-        if (isPlainObject(payload)) {
-          const isValid = this.handleFilterExpressionContent(payload, tree.value);
-          if (isValid) {
-            results = results.concat(payload);
-          }
-        }
-        return results;
-      }
-      case 'slices': {
-        return this.handleSlices(payload, tree);
-      }
-      case 'indexes': {
-        return this.handleIndexes(payload, tree);
-      }
-      case 'unions': {
-        return this.handleUnions(payload, tree);
-      }
-    }
-  };
-
-  handleSubscriptBracket = (payload: unknown, tree: SubscriptBracket): unknown => {
-    const results = this.handleBracketContent(payload, tree.value);
-
-    if (!tree.next) {
-      return results;
-    }
-
-    if (['identifier', 'stringLiteral', 'numericLiteral'].includes(tree.value.type) || !isArray(results)) {
-      return this.handleSubscript(results, tree.next);
-    }
-
-    return results
-      .map((item) => this.handleSubscript(item, tree.next))
-      .filter(isDefined)
-      .flat();
-  };
-
-  handleSubscriptDotdotRecursive = (payload: unknown, tree: SubscriptDotDot): unknown[] => {
+  private handleDotdot = (payload: unknown, tree: DotDot): unknown[] => {
     const treeValue = tree.value;
     let results: unknown[] = [];
 
     switch (treeValue.type) {
-      case 'subscript': {
-        const identifierRes = this.handleSubscriptBracket(payload, treeValue);
-        results = results.concat(identifierRes);
+      case 'bracketMember': {
+        const identifierRes = this.handleBracketMemberContent(payload, treeValue.value);
+        if (isDefined(identifierRes)) {
+          results.push(identifierRes);
+        }
+        break;
+      }
+      case 'bracketExpression': {
+        if (!isPlainObject(payload)) {
+          const identifierRes = this.handleBracketExpressionContent(payload, treeValue.value);
+          results = results.concat(identifierRes);
+        }
         break;
       }
       case 'wildcard': {
@@ -372,21 +317,21 @@ export class Handler {
         const identifierRes = this.handleIdentifier(payload, treeValue);
         if (isDefined(identifierRes)) {
           results.push(identifierRes);
-          break;
         }
+        break;
       }
     }
 
     if (isPlainObject(payload)) {
       for (const value of Object.values(payload)) {
-        const result = this.handleSubscriptDotdotRecursive(value, tree);
+        const result = this.handleDotdot(value, tree);
         results = results.concat(result);
       }
     }
 
     if (isArray(payload)) {
       for (const value of payload) {
-        const result = this.handleSubscriptDotdotRecursive(value, tree);
+        const result = this.handleDotdot(value, tree);
         results = results.concat(result);
       }
     }
@@ -394,83 +339,106 @@ export class Handler {
     return results;
   };
 
-  handleSubscriptDotdot = (payload: unknown, tree: SubscriptDotDot): unknown => {
-    const results = this.handleSubscriptDotdotRecursive(payload, tree);
-
-    if (!tree.next) {
-      return results;
-    }
-
-    const treeNext = tree.next;
-    switch (treeNext.subtype) {
-      case 'dot': {
-        return results
-          .map((item) => this.handleSubscriptDot(item, treeNext))
-          .filter(isDefined)
-          .flat();
-      }
-      case 'dotdot': {
-        if (treeNext.value.type === 'wildcard') {
-          return results
-            .map((item) => this.handleSubscriptDotdot(item, treeNext))
-            .filter(isDefined)
-            .flat();
-        }
-        return this.handleSubscriptDotdot(results, treeNext);
-      }
-      case 'bracket': {
-        return results
-          .map((item) => this.handleSubscriptBracket(item, treeNext))
-          .filter(isDefined)
-          .flat();
-      }
-    }
-  };
-
-  handleSubscriptDot = (payload: unknown, tree: SubscriptDot): unknown => {
-    switch (tree.value.type) {
+  private handleBracketMemberContent = (payload: unknown, tree: BracketMemberContent): unknown => {
+    switch (tree.type) {
       case 'identifier': {
-        if (!isPlainObject(payload)) {
-          return;
-        }
-        const result = this.handleIdentifier(payload, tree.value);
-        return this.handleSubscript(result, tree.next);
+        return this.handleIdentifier(payload, tree);
       }
       case 'numericLiteral': {
-        if (!isArray(payload)) {
-          return;
-        }
-        const result = this.handleNumericLiteral(payload, tree.value);
-        return this.handleSubscript(result, tree.next);
+        return this.handleNumericLiteral(payload, tree);
       }
-      case 'wildcard': {
-        const result = this.handleWildcard(payload);
-        if (!tree.next) {
-          return result;
-        }
-
-        return result
-          .map((item) => this.handleSubscript(item, tree.next))
-          .filter(isDefined)
-          .flat();
+      case 'stringLiteral': {
+        return this.handleStringLiteral(payload, tree);
       }
     }
   };
 
-  handleSubscript = (payload: unknown, tree: Subscript | null): unknown => {
+  private handleBracketExpressionContent = (payload: unknown, tree: BracketExpressionContent): unknown[] => {
+    switch (tree.type) {
+      case 'filterExpression': {
+        let results: unknown[] = [];
+        if (isArray(payload)) {
+          for (const item of payload) {
+            const isValid = this.handleFilterExpressionContent(item, tree.value);
+            if (isValid) {
+              results = results.concat(item);
+            }
+          }
+        } else if (isPlainObject(payload)) {
+          const isValid = this.handleFilterExpressionContent(payload, tree.value);
+          if (isValid) {
+            results = results.concat(payload);
+          }
+        }
+
+        return results;
+      }
+      case 'indexes': {
+        return this.handleIndexes(payload, tree);
+      }
+      case 'unions': {
+        return this.handleUnions(payload, tree);
+      }
+      case 'wildcard': {
+        return this.handleWildcard(payload);
+      }
+      case 'slices': {
+        return this.handleSlices(payload, tree);
+      }
+    }
+  };
+
+  private handleSubscriptConcat = (payload: unknown[], tree: Subscript | null): unknown => {
+    if (!tree) {
+      return payload;
+    }
+
+    let results: unknown[] = [];
+
+    for (const item of payload) {
+      const res = this.handleSubscript(item, tree);
+      if (isDefined(res)) {
+        results = results.concat(res);
+      }
+    }
+
+    return results;
+  };
+
+  public handleSubscript = (payload: unknown, tree: Subscript | null): unknown => {
     if (tree === null) {
       return payload;
     }
 
-    switch (tree.subtype) {
-      case 'bracket': {
-        return this.handleSubscriptBracket(payload, tree);
+    const treeValue = tree.value;
+    switch (treeValue.type) {
+      case 'bracketExpression': {
+        const result = this.handleBracketExpressionContent(payload, treeValue.value);
+        return this.handleSubscriptConcat(result, tree.next);
+      }
+      case 'bracketMember': {
+        const result = this.handleBracketMemberContent(payload, treeValue.value);
+        return this.handleSubscript(result, tree.next);
       }
       case 'dot': {
-        return this.handleSubscriptDot(payload, tree);
+        switch (treeValue.value.type) {
+          case 'identifier': {
+            const result = this.handleIdentifier(payload, treeValue.value);
+            return this.handleSubscript(result, tree.next);
+          }
+          case 'numericLiteral': {
+            const result = this.handleNumericLiteral(payload, treeValue.value);
+            return this.handleSubscript(result, tree.next);
+          }
+          case 'wildcard': {
+            const result = this.handleWildcard(payload);
+            return this.handleSubscriptConcat(result, tree.next);
+          }
+        }
       }
       case 'dotdot': {
-        return this.handleSubscriptDotdot(payload, tree);
+        const result = this.handleDotdot(payload, treeValue);
+        return this.handleSubscriptConcat(result, tree.next);
       }
     }
   };

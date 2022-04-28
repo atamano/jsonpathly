@@ -13,6 +13,7 @@ import { FilterExpressionContext } from './JSONPathParser';
 import { IndexesContext } from './JSONPathParser';
 import { UnionsContext } from './JSONPathParser';
 import { SlicesContext } from './JSONPathParser';
+import { RegexContext } from './JSONPathParser';
 import { ExpressionContext } from './JSONPathParser';
 import { FilterpathContext } from './JSONPathParser';
 import { JsonContext } from './JSONPathParser';
@@ -146,6 +147,17 @@ export interface JSONPathListener extends ParseTreeListener {
    * @param ctx the parse tree
    */
   exitSlices?: (ctx: SlicesContext) => void;
+
+  /**
+   * Enter a parse tree produced by `JSONPathParser.regex`.
+   * @param ctx the parse tree
+   */
+  enterRegex?: (ctx: RegexContext) => void;
+  /**
+   * Exit a parse tree produced by `JSONPathParser.regex`.
+   * @param ctx the parse tree
+   */
+  exitRegex?: (ctx: RegexContext) => void;
 
   /**
    * Enter a parse tree produced by `JSONPathParser.expression`.

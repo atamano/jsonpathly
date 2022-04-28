@@ -1,6 +1,6 @@
 export { query } from './handler/query';
 export type { JSONPathOptions } from './handler/query';
-export { JSONPathSyntaxError, JSONPathValidationError } from './parser/errors';
+export { JSONPathSyntaxError } from './parser/errors';
 export { parse } from './parser/parse';
 export { stringify } from './parser/stringify';
 export type {
@@ -22,12 +22,14 @@ export type {
   Slices,
   StringLiteral,
   Subscript,
-  SubscriptBracket,
-  SubscriptBracketContent,
-  SubscriptDot,
-  SubscriptDotContent,
-  SubscriptDotDot,
-  SubscriptDotDotContent,
+  BracketExpression,
+  BracketExpressionContent,
+  BracketMember,
+  BracketMemberContent,
+  Dot,
+  DotContent,
+  DotDot,
+  DotDotContent,
   Unions,
   Value,
   ValueArray,
@@ -35,6 +37,7 @@ export type {
   ValueNull,
   ValueNumber,
   ValueObject,
+  ValueRegex,
   ValueString,
   Wildcard,
 } from './parser/types';

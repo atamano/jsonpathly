@@ -40,6 +40,9 @@ describe('parse', () => {
     [`$.store.book[?(@.price != $.expensive)]`, ''],
     [`$.store.book[?(@.price >= $.expensive)]`, ''],
     [`$.store.book[?(@.price > $.expensive)]`, ''],
+    [`$.store.book[?(@.price =~ /hello/)]`, ''],
+    [`$.store.book[?(@.price =~ /hello/i)]`, ''],
+    [`$.store.book[?(@.price =~ /hello/gui)]`, ''],
     [`$.store.book[?(@.price in [1,2,3])]`, ''],
     [`$..book[?(@.isbn)]`, ''],
     [`$..book[?(!@.isbn)]`, ''],
@@ -60,7 +63,7 @@ describe('parse', () => {
     [`$..*`, ''],
   ];
 
-  test.each(textCases)('parse(%s)', (input, expected) => {
+  test.each(textCases)('parsed then stringified jsonpath should not differ (%s)', (input, expected) => {
     const { tree } = parse(input);
 
     if (expected) {

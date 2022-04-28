@@ -1,48 +1,8 @@
 import { JSONPathSyntaxError } from '../parser/errors';
 import { query } from './query';
 
-const PAYLOAD = {
-  string: 'stringValue',
-  number: 0,
-  arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-  arrayOfString: ['11', '22', '33', '44', '55'],
-  nestedObject: {
-    object: {
-      test: '1',
-    },
-    array: [
-      {
-        item: {
-          nested: {
-            nested: [{ nested: { value: '123', exist: true } }],
-          },
-        },
-      },
-      {
-        item: {
-          nested: {
-            nested: [{ nested: { value: '2501' } }],
-          },
-        },
-      },
-      {
-        item: {
-          nested: {
-            nested: [{ nested: '13' }],
-          },
-        },
-      },
-    ],
-  },
-  arraySimpleObjects: [
-    { number: 2, string: 'ABC', exist: true, array: [1, 2, 3] },
-    { number: 5, string: 'BCD', array: [4, 5, 6] },
-    { number: 7, string: 'CDE', array: [4, 5, 6] },
-  ],
-};
-
 describe('query with dot notations', () => {
-  const DOT_PAYLOAD = {
+  const PAYLOAD = {
     string: 'string',
     array: [1, 2, 3, 4],
     nested: {
@@ -50,16 +10,16 @@ describe('query with dot notations', () => {
     },
   };
   const textCases = [
-    { payload: DOT_PAYLOAD, path: `$.string`, expected: DOT_PAYLOAD.string },
-    { payload: DOT_PAYLOAD, path: `$.array.2`, expected: DOT_PAYLOAD.array[2] },
-    { payload: DOT_PAYLOAD, path: `$.array.10`, expected: undefined },
-    { payload: DOT_PAYLOAD, path: `$.array.-1`, expected: DOT_PAYLOAD.array[3] },
-    { payload: DOT_PAYLOAD, path: `$.nested.object`, expected: DOT_PAYLOAD.nested.object },
-    { payload: DOT_PAYLOAD, path: `$.*`, expected: Object.values(DOT_PAYLOAD) },
-    { payload: DOT_PAYLOAD, path: `$.*.object`, expected: [1] },
-    { payload: DOT_PAYLOAD, path: `$.nested.*`, expected: Object.values(DOT_PAYLOAD.nested) },
-    { payload: DOT_PAYLOAD, path: `$.bad`, expected: undefined },
-    { payload: [DOT_PAYLOAD], path: `$.string`, expected: undefined },
+    { payload: PAYLOAD, path: `$.string`, expected: PAYLOAD.string },
+    { payload: PAYLOAD, path: `$.array.2`, expected: PAYLOAD.array[2] },
+    { payload: PAYLOAD, path: `$.array.10`, expected: undefined },
+    { payload: PAYLOAD, path: `$.array.-1`, expected: PAYLOAD.array[3] },
+    { payload: PAYLOAD, path: `$.nested.object`, expected: PAYLOAD.nested.object },
+    { payload: PAYLOAD, path: `$.*`, expected: Object.values(PAYLOAD) },
+    { payload: PAYLOAD, path: `$.*.object`, expected: [1] },
+    { payload: PAYLOAD, path: `$.nested.*`, expected: Object.values(PAYLOAD.nested) },
+    { payload: PAYLOAD, path: `$.bad`, expected: undefined },
+    { payload: [PAYLOAD], path: `$.string`, expected: undefined },
   ];
 
   test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
@@ -70,97 +30,259 @@ describe('query with dot notations', () => {
 });
 
 describe('query with dot dot notations', () => {
-  const textCases = [
-    { path: `$..notExist`, expected: [] },
-    { path: `$..["nested"].value`, expected: ['123', '2501'] },
-    { path: `$..[number, string]`, expected: [0, 'stringValue', 2, 'ABC', 5, 'BCD', 7, 'CDE'] },
-    { path: `$..arraySimpleObjects[*]["number", "string"]`, expected: [2, 'ABC', 5, 'BCD', 7, 'CDE'] },
-    { path: `$..nested.value`, expected: ['123', '2501'] },
-    { path: `$..nested["value"]`, expected: ['123', '2501'] },
-    { path: `$..nested.nested..value`, expected: ['123', '2501'] },
-    { path: `$..nested..value`, expected: ['123', '123', '123', '2501', '2501', '2501'] },
-    {
-      path: `$..nested..*..value`,
-      expected: ['123', '123', '123', '123', '123', '2501', '2501', '2501', '2501', '2501'],
-    },
-    { path: `$..*.object`, expected: [{ test: '1' }] },
-    { path: `$..*.object..test`, expected: ['1'] },
-    { path: `$..*.object.test`, expected: ['1'] },
-  ];
+  describe('query with identifier / stringLiteral / numericLiteral', () => {
+    const PAYLOAD = {
+      nested: {
+        nested: [
+          {
+            nested: 2,
+            exist: true,
+          },
+          {
+            nested: 3,
+            test: { nested: [] },
+          },
+        ],
+      },
+      other: {
+        object: {
+          test: '1',
+        },
+      },
+    };
+    const textCases = [
+      { payload: PAYLOAD, path: `$..notExist`, expected: [] },
+      {
+        payload: PAYLOAD,
+        path: `$..other`,
+        expected: [PAYLOAD.other],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..["nested"].nested..test`,
+        expected: [PAYLOAD.nested.nested[1].test],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested["nested"]..["test"]`,
+        expected: [PAYLOAD.nested.nested[1].test],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested.nested[0]`,
+        expected: [PAYLOAD.nested.nested[0]],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested.nested.1`,
+        expected: [PAYLOAD.nested.nested[1]],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested.nested.1.test`,
+        expected: [PAYLOAD.nested.nested[1].test],
+      },
+    ];
 
-  test.each(textCases)('query(%s)', ({ path, expected }) => {
-    const res = query(PAYLOAD, path);
+    test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+      const res = query(payload, path);
 
-    expect(res).toEqual(expected);
+      expect(res).toEqual(expected);
+    });
+  });
+
+  describe('query with wildcard', () => {
+    const PAYLOAD = {
+      nested: {
+        nested: [
+          {
+            nested: 2,
+            exist: true,
+          },
+          {
+            nested: 3,
+            test: { nested: [] },
+          },
+        ],
+      },
+      other: {
+        object: {
+          test: '1',
+        },
+      },
+    };
+    const textCases = [
+      { payload: PAYLOAD, path: `$..*.nested..nested`, expected: [2, 3, []] },
+      { payload: PAYLOAD, path: `$..*..*[0].nested`, expected: [2] },
+      { payload: PAYLOAD, path: `$..*..*[10].nested`, expected: [] },
+      { payload: PAYLOAD, path: `$..nested.nested[*]["nested", "exist"]`, expected: [2, true, 3] },
+      { payload: [PAYLOAD], path: `$..nested.nested[*]["nested", "exist"]`, expected: [2, true, 3] },
+      { payload: PAYLOAD, path: `$..*.object`, expected: [{ test: '1' }] },
+      { payload: PAYLOAD, path: `$..*.object..test`, expected: ['1'] },
+      { payload: PAYLOAD, path: `$..*.object.test`, expected: ['1'] },
+      { payload: [PAYLOAD], path: `$..*.object.test`, expected: ['1'] },
+    ];
+
+    test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+      const res = query(payload, path);
+
+      expect(res).toEqual(expected);
+    });
+  });
+
+  describe('query with filters', () => {
+    const PAYLOAD = {
+      nested: {
+        nested: [{ number: 1, exist: true }, { number: 2 }, { number: 3 }],
+      },
+    };
+
+    const textCases = [
+      { payload: PAYLOAD, path: `$..nested.*["number", "exist"]`, expected: [1, true, 2, 3] },
+      {
+        payload: PAYLOAD,
+        path: `$..nested[?(@.number==1)]`,
+        expected: [PAYLOAD.nested.nested[0]],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..[?(@.number < 2 )]`,
+        expected: [{ number: 1, exist: true }],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested[?(@.number>=2)]`,
+        expected: [PAYLOAD.nested.nested[1], PAYLOAD.nested.nested[2]],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested[?(@.number>=2)].number`,
+        expected: [2, 3],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested[?(@.exist)]`,
+        expected: [PAYLOAD.nested.nested[0]],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested[0,2]`,
+        expected: [PAYLOAD.nested.nested[0], PAYLOAD.nested.nested[2]],
+      },
+      {
+        payload: PAYLOAD,
+        path: `$..nested[:2]`,
+        expected: [PAYLOAD.nested.nested[0], PAYLOAD.nested.nested[1]],
+      },
+    ];
+
+    test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+      const res = query(payload, path);
+
+      expect(res).toEqual(expected);
+    });
   });
 });
 
 describe('query with bracket numeric value', () => {
+  const PAYLOAD = {
+    string: 'stringValue',
+    number: 0,
+    arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  };
+
   const textCases = [
-    { path: `$.arrayOfNumber[-1]`, expected: 9 },
-    { path: `$.arrayOfNumber[1]`, expected: 2 },
-    { path: `$.arrayOfNumber[1,3,5]`, expected: [2, 4, 6] },
-    { path: `$.arrayOfNumber[10,11,12]`, expected: [] },
-    { path: `$.arrayOfNumber[10,1,12]`, expected: [2] },
-    { path: `$.arrayOfNumber[10]`, expected: undefined },
-    { path: `$.string[0]`, expected: PAYLOAD.string[0] },
-    { path: `$.string[0,1,2]`, expected: [] },
-    { path: `$.number[0]`, expected: undefined },
-    { path: `$.number.0`, expected: undefined },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[-1]`, expected: 9 },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[1]`, expected: 2 },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[1,3,5]`, expected: [2, 4, 6] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[10,11,12]`, expected: [] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[10,1,12]`, expected: [2] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[10]`, expected: undefined },
+    { payload: PAYLOAD, path: `$.string[0]`, expected: PAYLOAD.string[0] },
+    { payload: PAYLOAD, path: `$.string[0,1,2]`, expected: [] },
+    { payload: PAYLOAD, path: `$.number[0]`, expected: undefined },
+    { payload: PAYLOAD, path: `$.number.0`, expected: undefined },
   ];
 
-  test.each(textCases)('query(%s)', ({ path, expected }) => {
-    const res = query(PAYLOAD, path);
+  test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+    const res = query(payload, path);
 
     expect(res).toEqual(expected);
   });
 });
 
 describe('query with bracket string value', () => {
+  const PAYLOAD = {
+    string: 'stringValue',
+    number: 0,
+    arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    arrayOfString: ['11', '22', '33', '44', '55'],
+    nestedObject: {
+      object: {
+        test: '1',
+      },
+    },
+  };
+
   const textCases = [
-    { path: `$["notExist"]`, undefined },
-    { path: `$["string"]`, expected: PAYLOAD.string },
+    { payload: PAYLOAD, path: `$["notExist"]`, undefined },
+    { payload: PAYLOAD, path: `$["string"]`, expected: PAYLOAD.string },
     // Different implementation depending on libraries
-    { path: `$["string", "number"]`, expected: [PAYLOAD.string, PAYLOAD.number] },
-    { path: `$["nestedObject"]["object"]`, expected: PAYLOAD.nestedObject.object },
-    { path: `$[nestedObject]`, expected: PAYLOAD.nestedObject },
-    { path: `$[*]`, expected: Object.values(PAYLOAD) },
-    { path: `$[*]["object"]`, expected: [PAYLOAD.nestedObject.object] },
+    { payload: PAYLOAD, path: `$[string, number]`, expected: [PAYLOAD.string, PAYLOAD.number] },
+    { payload: PAYLOAD, path: `$["string", "number"]`, expected: [PAYLOAD.string, PAYLOAD.number] },
+    { payload: PAYLOAD, path: `$["nestedObject"]["object"]`, expected: PAYLOAD.nestedObject.object },
+    { payload: PAYLOAD, path: `$[nestedObject]`, expected: PAYLOAD.nestedObject },
+    { payload: PAYLOAD, path: `$[*]`, expected: Object.values(PAYLOAD) },
+    { payload: PAYLOAD, path: `$[*]["object"]`, expected: [PAYLOAD.nestedObject.object] },
   ];
 
-  test.each(textCases)('query(%s)', ({ path, expected }) => {
-    const res = query(PAYLOAD, path);
+  test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+    const res = query(payload, path);
 
     expect(res).toEqual(expected);
   });
 });
 
 describe('query with array slice', () => {
+  const PAYLOAD = {
+    string: 'stringValue',
+    arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  };
+
   const textCases = [
-    { path: `$.string[1:3]`, expected: [] },
-    { path: `$.arrayOfNumber[1:3]`, expected: [2, 3] },
-    { path: `$.arrayOfNumber[-1:]`, expected: [9] },
-    { path: `$.arrayOfNumber[:3]`, expected: [1, 2, 3] },
-    { path: `$.arrayOfNumber[5:2]`, expected: [] },
-    { path: `$.arrayOfNumber[:7:2]`, expected: [1, 3, 5, 7] },
-    { path: `$.arrayOfNumber[::3]`, expected: [1, 4, 7] },
-    { path: `$.arrayOfNumber[2::3]`, expected: [3, 6, 9] },
-    { path: `$.arrayOfNumber[:2:]`, expected: [1, 2] },
-    { path: `$.arrayOfNumber[:2]`, expected: [1, 2] },
-    { path: `$.arrayOfNumber[7::]`, expected: [8, 9] },
-    { path: `$.arrayOfNumber[5::2]`, expected: [6, 8] },
-    { path: `$.arrayOfNumber[:]`, expected: PAYLOAD.arrayOfNumber },
-    { path: `$.arrayOfNumber[0:2:2]`, expected: [1] },
+    { payload: PAYLOAD, path: `$.string[1:3]`, expected: [] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[1:3]`, expected: [2, 3] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[-1:]`, expected: [9] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[:3]`, expected: [1, 2, 3] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[5:2]`, expected: [] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[:7:2]`, expected: [1, 3, 5, 7] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[::3]`, expected: [1, 4, 7] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[2::3]`, expected: [3, 6, 9] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[:2:]`, expected: [1, 2] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[:2]`, expected: [1, 2] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[7::]`, expected: [8, 9] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[5::2]`, expected: [6, 8] },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[:]`, expected: PAYLOAD.arrayOfNumber },
+    { payload: PAYLOAD, path: `$.arrayOfNumber[0:2:2]`, expected: [1] },
   ];
 
-  test.each(textCases)('query(%s)', ({ path, expected }) => {
-    const res = query(PAYLOAD, path);
+  test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+    const res = query(payload, path);
 
     expect(res).toEqual(expected);
   });
 });
 
 describe('query with comparators', () => {
+  const PAYLOAD = {
+    arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    arraySimpleObjects: [
+      { number: 2, string: 'ABC', exist: true, array: [1, 2, 3] },
+      { number: 5, string: 'BCD', array: [4, 5, 6] },
+      { number: 7, string: 'CDE', array: [4, 5, 6] },
+    ],
+  };
+
   const textCases = [
     {
       path: `$.arraySimpleObjects[?(@.number=="2")]..number`,
@@ -168,6 +290,10 @@ describe('query with comparators', () => {
     },
     {
       path: `$.arraySimpleObjects[?(@.number*2==@.number+@.number)]..number`,
+      expected: [2, 5, 7],
+    },
+    {
+      path: `$.arraySimpleObjects[?(@.number*2==@.number+@.number)]..["number"]`,
       expected: [2, 5, 7],
     },
     {
@@ -320,6 +446,15 @@ describe('query with comparators', () => {
 });
 
 describe('query with comparator operations', () => {
+  const PAYLOAD = {
+    number: 0,
+    arraySimpleObjects: [
+      { number: 2, string: 'ABC', exist: true, array: [1, 2, 3] },
+      { number: 5, string: 'BCD', array: [4, 5, 6] },
+      { number: 7, string: 'CDE', array: [4, 5, 6] },
+    ],
+  };
+
   const textCases = [
     {
       path: `$.arraySimpleObjects[?(@.number>$.number+3)]..number`,
@@ -381,13 +516,6 @@ describe('query with comparator operations', () => {
   });
 });
 
-describe('query with script expressions', () => {
-  const t = (): void => {
-    query(PAYLOAD, '$.arraySimpleObjects[(@.length-1)]');
-  };
-  expect(t).toThrow(Error);
-});
-
 describe('query with bad path', () => {
   const testCases = [
     { path: 'bad', err: JSONPathSyntaxError },
@@ -405,13 +533,22 @@ describe('query with bad path', () => {
 
   test.each(testCases)('error(%s)', ({ path, err }) => {
     const t = (): void => {
-      query(PAYLOAD, path);
+      query({ test: 1 }, path);
     };
     expect(t).toThrow(err);
   });
 });
 
 describe('query with logical expressions', () => {
+  const PAYLOAD = {
+    number: 0,
+    arraySimpleObjects: [
+      { number: 2, string: 'ABC', exist: true, array: [1, 2, 3] },
+      { number: 5, string: 'BCD', array: [4, 5, 6] },
+      { number: 7, string: 'CDE', array: [4, 5, 6] },
+    ],
+  };
+
   const textCases = [
     {
       path: `$.arraySimpleObjects[?(@.number==2 || @.number==7)].number`,
@@ -447,6 +584,12 @@ describe('query with logical expressions', () => {
 });
 
 describe('query with return array option', () => {
+  const PAYLOAD = {
+    string: 'stringValue',
+    number: 0,
+    arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  };
+
   const textCases = [
     {
       path: `$.number`,
@@ -476,26 +619,15 @@ describe('query with return array option', () => {
 describe('query with regexp operator', () => {
   const REG_PAYLOAD = ['Hello World !', 'hello Earth !', 'Good Morning'];
   const textCases = [
-    {
-      path: `$[?(@ =~ /hello/i )]`,
-      expected: [REG_PAYLOAD[0], REG_PAYLOAD[1]],
-    },
-    {
-      path: `$[?(@ =~ /World/g )]`,
-      expected: [REG_PAYLOAD[0]],
-    },
-    {
-      path: `$[?(@ =~ /bad/g )]`,
-      expected: [],
-    },
-    {
-      path: `$[?(@ =~ /.*/g )]`,
-      expected: REG_PAYLOAD,
-    },
+    { payload: REG_PAYLOAD, path: `$[?(@ =~ /hello/i )]`, expected: [REG_PAYLOAD[0], REG_PAYLOAD[1]] },
+    { payload: REG_PAYLOAD, path: `$[?(@ =~ /World/g )]`, expected: [REG_PAYLOAD[0]] },
+    { payload: REG_PAYLOAD, path: `$[?(@ =~ /bad/g )]`, expected: [] },
+    { payload: REG_PAYLOAD, path: `$[?(@ =~ /.*/g )]`, expected: REG_PAYLOAD },
+    { payload: [1], path: `$[?(@ =~ /.*/g )]`, expected: [] },
   ];
 
-  test.each(textCases)('query(%s)', ({ path, expected }) => {
-    const res = query(REG_PAYLOAD, path);
+  test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+    const res = query(payload, path);
 
     expect(res).toEqual(expected);
   });
@@ -519,7 +651,7 @@ describe('query with hide exception option', () => {
   ];
 
   test.each(testCases)('error(%s)', ({ path, expected, options }) => {
-    const res = query(PAYLOAD, path, options);
+    const res = query({ test: 1 }, path, options);
 
     expect(res).toEqual(expected);
   });

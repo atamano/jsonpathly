@@ -42,7 +42,8 @@ MINUS_SP: '- ';
 PLUS: '+';
 DIV: '/';
 
-REGEX_EXPR: '/'.*?'/'([gimy])*;
+REGEX_OPT: [gimsuy]*;
+REGEX_EXPR: '/'.*?'/';
 
 jsonpath
    : ROOT_VALUE subscript? EOF
@@ -106,13 +107,15 @@ slices
    : NUMBER? COLON NUMBER? ( COLON ( NUMBER )? )?
    ;
 
+regex : REGEX_EXPR REGEX_OPT?;
+
 expression
    : NOT expression
    | PAREN_LEFT expression PAREN_RIGHT
    | expression AND expression
    | expression OR expression
    | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | SIZO| NON | SIZ ) filterarg
-   | filterarg REG REGEX_EXPR
+   | filterarg REG regex
    | filterpath
    ;
 

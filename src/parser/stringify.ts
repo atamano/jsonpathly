@@ -42,19 +42,19 @@ export function stringify(input: JsonPathElement | null): string {
     case 'current': {
       return '@' + stringify(input.next);
     }
+    case 'dot': {
+      return '.' + stringify(input.value);
+    }
+    case 'dotdot': {
+      const res = stringify(input.value);
+      return '..' + res;
+    }
+    case 'bracketExpression':
+    case 'bracketMember': {
+      return '[' + stringify(input.value) + ']';
+    }
     case 'subscript': {
-      switch (input.subtype) {
-        case 'dot': {
-          return '.' + stringify(input.value) + stringify(input.next);
-        }
-        case 'dotdot': {
-          const res = stringify(input.value);
-          return '..' + res + stringify(input.next);
-        }
-        case 'bracket': {
-          return '[' + stringify(input.value) + ']' + stringify(input.next);
-        }
-      }
+      return stringify(input.value) + stringify(input.next);
     }
     case 'identifier': {
       return input.value;
@@ -78,6 +78,9 @@ export function stringify(input: JsonPathElement | null): string {
       return '!' + stringify(input.value);
     }
     case 'value': {
+      if (input.subtype === 'regex') {
+        return `${input.value}${input.opts}`;
+      }
       return JSON.stringify(input.value);
     }
     case 'filterExpression': {

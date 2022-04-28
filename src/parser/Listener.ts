@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { RuleContext } from 'antlr4ts/RuleContext';
-import { JSONPathValidationError } from './errors';
 import { JSONPathListener } from './generated/JSONPathListener';
 import {
   ArrayContext,
   BracketContentContext,
+  BracketContext,
   DotContentContext,
   DotdotContentContext,
   ExpressionContext,
@@ -15,6 +15,7 @@ import {
   JsonpathContext,
   JSONPathParser,
   ObjContext,
+  RegexContext,
   SlicesContext,
   SubscriptContext,
   UnionsContext,
@@ -31,31 +32,39 @@ import {
   Slices,
   StringLiteral,
   Subscript,
-  SubscriptBracketContent,
-  SubscriptDotContent,
-  SubscriptDotDotContent,
+  BracketExpression,
+  BracketExpressionContent,
+  BracketMember,
+  BracketMemberContent,
+  DotContent,
+  DotDotContent,
   Unions,
   Value,
+  ValueRegex,
 } from './types';
 
 const TYPE_CHECK_MAPPER = {
   root: (node: JsonPathElement): node is Root => 'type' in node && node.type === 'root',
   value: (node: JsonPathElement): node is Value => 'type' in node && node.type === 'value',
+  regex: (node: JsonPathElement): node is ValueRegex =>
+    'type' in node && node.type === 'value' && node.subtype === 'regex',
   operationContent: (node: JsonPathElement): node is OperationContent =>
     'type' in node &&
     typeof node.type === 'string' &&
     ['value', 'current', 'root', 'groupOperation', 'operation'].includes(node.type),
   subscript: (node: JsonPathElement): node is Subscript => 'type' in node && node.type === 'subscript',
+  bracket: (node: JsonPathElement): node is BracketMember | BracketExpression =>
+    'type' in node && ['bracketMember', 'bracketExpression'].includes(node.type),
   unions: (node: JsonPathElement): node is Unions => 'type' in node && node.type === 'unions',
   indexes: (node: JsonPathElement): node is Indexes => 'type' in node && node.type === 'indexes',
   slices: (node: JsonPathElement): node is Slices => 'type' in node && node.type === 'slices',
   filterExpression: (node: JsonPathElement): node is FilterExpression =>
     'type' in node && node.type === 'filterExpression',
-  dotContent: (node: JsonPathElement): node is SubscriptDotContent =>
+  dotContent: (node: JsonPathElement): node is DotContent =>
     'type' in node && ['identifier', 'numericLiteral', 'wildcard'].includes(node.type),
-  dotdotContent: (node: JsonPathElement): node is SubscriptDotDotContent =>
-    'type' in node && ['identifier', 'wildcard', 'subscript'].includes(node.type),
-  bracketContent: (node: JsonPathElement): node is SubscriptBracketContent =>
+  dotdotContent: (node: JsonPathElement): node is DotDotContent =>
+    'type' in node && ['identifier', 'wildcard', 'bracketMember', 'bracketExpression'].includes(node.type),
+  bracketContent: (node: JsonPathElement): node is BracketMemberContent | BracketExpressionContent =>
     'type' in node &&
     [
       'identifier',
@@ -74,6 +83,9 @@ const TYPE_CHECK_MAPPER = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TypeGardReturn<K> = K extends (a: any) => a is infer T ? T : never;
+
+const isBracketMember = (item: BracketMemberContent | BracketExpressionContent): item is BracketMemberContent =>
+  ['identifier', 'numericLiteral', 'stringLiteral'].includes(item.type);
 
 export default class Listener implements JSONPathListener {
   _stack: JsonPathElement[] = [];
@@ -102,7 +114,7 @@ export default class Listener implements JSONPathListener {
     }
 
     /* istanbul ignore next */
-    throw new JSONPathValidationError(`bad type returned for ${key}`, ctx);
+    throw new Error(`bad type returned for ${key} with token: ${ctx?.text}`);
   }
 
   private push(node: JsonPathElement): void {
@@ -173,6 +185,23 @@ export default class Listener implements JSONPathListener {
     }
   }
 
+  public exitBracket(ctx: BracketContext): void {
+    const value = this.popWithCheck('bracketContent', ctx);
+
+    if (isBracketMember(value)) {
+      this.push({
+        type: 'bracketMember',
+        value,
+      });
+      return;
+    }
+
+    this.push({
+      type: 'bracketExpression',
+      value,
+    });
+  }
+
   public exitDotdotContent(ctx: DotdotContentContext): void {
     this.setIsIndefinite(true);
 
@@ -188,14 +217,9 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.bracket(): {
-        const value = this.popWithCheck('bracketContent', ctx);
+        const value = this.popWithCheck('bracket', ctx);
 
-        this.push({
-          type: 'subscript',
-          subtype: 'bracket',
-          next: null,
-          value,
-        });
+        this.push(value);
         break;
       }
     }
@@ -235,9 +259,11 @@ export default class Listener implements JSONPathListener {
 
         this.push({
           type: 'subscript',
-          subtype: 'dot',
+          value: {
+            type: 'dot',
+            value,
+          },
           next,
-          value,
         });
         break;
       }
@@ -247,19 +273,20 @@ export default class Listener implements JSONPathListener {
 
         this.push({
           type: 'subscript',
-          subtype: 'dotdot',
-          value,
+          value: {
+            type: 'dotdot',
+            value,
+          },
           next,
         });
         break;
       }
       case !!ctx.bracket(): {
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
-        const value = this.popWithCheck('bracketContent', ctx);
+        const value = this.popWithCheck('bracket', ctx);
 
         this.push({
           type: 'subscript',
-          subtype: 'bracket',
           next,
           value,
         });
@@ -388,6 +415,18 @@ export default class Listener implements JSONPathListener {
     });
   }
 
+  public exitRegex(ctx: RegexContext): void {
+    const value = ctx.REGEX_EXPR().text;
+    const opts = ctx.REGEX_OPT()?.text || '';
+
+    this.push({
+      type: 'value',
+      subtype: 'regex',
+      value: value as ValueRegex['value'],
+      opts,
+    });
+  }
+
   public exitExpression(ctx: ExpressionContext): void {
     switch (true) {
       case !!ctx.NOT(): {
@@ -419,19 +458,15 @@ export default class Listener implements JSONPathListener {
         this.push({ type: 'groupExpression', value });
         break;
       }
-      case !!ctx.REGEX_EXPR(): {
-        const right = ctx.REGEX_EXPR()!.text;
+      case !!ctx.regex(): {
+        const right = this.popWithCheck('regex', ctx);
         const left = this.popWithCheck('operationContent', ctx);
 
         this.push({
           type: 'comparator',
           operator: 'reg',
           left,
-          right: {
-            type: 'value',
-            value: right,
-            subtype: 'regex',
-          },
+          right,
         });
         break;
       }

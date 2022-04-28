@@ -14,7 +14,7 @@ export type ValueString = { type: 'value'; value: string; subtype: 'string' };
 export type ValueBoolean = { type: 'value'; value: boolean; subtype: 'boolean' };
 export type ValueNumber = { type: 'value'; value: number; subtype: 'number' };
 export type ValueNull = { type: 'value'; value: null; subtype: 'null' };
-export type ValueRegex = { type: 'value'; value: string; subtype: 'regex' };
+export type ValueRegex = { type: 'value'; value: `/${string}/`; subtype: 'regex'; opts: string };
 
 export type Value = ValueString | ValueBoolean | ValueNumber | ValueNull | ValueArray | ValueObject | ValueRegex;
 
@@ -69,42 +69,38 @@ export type Comparator =
     }
   | { type: 'comparator'; operator: 'reg'; left: OperationContent; right: ValueRegex };
 
-export type SubscriptDotContent = Identifier | NumericLiteral | Wildcard;
+export type DotContent = Identifier | NumericLiteral | Wildcard;
 
-export type SubscriptDot = {
-  type: 'subscript';
-  subtype: 'dot';
-  value: SubscriptDotContent;
-  next: Subscript | null;
+export type Dot = {
+  type: 'dot';
+  value: DotContent;
 };
 
-export type SubscriptDotDotContent = Identifier | Wildcard | SubscriptBracket;
+export type DotDotContent = Identifier | Wildcard | BracketMember | BracketExpression;
 
-export type SubscriptDotDot = {
-  type: 'subscript';
-  subtype: 'dotdot';
-  value: SubscriptDotDotContent;
-  next: Subscript | null;
+export type DotDot = {
+  type: 'dotdot';
+  value: DotDotContent;
 };
 
-export type SubscriptBracketContent =
-  | Identifier
-  | Wildcard
-  | StringLiteral
-  | NumericLiteral
-  | FilterExpression
-  | Slices
-  | Unions
-  | Indexes;
+export type BracketMemberContent = Identifier | NumericLiteral | StringLiteral;
+export type BracketExpressionContent = Wildcard | FilterExpression | Slices | Unions | Indexes;
 
-export type SubscriptBracket = {
-  type: 'subscript';
-  subtype: 'bracket';
-  value: SubscriptBracketContent;
-  next: Subscript | null;
+export type BracketExpression = {
+  type: 'bracketExpression';
+  value: BracketExpressionContent;
 };
 
-export type Subscript = SubscriptDot | SubscriptDotDot | SubscriptBracket;
+export type BracketMember = {
+  type: 'bracketMember';
+  value: BracketMemberContent;
+};
+
+export type Subscript = {
+  type: 'subscript';
+  value: Dot | DotDot | BracketMember | BracketExpression;
+  next: Subscript | null;
+};
 
 export type Wildcard = {
   type: 'wildcard';
@@ -152,23 +148,38 @@ export type Operation = {
 };
 
 export type JsonPathElement =
+  | ValueObject
+  | ValueString
+  | ValueBoolean
+  | ValueArray
+  | ValueNumber
+  | ValueNull
+  | ValueRegex
+  | Value
   | Root
   | Current
-  | Value
   | NotExpression
   | GroupOperation
   | GroupExpression
   | LogicalExpression
   | Slices
   | Comparator
-  | SubscriptDot
-  | SubscriptDotDot
-  | SubscriptBracket
+  | OperationContent
+  | DotContent
+  | Dot
+  | DotDotContent
+  | DotDot
+  | BracketMemberContent
+  | BracketMember
+  | BracketExpressionContent
+  | BracketExpression
+  | Subscript
   | Wildcard
   | StringLiteral
   | Identifier
   | NumericLiteral
   | Indexes
   | Unions
+  | FilterExpressionContent
   | FilterExpression
   | Operation;
