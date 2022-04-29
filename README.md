@@ -28,6 +28,14 @@ const names = query(cities, '$..name');
 // [ "London", "Berlin", "Madrid", "Rome" ]
 ```
 
+## Install
+
+Install from npm:
+
+```bash
+$ npm install jsonpathly
+```
+
 JsonPath expressions always refer to a JSON structure in the same way as XPath expression are used in combination
 with an XML document. The "root member object" in JsonPath is always referred to as `$` regardless if it is an
 object or array.

@@ -1,6 +1,5 @@
-import { query } from './handler/query';
-import { JSONPathSyntaxError } from './parser/errors';
-import { parse } from './parser/parse';
-import { stringify } from './parser/stringify';
+export { JSONPathSyntaxError } from './parser/errors';
 
-export { query, JSONPathSyntaxError, parse, stringify };
+export { query } from './handler/query';
+export { parse } from './parser/parse';
+export { stringify } from './parser/stringify';

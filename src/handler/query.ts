@@ -1,15 +1,15 @@
 import { isUndefined } from './helper';
-import { parse } from '../parser/parse';
+import { parseInternal } from '../parser/parse';
 import { Handler } from './Handler';
 
-export type JSONPathOptions = {
+export type QueryOptions = {
   supressExceptions?: boolean;
   returnArray?: boolean;
 };
 
-export const query = (payload: unknown, path: string, options: JSONPathOptions = {}): unknown => {
+export const query = (payload: unknown, path: string, options: QueryOptions = {}): unknown => {
   try {
-    const { tree, isIndefinite } = parse(path);
+    const { tree, isIndefinite } = parseInternal(path);
 
     const handler = new Handler(payload);
     const result = handler.handleRoot(payload, tree);

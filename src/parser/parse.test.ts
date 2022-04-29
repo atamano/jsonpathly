@@ -73,12 +73,24 @@ describe('parse', () => {
   ];
 
   test.each(textCases)('parsed then stringified jsonpath should not differ (%s)', (input, expected) => {
-    const { tree } = parse(input);
+    const tree = parse(input);
 
     if (expected) {
       expect(stringify(tree || null)).toEqual(expected);
     } else {
       expect(stringify(tree || null)).toEqual(input.replace(/'/g, '"'));
     }
+  });
+
+  test('should not throw exceptions', () => {
+    const tree = parse('bad', { supressExceptions: true });
+
+    expect(tree).toBeNull();
+  });
+  test('should throw exceptions', () => {
+    const t = (): void => {
+      parse('bad');
+    };
+    expect(t).toThrow(Error);
   });
 });

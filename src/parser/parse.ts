@@ -12,7 +12,7 @@ type ParseResponse = {
   isIndefinite: boolean;
 };
 
-export function parse(input: string): ParseResponse {
+export function parseInternal(input: string): ParseResponse {
   const inputStream = new ANTLRInputStream(input);
   const lexer = new JSONPathLexer(inputStream);
   const tokenStream = new CommonTokenStream(lexer);
@@ -38,4 +38,20 @@ export function parse(input: string): ParseResponse {
   ParseTreeWalker.DEFAULT.walk(listener as JSONPathListener, tree);
 
   return { tree: listener.getTree(), isIndefinite: listener.isIndefinite() };
+}
+
+export type ParseOptions = {
+  supressExceptions?: boolean;
+};
+
+export function parse(input: string, options: ParseOptions = {}): Root | null {
+  try {
+    const { tree } = parseInternal(input);
+    return tree;
+  } catch (e) {
+    if (!options.supressExceptions) {
+      throw e;
+    }
+    return null;
+  }
 }
