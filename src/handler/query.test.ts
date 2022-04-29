@@ -725,19 +725,23 @@ describe('query with functions', () => {
 
 describe('query with hide exception option', () => {
   const testCases = [
-    { path: '$.bad', expected: [], options: { returnArray: true, hideExceptions: true } },
-    { path: 'bad', expected: [], options: { returnArray: true, hideExceptions: true } },
-    { path: 'bad', expected: undefined, options: { hideExceptions: true } },
-    { path: '', expected: undefined, options: { hideExceptions: true } },
-    { path: '$...bad', expected: undefined, options: { hideExceptions: true } },
-    { path: '$.$', expected: undefined, options: { hideExceptions: true } },
-    { path: `$["bad Quote']`, expected: undefined, options: { hideExceptions: true } },
-    { path: `$[bad Quote']`, expected: undefined, options: { hideExceptions: true } },
-    { path: `$\{bad\}`, expected: undefined, options: { hideExceptions: true } },
-    { path: `@`, expected: undefined, options: { hideExceptions: true } },
-    { path: `$[?(@.test == {'1': { hideExceptions: true }})]`, expected: undefined, options: { hideExceptions: true } },
-    { path: `$[1:2:3:4]`, expected: undefined, options: { hideExceptions: true } },
-    { path: `$[[1:2:3]]`, expected: undefined, options: { hideExceptions: true } },
+    { path: '$.bad', expected: [], options: { returnArray: true, supressExceptions: true } },
+    { path: 'bad', expected: [], options: { returnArray: true, supressExceptions: true } },
+    { path: 'bad', expected: undefined, options: { supressExceptions: true } },
+    { path: '', expected: undefined, options: { supressExceptions: true } },
+    { path: '$...bad', expected: undefined, options: { supressExceptions: true } },
+    { path: '$.$', expected: undefined, options: { supressExceptions: true } },
+    { path: `$["bad Quote']`, expected: undefined, options: { supressExceptions: true } },
+    { path: `$[bad Quote']`, expected: undefined, options: { supressExceptions: true } },
+    { path: `$\{bad\}`, expected: undefined, options: { supressExceptions: true } },
+    { path: `@`, expected: undefined, options: { supressExceptions: true } },
+    {
+      path: `$[?(@.test == {'1': { supressExceptions: true }})]`,
+      expected: undefined,
+      options: { supressExceptions: true },
+    },
+    { path: `$[1:2:3:4]`, expected: undefined, options: { supressExceptions: true } },
+    { path: `$[[1:2:3]]`, expected: undefined, options: { supressExceptions: true } },
   ];
 
   test.each(testCases)('error(%s)', ({ path, expected, options }) => {
