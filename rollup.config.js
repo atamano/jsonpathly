@@ -20,6 +20,6 @@ export default [
         sourcemap: true,
       },
     ],
-    plugins: [resolve(), ts({ tsconfig: 'tsconfig.json' }), commonjs()],
+    plugins: [resolve(), commonjs({ strictRequires: true }), ts({ tsconfig: 'tsconfig.json' })],
   },
 ];

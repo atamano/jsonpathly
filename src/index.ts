@@ -1,43 +1,8 @@
-export { query } from './handler/query';
-export type { JSONPathOptions } from './handler/query';
-export { JSONPathSyntaxError } from './parser/errors';
-export { parse } from './parser/parse';
-export { stringify } from './parser/stringify';
-export type {
-  Comparator,
-  Current,
-  FilterExpression,
-  FilterExpressionContent,
-  GroupExpression,
-  GroupOperation,
-  Identifier,
-  Indexes,
-  JsonPathElement,
-  LogicalExpression,
-  NotExpression,
-  NumericLiteral,
-  Operation,
-  OperationContent,
-  Root,
-  Slices,
-  StringLiteral,
-  Subscript,
-  BracketExpression,
-  BracketExpressionContent,
-  BracketMember,
-  BracketMemberContent,
-  Dot,
-  DotContent,
-  DotDot,
-  DotDotContent,
-  Unions,
-  Value,
-  ValueArray,
-  ValueBoolean,
-  ValueNull,
-  ValueNumber,
-  ValueObject,
-  ValueRegex,
-  ValueString,
-  Wildcard,
-} from './parser/types';
+import { query } from './handler/query';
+import { JSONPathSyntaxError } from './parser/errors';
+import { parse } from './parser/parse';
+import { stringify } from './parser/stringify';
+
+export { query, JSONPathSyntaxError, parse, stringify };
+
+Object.assign(module.exports, { query, JSONPathSyntaxError, parse, stringify });
