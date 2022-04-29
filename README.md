@@ -91,3 +91,10 @@ Filters are logical expressions used to filter arrays. A typical filter would be
 | sizeof   | size of left (array or string) should match right (array or string) |
 | size     | size of left (array or string) should match right (number)          |
 | empty    | left (array or string) should be empty                              |
+
+## Options
+
+| Option            | Description                                                              |
+| :---------------- | :----------------------------------------------------------------------- |
+| supressExceptions | This option makes sure no exceptions are propagated from path evaluation |
+| returnArray       | This option configures JsonPath to return an array                       |

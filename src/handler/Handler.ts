@@ -346,7 +346,7 @@ export class Handler {
 
         if (isString(payload)) {
           if (!isString(value)) {
-            return undefined;
+            return;
           }
           return `${payload}${value}`;
         }

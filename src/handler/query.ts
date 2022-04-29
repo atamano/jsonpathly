@@ -3,7 +3,7 @@ import { parse } from '../parser/parse';
 import { Handler } from './Handler';
 
 export type JSONPathOptions = {
-  hideExceptions?: boolean;
+  supressExceptions?: boolean;
   returnArray?: boolean;
 };
 
@@ -14,7 +14,7 @@ export const query = (payload: unknown, path: string, options: JSONPathOptions =
     const handler = new Handler(payload);
     const result = handler.handleRoot(payload, tree);
 
-    if (!isIndefinite && options.returnArray) {
+    if (!isIndefinite && options.returnArray && !tree.fn) {
       if (isUndefined(result)) {
         return [];
       }
@@ -23,7 +23,7 @@ export const query = (payload: unknown, path: string, options: JSONPathOptions =
 
     return result;
   } catch (e) {
-    if (!options.hideExceptions) {
+    if (!options.supressExceptions) {
       throw e;
     }
 
