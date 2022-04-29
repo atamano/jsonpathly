@@ -27,8 +27,8 @@
     "json",
     "path"
   ],
-  "author": "Antoine TAMANO",
-  "license": "Apache License, Version 2.0, January 2004",
+  "author": "Antoine Tamano",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/atamano/jsonpathly/issues"
   },
