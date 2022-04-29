@@ -664,9 +664,12 @@ describe('query with functions', () => {
     strings: ['1', '2', '3'],
     empty: [],
     object: { test1: 1, test2: 2, test3: 3 },
+    array: [{ price: 1.5 }, { price: 2.5 }, { price: 5 }],
   };
 
   const textCases = [
+    { payload: PAYLOAD, path: `$..price.sum()`, expected: 9 },
+
     { payload: PAYLOAD, path: `$.numbers.min()`, expected: 1 },
     { payload: PAYLOAD, path: `$.empty.min()`, expected: 0 },
     { payload: PAYLOAD, path: `$.strings.min()`, expected: undefined },

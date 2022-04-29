@@ -36,6 +36,7 @@ import {
   JsonPathElement,
   NumericLiteral,
   OperationContent,
+  PathFunction,
   Root,
   Slices,
   StringLiteral,
@@ -59,13 +60,14 @@ const TYPE_CHECK_MAPPER = {
     'type' in node && ['bracketMember', 'bracketExpression'].includes(node.type),
   functionContent: (node: JsonPathElement): node is Value | Current | Root =>
     'type' in node && ['root', 'value', 'current'].includes(node.type),
+  function: (node: JsonPathElement): node is PathFunction => 'type' in node && node.type === 'function',
   unions: (node: JsonPathElement): node is Unions => 'type' in node && node.type === 'unions',
   indexes: (node: JsonPathElement): node is Indexes => 'type' in node && node.type === 'indexes',
   slices: (node: JsonPathElement): node is Slices => 'type' in node && node.type === 'slices',
   filterExpression: (node: JsonPathElement): node is FilterExpression =>
     'type' in node && node.type === 'filterExpression',
   dotContent: (node: JsonPathElement): node is DotContent =>
-    'type' in node && ['identifier', 'numericLiteral', 'wildcard', 'function'].includes(node.type),
+    'type' in node && ['identifier', 'numericLiteral', 'wildcard'].includes(node.type),
   dotdotContent: (node: JsonPathElement): node is DotDotContent =>
     'type' in node && ['identifier', 'wildcard', 'bracketMember', 'bracketExpression'].includes(node.type),
   bracketContent: (node: JsonPathElement): node is BracketMemberContent | BracketExpressionContent =>
@@ -127,9 +129,10 @@ export default class Listener implements JSONPathListener {
 
   public exitJsonpath(ctx: JsonpathContext): void {
     if (ctx.ROOT_VALUE()) {
+      const fn = ctx.function() ? this.popWithCheck('function', ctx) : null;
       const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
-      this.push({ type: 'root', next });
+      this.push({ type: 'root', next, fn });
     }
   }
 
@@ -304,7 +307,7 @@ export default class Listener implements JSONPathListener {
       case !!ctx.ROOT_VALUE(): {
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
-        this.push({ type: 'root', next: next });
+        this.push({ type: 'root', next: next, fn: null });
         break;
       }
       case !!ctx.CURRENT_VALUE(): {

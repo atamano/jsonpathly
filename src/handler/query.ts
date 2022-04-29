@@ -12,7 +12,7 @@ export const query = (payload: unknown, path: string, options: JSONPathOptions =
     const { tree, isIndefinite } = parse(path);
 
     const handler = new Handler(payload);
-    const result = handler.handleSubscript(payload, tree.next);
+    const result = handler.handleRoot(payload, tree);
 
     if (!isIndefinite && options.returnArray) {
       if (isUndefined(result)) {

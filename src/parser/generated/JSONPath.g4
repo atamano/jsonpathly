@@ -57,7 +57,7 @@ FN_CONC: 'concat(';
 FN_APPE: 'append(';
 
 jsonpath
-   : ROOT_VALUE subscript? EOF
+   : ROOT_VALUE subscript? ( DOT function )? EOF
    ;
 
 function
@@ -93,8 +93,7 @@ dotdotContent
    ;
 
 dotContent
-   : function
-   | IDENTIFIER
+   : IDENTIFIER
    | STAR
    | NUMBER
    ;

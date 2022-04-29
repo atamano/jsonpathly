@@ -17,6 +17,7 @@ import {
   JsonPathElement,
   PathFunction,
   PathFunctionContent,
+  Root,
 } from '../parser/types';
 import {
   isArray,
@@ -555,7 +556,7 @@ export class Handler {
     return results;
   };
 
-  public handleSubscript = (payload: unknown, tree: Subscript | null): unknown => {
+  private handleSubscript = (payload: unknown, tree: Subscript | null): unknown => {
     if (tree === null) {
       return payload;
     }
@@ -584,10 +585,6 @@ export class Handler {
             const result = this.handleWildcard(payload);
             return this.handleSubscriptConcat(result, tree.next);
           }
-          case 'function': {
-            const result = this.handleFunction(payload, treeValue.value);
-            return this.handleSubscript(result, tree.next);
-          }
         }
       }
       case 'dotdot': {
@@ -595,5 +592,13 @@ export class Handler {
         return this.handleSubscriptConcat(result, tree.next);
       }
     }
+  };
+
+  public handleRoot = (payload: unknown, tree: Root): unknown => {
+    const result = this.handleSubscript(payload, tree.next);
+    if (tree.fn) {
+      return this.handleFunction(result, tree.fn);
+    }
+    return result;
   };
 }

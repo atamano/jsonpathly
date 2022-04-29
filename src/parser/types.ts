@@ -1,6 +1,7 @@
 export type Root = {
   type: 'root';
   next: Subscript | null;
+  fn: PathFunction | null;
 };
 
 export type Current = {
@@ -70,7 +71,7 @@ export type Comparator =
   | { type: 'comparator'; operator: 'reg'; left: OperationContent; right: ValueRegex }
   | { type: 'comparator'; operator: 'empty'; left: OperationContent; right: null };
 
-export type DotContent = Identifier | NumericLiteral | Wildcard | PathFunction;
+export type DotContent = Identifier | NumericLiteral | Wildcard;
 
 export type Dot = {
   type: 'dot';
