@@ -656,6 +656,70 @@ describe('query with regexp operator', () => {
   });
 });
 
+describe('query with functions', () => {
+  const PAYLOAD = {
+    number: 123,
+    string: 'hello',
+    numbers: [1, 1, 2, 3, 4, 5, 6, 7],
+    strings: ['1', '2', '3'],
+    empty: [],
+    object: { test1: 1, test2: 2, test3: 3 },
+  };
+
+  const textCases = [
+    { payload: PAYLOAD, path: `$.numbers.min()`, expected: 1 },
+    { payload: PAYLOAD, path: `$.empty.min()`, expected: 0 },
+    { payload: PAYLOAD, path: `$.strings.min()`, expected: undefined },
+
+    { payload: PAYLOAD, path: `$.numbers.max()`, expected: 7 },
+    { payload: PAYLOAD, path: `$.empty.max()`, expected: 0 },
+    { payload: PAYLOAD, path: `$.strings.max()`, expected: undefined },
+
+    { payload: PAYLOAD, path: `$.numbers.sum()`, expected: 29 },
+    { payload: PAYLOAD, path: `$.empty.sum()`, expected: 0 },
+    { payload: PAYLOAD, path: `$.strings.sum()`, expected: undefined },
+
+    { payload: PAYLOAD, path: `$.numbers.avg()`, expected: 3.625 },
+    { payload: PAYLOAD, path: `$.empty.avg()`, expected: 0 },
+    { payload: PAYLOAD, path: `$.strings.avg()`, expected: undefined },
+
+    { payload: PAYLOAD, path: `$.numbers.length()`, expected: 8 },
+    { payload: PAYLOAD, path: `$.empty.length()`, expected: 0 },
+    { payload: PAYLOAD, path: `$.number.length()`, expected: undefined },
+
+    { payload: PAYLOAD, path: `$.numbers.stddev()`, expected: 2.117634293262177 },
+    { payload: PAYLOAD, path: `$.empty.stddev()`, expected: 0 },
+    { payload: PAYLOAD, path: `$.strings.stddev()`, expected: undefined },
+
+    { payload: PAYLOAD, path: `$.object.keys()`, expected: ['test1', 'test2', 'test3'] },
+    { payload: PAYLOAD, path: `$.strings.keys()`, expected: undefined },
+
+    { payload: PAYLOAD, path: `$.empty.concat($.strings)`, expected: PAYLOAD.strings },
+    { payload: PAYLOAD, path: `$.empty.concat($.numbers)`, expected: PAYLOAD.numbers },
+    { payload: PAYLOAD, path: `$.numbers.concat($.strings)`, expected: [...PAYLOAD.numbers, ...PAYLOAD.strings] },
+    { payload: PAYLOAD, path: `$.numbers.concat(@[0])`, expected: [...PAYLOAD.numbers, PAYLOAD.numbers[0]] },
+    { payload: PAYLOAD, path: `$.numbers.concat("hello")`, expected: [...PAYLOAD.numbers, 'hello'] },
+    { payload: PAYLOAD, path: `$.empty.concat($.notExist)`, expected: [] },
+    { payload: PAYLOAD, path: `$.number.concat($.strings)`, expected: undefined },
+    { payload: PAYLOAD, path: `$.string.concat(" world")`, expected: 'hello world' },
+    { payload: PAYLOAD, path: `$.string.concat(123)`, expected: undefined },
+
+    { payload: PAYLOAD, path: `$.empty.append($.strings)`, expected: [PAYLOAD.strings] },
+    { payload: PAYLOAD, path: `$.empty.append($.numbers)`, expected: [PAYLOAD.numbers] },
+    { payload: PAYLOAD, path: `$.numbers.append($.strings)`, expected: [...PAYLOAD.numbers, PAYLOAD.strings] },
+    { payload: PAYLOAD, path: `$.numbers.append(@[0])`, expected: [...PAYLOAD.numbers, PAYLOAD.numbers[0]] },
+    { payload: PAYLOAD, path: `$.numbers.append(123)`, expected: [...PAYLOAD.numbers, 123] },
+    { payload: PAYLOAD, path: `$.empty.append($.notExist)`, expected: [] },
+    { payload: PAYLOAD, path: `$.number.append($.strings)`, expected: undefined },
+  ];
+
+  test.each(textCases)('query(%s)', ({ payload, path, expected }) => {
+    const res = query(payload, path);
+
+    expect(res).toEqual(expected);
+  });
+});
+
 describe('query with hide exception option', () => {
   const testCases = [
     { path: '$.bad', expected: [], options: { returnArray: true, hideExceptions: true } },

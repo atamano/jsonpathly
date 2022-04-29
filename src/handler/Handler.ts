@@ -15,8 +15,19 @@ import {
   DotDot,
   Unions,
   JsonPathElement,
+  PathFunction,
+  PathFunctionContent,
 } from '../parser/types';
-import { isArray, isDefined, isNumber, isPlainObject, isString } from './helper';
+import {
+  isArray,
+  isArrayOfNumber,
+  isDefined,
+  isNumber,
+  isPlainObject,
+  isString,
+  isUndefined,
+  standardDeviation,
+} from './helper';
 
 const isIndefinite = (item: JsonPathElement | null): boolean => {
   if (!item) {
@@ -251,6 +262,111 @@ export class Handler {
     }
   };
 
+  private handleFunctionContent = (payload: unknown, tree: PathFunctionContent): unknown => {
+    switch (tree.type) {
+      case 'root': {
+        return this.handleSubscript(this.rootPayload, tree.next);
+      }
+      case 'current': {
+        return this.handleSubscript(payload, tree.next);
+      }
+      case 'value': {
+        return tree.value;
+      }
+    }
+  };
+
+  private handleFunction = (payload: unknown, tree: PathFunction): unknown => {
+    switch (tree.operator) {
+      case 'avg': {
+        if (!isArrayOfNumber(payload)) {
+          return;
+        }
+        if (payload.length === 0) {
+          return 0;
+        }
+        return payload.reduce((a, b) => a + b, 0.0) / payload.length;
+      }
+      case 'keys': {
+        if (!isPlainObject(payload)) {
+          return;
+        }
+        return Object.keys(payload);
+      }
+      case 'length': {
+        if (!isArray(payload)) {
+          return;
+        }
+        return payload.length;
+      }
+      case 'max': {
+        if (!isArrayOfNumber(payload)) {
+          return;
+        }
+        if (payload.length === 0) {
+          return 0;
+        }
+        return Math.max(...payload);
+      }
+      case 'min': {
+        if (!isArrayOfNumber(payload)) {
+          return;
+        }
+        if (payload.length === 0) {
+          return 0;
+        }
+        return Math.min(...payload);
+      }
+      case 'stddev': {
+        if (!isArrayOfNumber(payload)) {
+          return;
+        }
+        if (payload.length === 0) {
+          return 0;
+        }
+        return standardDeviation(payload);
+      }
+      case 'sum': {
+        if (!isArrayOfNumber(payload)) {
+          return;
+        }
+
+        return payload.reduce((a, b) => a + b, 0);
+      }
+      case 'concat': {
+        if (!isArray(payload) && !isString(payload)) {
+          return;
+        }
+
+        const value = this.handleFunctionContent(payload, tree.value);
+        if (isUndefined(value)) {
+          return payload;
+        }
+
+        if (isString(payload)) {
+          if (!isString(value)) {
+            return undefined;
+          }
+          return `${payload}${value}`;
+        }
+
+        return payload.concat(value);
+      }
+      case 'append': {
+        if (!isArray(payload)) {
+          return;
+        }
+        const value = this.handleFunctionContent(payload, tree.value);
+
+        if (isUndefined(value)) {
+          return payload;
+        }
+
+        return [...payload, value];
+      }
+    }
+  };
+
   private handleNumericLiteral = (payload: unknown, tree: NumericLiteral): unknown => {
     if (!isArray(payload) && !isString(payload)) {
       return;
@@ -467,6 +583,10 @@ export class Handler {
           case 'wildcard': {
             const result = this.handleWildcard(payload);
             return this.handleSubscriptConcat(result, tree.next);
+          }
+          case 'function': {
+            const result = this.handleFunction(payload, treeValue.value);
+            return this.handleSubscript(result, tree.next);
           }
         }
       }

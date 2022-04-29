@@ -3,6 +3,7 @@
 import { ParseTreeListener } from 'antlr4ts/tree/ParseTreeListener';
 
 import { JsonpathContext } from './JSONPathParser';
+import { FunctionContext } from './JSONPathParser';
 import { FilterargContext } from './JSONPathParser';
 import { SubscriptContext } from './JSONPathParser';
 import { DotdotContentContext } from './JSONPathParser';
@@ -37,6 +38,17 @@ export interface JSONPathListener extends ParseTreeListener {
    * @param ctx the parse tree
    */
   exitJsonpath?: (ctx: JsonpathContext) => void;
+
+  /**
+   * Enter a parse tree produced by `JSONPathParser.function`.
+   * @param ctx the parse tree
+   */
+  enterFunction?: (ctx: FunctionContext) => void;
+  /**
+   * Exit a parse tree produced by `JSONPathParser.function`.
+   * @param ctx the parse tree
+   */
+  exitFunction?: (ctx: FunctionContext) => void;
 
   /**
    * Enter a parse tree produced by `JSONPathParser.filterarg`.
