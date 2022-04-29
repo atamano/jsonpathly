@@ -11,6 +11,15 @@
 
 [Link to the Demo](https://atamano.github.io/jsonpathly-demo/)
 
+## Install
+
+Install from npm:
+
+```bash
+$ npm install jsonpathly
+```
+
+
 ## Getting Started
 
 ```javascript
@@ -26,14 +35,6 @@ const cities = [
 const names = query(cities, '$..name');
 
 // [ "London", "Berlin", "Madrid", "Rome" ]
-```
-
-## Install
-
-Install from npm:
-
-```bash
-$ npm install jsonpathly
 ```
 
 JsonPath expressions always refer to a JSON structure in the same way as XPath expression are used in combination
