@@ -295,7 +295,7 @@ export class Handler {
         return Object.keys(payload);
       }
       case 'length': {
-        if (!isArray(payload)) {
+        if (!isArray(payload) && !isString(payload)) {
           return;
         }
         return payload.length;
@@ -543,10 +543,12 @@ export class Handler {
 
     let results: unknown[] = [];
 
+    const indefinite = isIndefinite(tree);
+
     for (const item of payload) {
       const res = this.handleSubscript(item, tree);
 
-      if (isDefined(res) && isIndefinite(tree)) {
+      if (isDefined(res) && indefinite) {
         results = results.concat(res);
       } else if (isDefined(res)) {
         results.push(res);
