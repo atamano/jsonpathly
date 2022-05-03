@@ -65,15 +65,15 @@ subscript
    ;
 
 dotdotContent
-   : IDENTIFIER
-   | STAR
+   : STAR
+   | IDENTIFIER
    | bracket
    ;
 
 dotContent
-   : IDENTIFIER
-   | STAR
+   : STAR
    | NUMBER
+   | IDENTIFIER
    ;
 
 bracket
@@ -83,12 +83,12 @@ bracket
 bracketContent
    : unions
    | indexes
-   | NUMBER
-   | STRING
    | slices
    | STAR
-   | filterExpression
+   | NUMBER
+   | STRING
    | IDENTIFIER
+   | filterExpression
    ;
 
 filterExpression
@@ -111,10 +111,9 @@ slices
 regex : REGEX_EXPR REGEX_OPT?;
 
 expression
-   : NOT expression
+   : NOT PAREN_LEFT expression PAREN_RIGHT
    | PAREN_LEFT expression PAREN_RIGHT
-   | expression AND expression
-   | expression OR expression
+   | expression ( AND | OR ) expression
    | filterarg ( EQ | NE | LT | LE | GT | GE | IN | NIN | SUB | ANY | SIZO| NON | SIZ ) filterarg
    | filterarg REG regex
    | filterarg EMPT

@@ -1,29 +1,47 @@
-import { isUndefined } from './helper';
 import { parseInternal } from '../parser/parse';
 import { Handler } from './Handler';
+import { isArray, isDefined, isUndefined } from './helper';
 
 export type QueryOptions = {
-  supressExceptions?: boolean;
+  hideExceptions?: boolean;
   returnArray?: boolean;
 };
 
-export const query = (payload: unknown, path: string, options: QueryOptions = {}): unknown => {
-  try {
-    const { tree, isIndefinite } = parseInternal(path);
+const querySingle = (payload: unknown, path: string, options: QueryOptions = {}): unknown => {
+  const tree = parseInternal(path);
 
-    const handler = new Handler(payload);
-    const result = handler.handleRoot(payload, tree);
+  const handler = new Handler(payload);
+  const result = handler.handleRoot(tree);
 
-    if (!isIndefinite && options.returnArray) {
-      if (isUndefined(result)) {
-        return [];
-      }
-      return [result];
+  if (!result?.isIndefinite && options.returnArray) {
+    if (isUndefined(result)) {
+      return [];
     }
+    return [result.value];
+  }
 
-    return result;
+  return result?.value;
+};
+
+const queryMany = (payload: unknown, paths: string[], options: QueryOptions = {}): unknown => {
+  const results: unknown[] = [];
+  for (const path of paths) {
+    const res = querySingle(payload, path, options);
+    if (isDefined(res)) {
+      results.push(res);
+    }
+  }
+  return results;
+};
+
+export const query = (payload: unknown, paths: string | string[], options: QueryOptions = {}): unknown => {
+  try {
+    if (isArray(paths)) {
+      return queryMany(payload, paths, options);
+    }
+    return querySingle(payload, paths, options);
   } catch (e) {
-    if (!options.supressExceptions) {
+    if (!options.hideExceptions) {
       throw e;
     }
 

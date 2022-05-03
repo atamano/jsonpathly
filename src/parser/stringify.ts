@@ -76,7 +76,7 @@ export function stringify(input: JsonPathElement | null): string {
       return `${input.value}`;
     }
     case 'notExpression': {
-      return '!' + stringify(input.value);
+      return '!(' + stringify(input.value) + ')';
     }
     case 'value': {
       if (input.subtype === 'regex') {

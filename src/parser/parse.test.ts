@@ -19,8 +19,8 @@ describe('parse', () => {
     [`$[?(@.author)]`, ''],
     [`$..["book"]`, ''],
     [`$..book[0][category, author]`, ''],
-    [`$..phoneNumbers[?(!(@.price < 30 && !@.type == "iPhone" && !@.number))]`, ''],
-    [`$..phoneNumbers[?(!@.price < 30 && !@.type == "iPhone" && !@.number)]`, ''],
+    [`$..phoneNumbers[?(!(@.price < 30 && !(@.type == "iPhone") && !(@.number)))]`, ''],
+    [`$..phoneNumbers[?(!(@.price < 30) && !(@.type == "iPhone") && !(@.number))]`, ''],
     [`$..phoneNumbers[?(@.price < 30 && !(@.type == "iPhone" && @.number))]`, ''],
     [`$.book[test, toto]`, ''],
     [`$.book["test", "toto"]`, ''],
@@ -45,7 +45,7 @@ describe('parse', () => {
     [`$.store.book[?(@.price =~ /hello/gui)]`, ''],
     [`$.store.book[?(@.price in [1,2,3])]`, ''],
     [`$..book[?(@.isbn)]`, ''],
-    [`$..book[?(!@.isbn)]`, ''],
+    [`$..book[?(!(@.isbn))]`, ''],
     [`$..book[-1:].title`, ''],
     [`$..book[0, 1].title`, ''],
     [`$..book[0:1].title`, ''],
@@ -74,7 +74,7 @@ describe('parse', () => {
   });
 
   test('should not throw exceptions', () => {
-    const tree = parse('bad', { supressExceptions: true });
+    const tree = parse('bad', { hideExceptions: true });
 
     expect(tree).toBeNull();
   });

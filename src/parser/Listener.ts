@@ -89,18 +89,9 @@ const isBracketMember = (item: BracketMemberContent | BracketExpressionContent):
 
 export default class Listener implements JSONPathListener {
   _stack: JsonPathElement[] = [];
-  _isIndefinite = false;
 
   public getTree(): Root {
     return this.popWithCheck('root', null);
-  }
-
-  public isIndefinite(): boolean {
-    return this._isIndefinite;
-  }
-
-  private setIsIndefinite(b: boolean): void {
-    this._isIndefinite = b;
   }
 
   private popWithCheck<T extends keyof typeof TYPE_CHECK_MAPPER>(
@@ -138,8 +129,6 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.STAR(): {
-        this.setIsIndefinite(true);
-
         this.push({ type: 'wildcard' });
         break;
       }
@@ -203,8 +192,6 @@ export default class Listener implements JSONPathListener {
   }
 
   public exitDotdotContent(ctx: DotdotContentContext): void {
-    this.setIsIndefinite(true);
-
     switch (true) {
       case !!ctx.STAR(): {
         this.push({ type: 'wildcard' });
@@ -228,8 +215,6 @@ export default class Listener implements JSONPathListener {
   public exitDotContent(ctx: DotContentContext): void {
     switch (true) {
       case !!ctx.STAR(): {
-        this.setIsIndefinite(true);
-
         this.push({ type: 'wildcard' });
         break;
       }
@@ -315,8 +300,6 @@ export default class Listener implements JSONPathListener {
   public exitUnions(ctx: UnionsContext): void {
     const nodes: (StringLiteral | Identifier)[] = [];
 
-    this.setIsIndefinite(true);
-
     for (let index = 0; index < ctx.IDENTIFIER().length; index += 1) {
       const value = ctx.IDENTIFIER(index)!.text;
 
@@ -343,8 +326,6 @@ export default class Listener implements JSONPathListener {
 
   public exitIndexes(ctx: IndexesContext): void {
     const nodes: NumericLiteral[] = [];
-
-    this.setIsIndefinite(true);
 
     for (let index = 0; index < ctx.NUMBER().length; index += 1) {
       const number = Number.parseInt(ctx.NUMBER(index)!.text);
@@ -406,8 +387,6 @@ export default class Listener implements JSONPathListener {
 
   public exitFilterExpression(ctx: FilterExpressionContext): void {
     const value = this.popWithCheck('expressionContent', ctx);
-
-    this.setIsIndefinite(true);
 
     this.push({
       type: 'filterExpression',

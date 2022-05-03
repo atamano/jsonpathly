@@ -1,4 +1,4 @@
-<img src="https://user-images.githubusercontent.com/9162276/166061295-a41b7d28-a1e9-4d17-9103-132a1ca20de8.png" width="400">
+<img src="https://user-images.githubusercontent.com/9162276/166061295-a41b7d28-a1e9-4d17-9103-132a1ca20de8.png" width="350">
 
 [![CircleCI](https://circleci.com/gh/atamano/jsonpathly/tree/master.svg?style=shield&circle-token=442d6d9d566a5ed1472048e669f0155ed44d6648)](https://circleci.com/gh/atamano/jsonpathly/tree/master)
 [![codecov](https://codecov.io/gh/atamano/jsonpathly/branch/master/graph/badge.svg?token=QSSZGZMULF)](https://codecov.io/gh/atamano/jsonpathly)
@@ -83,7 +83,7 @@ Filters are logical expressions used to filter arrays. A typical filter would be
 
 ## Options
 
-| Option            | Description                                                              |
-| :---------------- | :----------------------------------------------------------------------- |
-| supressExceptions | This option makes sure no exceptions are propagated from path evaluation |
-| returnArray       | This option configures JsonPath to return an array                       |
+| Option         | Description                                                              |
+| :------------- | :----------------------------------------------------------------------- |
+| hideExceptions | This option makes sure no exceptions are propagated from path evaluation |
+| returnArray    | This option configures JsonPath to return an array                       |

@@ -24,10 +24,10 @@ export const isString = (item: unknown): item is string => {
   return typeof item === 'string';
 };
 
-export const isUndefined = (item: unknown): item is undefined => {
+export const isUndefined = <T extends unknown>(item: T | undefined): item is undefined => {
   return typeof item === 'undefined';
 };
 
-export const isDefined = (item: unknown): item is Exclude<typeof item, undefined> => {
+export const isDefined = <T extends unknown>(item: T): item is Exclude<typeof item, undefined> => {
   return typeof item !== 'undefined';
 };

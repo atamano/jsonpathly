@@ -7,12 +7,7 @@ import { JSONPathParser } from './generated/JSONPathParser';
 import CustomJSONPathListener from './Listener';
 import { Root } from './types';
 
-type ParseResponse = {
-  tree: Root;
-  isIndefinite: boolean;
-};
-
-export function parseInternal(input: string): ParseResponse {
+export function parseInternal(input: string): Root {
   const inputStream = new ANTLRInputStream(input);
   const lexer = new JSONPathLexer(inputStream);
   const tokenStream = new CommonTokenStream(lexer);
@@ -37,19 +32,19 @@ export function parseInternal(input: string): ParseResponse {
   const tree = parser.jsonpath();
   ParseTreeWalker.DEFAULT.walk(listener as JSONPathListener, tree);
 
-  return { tree: listener.getTree(), isIndefinite: listener.isIndefinite() };
+  return listener.getTree();
 }
 
 export type ParseOptions = {
-  supressExceptions?: boolean;
+  hideExceptions?: boolean;
 };
 
 export function parse(input: string, options: ParseOptions = {}): Root | null {
   try {
-    const { tree } = parseInternal(input);
+    const tree = parseInternal(input);
     return tree;
   } catch (e) {
-    if (!options.supressExceptions) {
+    if (!options.hideExceptions) {
       throw e;
     }
     return null;
