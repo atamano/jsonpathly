@@ -46,30 +46,8 @@ DIV: '/';
 REGEX_OPT: [gimsuy]*;
 REGEX_EXPR: '/'.*?'/';
 
-FN_MIN: 'min()';
-FN_MAX: 'max()';
-FN_AVG: 'avg()';
-FN_STD: 'stddev()';
-FN_LEN: 'length()';
-FN_SUM: 'sum()';
-FN_KEY: 'keys()';
-FN_CONC: 'concat(';
-FN_APPE: 'append(';
-
 jsonpath
-   : ROOT_VALUE subscript? ( DOT function )? EOF
-   ;
-
-function
-   : FN_MIN
-   | FN_MAX
-   | FN_AVG
-   | FN_STD
-   | FN_LEN
-   | FN_SUM
-   | FN_KEY
-   | FN_CONC ( value | filterpath ) PAREN_RIGHT
-   | FN_APPE ( value | filterpath ) PAREN_RIGHT
+   : ROOT_VALUE subscript? EOF
    ;
 
 filterarg

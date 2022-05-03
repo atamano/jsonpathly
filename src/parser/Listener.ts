@@ -11,7 +11,6 @@ import {
   FilterargContext,
   FilterExpressionContext,
   FilterpathContext,
-  FunctionContext,
   IndexesContext,
   JsonpathContext,
   JSONPathParser,
@@ -27,7 +26,6 @@ import {
   BracketExpressionContent,
   BracketMember,
   BracketMemberContent,
-  Current,
   DotContent,
   DotDotContent,
   FilterExpression,
@@ -36,7 +34,6 @@ import {
   JsonPathElement,
   NumericLiteral,
   OperationContent,
-  PathFunction,
   Root,
   Slices,
   StringLiteral,
@@ -58,9 +55,6 @@ const TYPE_CHECK_MAPPER = {
   subscript: (node: JsonPathElement): node is Subscript => 'type' in node && node.type === 'subscript',
   bracket: (node: JsonPathElement): node is BracketMember | BracketExpression =>
     'type' in node && ['bracketMember', 'bracketExpression'].includes(node.type),
-  functionContent: (node: JsonPathElement): node is Value | Current | Root =>
-    'type' in node && ['root', 'value', 'current'].includes(node.type),
-  function: (node: JsonPathElement): node is PathFunction => 'type' in node && node.type === 'function',
   unions: (node: JsonPathElement): node is Unions => 'type' in node && node.type === 'unions',
   indexes: (node: JsonPathElement): node is Indexes => 'type' in node && node.type === 'indexes',
   slices: (node: JsonPathElement): node is Slices => 'type' in node && node.type === 'slices',
@@ -129,10 +123,9 @@ export default class Listener implements JSONPathListener {
 
   public exitJsonpath(ctx: JsonpathContext): void {
     if (ctx.ROOT_VALUE()) {
-      const fn = ctx.function() ? this.popWithCheck('function', ctx) : null;
       const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
-      this.push({ type: 'root', next, fn });
+      this.push({ type: 'root', next });
     }
   }
 
@@ -307,7 +300,7 @@ export default class Listener implements JSONPathListener {
       case !!ctx.ROOT_VALUE(): {
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
-        this.push({ type: 'root', next: next, fn: null });
+        this.push({ type: 'root', next: next });
         break;
       }
       case !!ctx.CURRENT_VALUE(): {
@@ -432,80 +425,6 @@ export default class Listener implements JSONPathListener {
       value: value as ValueRegex['value'],
       opts,
     });
-  }
-
-  public exitFunction(ctx: FunctionContext): void {
-    switch (true) {
-      case !!ctx.FN_MIN(): {
-        this.push({
-          type: 'function',
-          operator: 'min',
-        });
-        break;
-      }
-      case !!ctx.FN_MAX(): {
-        this.push({
-          type: 'function',
-          operator: 'max',
-        });
-        break;
-      }
-      case !!ctx.FN_AVG(): {
-        this.push({
-          type: 'function',
-          operator: 'avg',
-        });
-        break;
-      }
-      case !!ctx.FN_STD(): {
-        this.push({
-          type: 'function',
-          operator: 'stddev',
-        });
-        break;
-      }
-      case !!ctx.FN_LEN(): {
-        this.push({
-          type: 'function',
-          operator: 'length',
-        });
-        break;
-      }
-      case !!ctx.FN_SUM(): {
-        this.push({
-          type: 'function',
-          operator: 'sum',
-        });
-        break;
-      }
-      case !!ctx.FN_KEY(): {
-        this.push({
-          type: 'function',
-          operator: 'keys',
-        });
-        break;
-      }
-      case !!ctx.FN_CONC(): {
-        const value = this.popWithCheck('functionContent', ctx);
-
-        this.push({
-          type: 'function',
-          operator: 'concat',
-          value,
-        });
-        break;
-      }
-      case !!ctx.FN_APPE(): {
-        const value = this.popWithCheck('functionContent', ctx);
-
-        this.push({
-          type: 'function',
-          operator: 'append',
-          value,
-        });
-        break;
-      }
-    }
   }
 
   public exitExpression(ctx: ExpressionContext): void {

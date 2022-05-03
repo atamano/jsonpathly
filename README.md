@@ -1,9 +1,7 @@
 <img src="https://user-images.githubusercontent.com/9162276/166061295-a41b7d28-a1e9-4d17-9103-132a1ca20de8.png" width="400">
 
-
 [![CircleCI](https://circleci.com/gh/atamano/jsonpathly/tree/master.svg?style=shield&circle-token=442d6d9d566a5ed1472048e669f0155ed44d6648)](https://circleci.com/gh/atamano/jsonpathly/tree/master)
 [![codecov](https://codecov.io/gh/atamano/jsonpathly/branch/master/graph/badge.svg?token=QSSZGZMULF)](https://codecov.io/gh/atamano/jsonpathly)
-
 
 ## This project is currently under development
 
@@ -18,7 +16,6 @@ Install from npm:
 ```bash
 $ npm install jsonpathly
 ```
-
 
 ## Getting Started
 
@@ -62,23 +59,6 @@ or the bracket–notation
 | `[<number> (, <number>)]` | Array index or indexes                                          |
 | `[start:end:step]`        | A python like array slice operator                              |
 | `[?(<expression>)]`       | Filter expression. Expression must evaluate to a boolean value. |
-
-## Functions
-
-Functions can be invoked at the tail end of a path - the input to a function is the output of the path expression.
-The function output is dictated by the function itself.
-
-| Function  | Description                                                  | Output type        |
-| :-------- | :----------------------------------------------------------- | :----------------- |
-| min()     | Provides the min value of an array of numbers                | number             |
-| max()     | Provides the max value of an array of numbers                | number             |
-| avg()     | Provides the average value of an array of numbers            | number             |
-| stddev()  | Provides the standard deviation value of an array of numbers | number             |
-| length()  | Provides the length of an array                              | number             |
-| sum()     | Provides the sum value of an array of numbers                | number             |
-| keys()    | Provides the property keys                                   | string[]           |
-| concat(X) | Provides a concatinated array + item or string + string      | unknown[] / string |
-| append(X) | add an item to the json path output array                    | unknown[]          |
 
 ## Filter Operators
 

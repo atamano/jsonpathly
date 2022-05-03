@@ -14,7 +14,7 @@ export const query = (payload: unknown, path: string, options: QueryOptions = {}
     const handler = new Handler(payload);
     const result = handler.handleRoot(payload, tree);
 
-    if (!isIndefinite && options.returnArray && !tree.fn) {
+    if (!isIndefinite && options.returnArray) {
       if (isUndefined(result)) {
         return [];
       }

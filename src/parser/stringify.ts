@@ -38,7 +38,7 @@ export function stringify(input: JsonPathElement | null): string {
 
   switch (input.type) {
     case 'root': {
-      return '$' + stringify(input.next) + stringify(input.fn);
+      return '$' + stringify(input.next);
     }
     case 'current': {
       return '@' + stringify(input.next);
@@ -77,15 +77,6 @@ export function stringify(input: JsonPathElement | null): string {
     }
     case 'notExpression': {
       return '!' + stringify(input.value);
-    }
-    case 'function': {
-      if (input.operator === 'append') {
-        return `.${input.operator}(${stringify(input.value)})`;
-      }
-      if (input.operator === 'concat') {
-        return `.${input.operator}(${stringify(input.value)})`;
-      }
-      return `.${input.operator}()`;
     }
     case 'value': {
       if (input.subtype === 'regex') {

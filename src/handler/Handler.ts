@@ -1,34 +1,23 @@
 import { JSONPathSyntaxError } from '../parser/errors';
 import {
+  BracketExpressionContent,
+  BracketMemberContent,
   Comparator,
+  DotDot,
   FilterExpressionContent,
   Identifier,
   Indexes,
+  JsonPathElement,
   LogicalExpression,
   NumericLiteral,
   OperationContent,
+  Root,
   Slices,
   StringLiteral,
   Subscript,
-  BracketExpressionContent,
-  BracketMemberContent,
-  DotDot,
   Unions,
-  JsonPathElement,
-  PathFunction,
-  PathFunctionContent,
-  Root,
 } from '../parser/types';
-import {
-  isArray,
-  isArrayOfNumber,
-  isDefined,
-  isNumber,
-  isPlainObject,
-  isString,
-  isUndefined,
-  standardDeviation,
-} from './helper';
+import { isArray, isDefined, isNumber, isPlainObject, isString } from './helper';
 
 const isIndefinite = (item: JsonPathElement | null): boolean => {
   if (!item) {
@@ -263,111 +252,6 @@ export class Handler {
     }
   };
 
-  private handleFunctionContent = (payload: unknown, tree: PathFunctionContent): unknown => {
-    switch (tree.type) {
-      case 'root': {
-        return this.handleSubscript(this.rootPayload, tree.next);
-      }
-      case 'current': {
-        return this.handleSubscript(payload, tree.next);
-      }
-      case 'value': {
-        return tree.value;
-      }
-    }
-  };
-
-  private handleFunction = (payload: unknown, tree: PathFunction): unknown => {
-    switch (tree.operator) {
-      case 'avg': {
-        if (!isArrayOfNumber(payload)) {
-          return;
-        }
-        if (payload.length === 0) {
-          return 0;
-        }
-        return payload.reduce((a, b) => a + b, 0.0) / payload.length;
-      }
-      case 'keys': {
-        if (!isPlainObject(payload)) {
-          return;
-        }
-        return Object.keys(payload);
-      }
-      case 'length': {
-        if (!isArray(payload) && !isString(payload)) {
-          return;
-        }
-        return payload.length;
-      }
-      case 'max': {
-        if (!isArrayOfNumber(payload)) {
-          return;
-        }
-        if (payload.length === 0) {
-          return 0;
-        }
-        return Math.max(...payload);
-      }
-      case 'min': {
-        if (!isArrayOfNumber(payload)) {
-          return;
-        }
-        if (payload.length === 0) {
-          return 0;
-        }
-        return Math.min(...payload);
-      }
-      case 'stddev': {
-        if (!isArrayOfNumber(payload)) {
-          return;
-        }
-        if (payload.length === 0) {
-          return 0;
-        }
-        return standardDeviation(payload);
-      }
-      case 'sum': {
-        if (!isArrayOfNumber(payload)) {
-          return;
-        }
-
-        return payload.reduce((a, b) => a + b, 0);
-      }
-      case 'concat': {
-        if (!isArray(payload) && !isString(payload)) {
-          return;
-        }
-
-        const value = this.handleFunctionContent(payload, tree.value);
-        if (isUndefined(value)) {
-          return payload;
-        }
-
-        if (isString(payload)) {
-          if (!isString(value)) {
-            return;
-          }
-          return `${payload}${value}`;
-        }
-
-        return payload.concat(value);
-      }
-      case 'append': {
-        if (!isArray(payload)) {
-          return;
-        }
-        const value = this.handleFunctionContent(payload, tree.value);
-
-        if (isUndefined(value)) {
-          return payload;
-        }
-
-        return [...payload, value];
-      }
-    }
-  };
-
   private handleNumericLiteral = (payload: unknown, tree: NumericLiteral): unknown => {
     if (!isArray(payload) && !isString(payload)) {
       return;
@@ -597,10 +481,6 @@ export class Handler {
   };
 
   public handleRoot = (payload: unknown, tree: Root): unknown => {
-    const result = this.handleSubscript(payload, tree.next);
-    if (tree.fn) {
-      return this.handleFunction(result, tree.fn);
-    }
-    return result;
+    return this.handleSubscript(payload, tree.next);
   };
 }
