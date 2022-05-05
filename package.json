@@ -3,12 +3,17 @@
   "version": "1.5.0",
   "description": "Query json with jsonpath expressions",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    "import": "./dist/esm/index.js",
+    "require": "./dist/cjs/index.js",
+    "default": "./dist/esm/index.js"
+  },
   "scripts": {
     "generate": "antlr4ts ./src/parser/generated/JSONPath.g4 && npm run format",
     "test": "jest --config jestconfig.json",
     "ci:test": "jest --config jestconfig.json --runInBand --ci --coverage --coverageDirectory=coverage",
-    "build": "tsc",
+    "build": "tsc --project tsconfig.esm.json && tsc --project tsconfig.json",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint src --ext .ts",
     "prepare": "npm run build",
