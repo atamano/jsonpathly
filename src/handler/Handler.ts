@@ -317,12 +317,12 @@ export class Handler {
       case 'bracketMember': {
         const identifierRes = this.handleBracketMemberContent(payload, treeValue.value);
         if (isDefined(identifierRes)) {
-          results.push(identifierRes);
+          results = results.concat(identifierRes);
         }
         break;
       }
       case 'bracketExpression': {
-        if (!isPlainObject(value)) {
+        if (isPlainObject(value)) {
           const identifierRes = this.handleBracketExpressionContent(payload, treeValue.value);
           results = results.concat(identifierRes);
         }
@@ -336,7 +336,7 @@ export class Handler {
       case 'identifier': {
         const identifierRes = this.handleIdentifier(payload, treeValue);
         if (isDefined(identifierRes)) {
-          results.push(identifierRes);
+          results = results.concat(identifierRes);
         }
         break;
       }
@@ -347,9 +347,7 @@ export class Handler {
         const result = this.handleDotdot({ value: value[key], paths: payload.paths.concat(`["${key}"]`) }, tree);
         results = results.concat(result);
       });
-    }
-
-    if (isArray(value)) {
+    } else if (isArray(value)) {
       value.forEach((item, index) => {
         const result = this.handleDotdot({ value: item, paths: payload.paths.concat(`[${index}]`) }, tree);
         results = results.concat(result);
@@ -374,18 +372,20 @@ export class Handler {
   };
 
   private handleBracketExpressionContent = (payload: ValuePath, tree: BracketExpressionContent): ValuePath[] => {
+    const payloadValue = payload.value;
+
     switch (tree.type) {
       case 'filterExpression': {
         let results: ValuePath[] = [];
 
-        if (isArray(payload.value)) {
-          payload.value.forEach((value, index) => {
+        if (isArray(payloadValue)) {
+          payloadValue.forEach((value, index) => {
             const item = { value, paths: payload.paths.concat(`[${index}]`) };
             if (this.handleFilterExpressionContent(item, tree.value)) {
               results = results.concat(item);
             }
           });
-        } else if (isPlainObject(payload.value)) {
+        } else if (isPlainObject(payloadValue)) {
           if (this.handleFilterExpressionContent(payload, tree.value)) {
             results = results.concat(payload);
           }
@@ -434,7 +434,7 @@ export class Handler {
         values = values.concat(res.value);
         paths = paths.concat(res.paths);
       } else {
-        values.push(res.value);
+        values = [...values, res.value];
         paths = paths.concat(res.paths);
       }
     });
