@@ -18,14 +18,15 @@ import {
 } from '../parser/types';
 import { isArray, isDefined, isNumber, isPlainObject, isString, isUndefined } from './helper';
 
-type ValuePath = { value: unknown; paths: string | string[]; isIndefinite?: boolean };
+type ValuePath<T extends unknown = unknown> = { value: T; paths: string | string[]; isIndefinite?: boolean };
 
-const getIndex = (index: number, total: number): number => (index < 0 && total ? total + (index % total) : index);
+const getNumericLiteralIndex = (index: number, total: number): number =>
+  index < 0 && total ? total + (index % total) : index;
 
-export class Handler {
-  rootPayload: ValuePath;
+export class Handler<T extends unknown = unknown> {
+  rootPayload: ValuePath<T>;
 
-  constructor(rootPayload: unknown) {
+  constructor(rootPayload: T) {
     this.rootPayload = { value: rootPayload, paths: '$' };
   }
 
@@ -242,7 +243,7 @@ export class Handler {
       return;
     }
 
-    const index = getIndex(tree.value, value.length);
+    const index = getNumericLiteralIndex(tree.value, value.length);
 
     if (index < value.length) {
       return { value: value[index], paths: paths.concat(`[${index}]`) };
@@ -256,8 +257,8 @@ export class Handler {
       return [];
     }
 
-    const start = tree.start !== null ? getIndex(tree.start, value.length) : 0;
-    const end = tree.end !== null ? getIndex(tree.end, value.length) : value.length;
+    const start = tree.start !== null ? getNumericLiteralIndex(tree.start, value.length) : 0;
+    const end = tree.end !== null ? getNumericLiteralIndex(tree.end, value.length) : value.length;
     const step = tree.step === null || tree.step <= 0 ? 1 : tree.step;
 
     let count = 0;
@@ -315,28 +316,28 @@ export class Handler {
 
     switch (treeValue.type) {
       case 'bracketMember': {
-        const identifierRes = this.handleBracketMemberContent(payload, treeValue.value);
-        if (isDefined(identifierRes)) {
-          results = results.concat(identifierRes);
+        const result = this.handleBracketMemberContent(payload, treeValue.value);
+        if (isDefined(result)) {
+          results = results.concat(result);
         }
         break;
       }
       case 'bracketExpression': {
         if (isPlainObject(value)) {
-          const identifierRes = this.handleBracketExpressionContent(payload, treeValue.value);
-          results = results.concat(identifierRes);
+          const result = this.handleBracketExpressionContent(payload, treeValue.value);
+          results = results.concat(result);
         }
         break;
       }
       case 'wildcard': {
-        const identifierRes = this.handleWildcard(payload);
-        results = results.concat(identifierRes);
+        const result = this.handleWildcard(payload);
+        results = results.concat(result);
         break;
       }
       case 'identifier': {
-        const identifierRes = this.handleIdentifier(payload, treeValue);
-        if (isDefined(identifierRes)) {
-          results = results.concat(identifierRes);
+        const result = this.handleIdentifier(payload, treeValue);
+        if (isDefined(result)) {
+          results = results.concat(result);
         }
         break;
       }
@@ -410,11 +411,11 @@ export class Handler {
 
   private concatIndefiniteValuePaths = (payload: ValuePath[], tree: Subscript | null): ValuePath => {
     if (!tree) {
-      return payload.reduce(
+      return payload.reduce<ValuePath<unknown[]>>(
         (acc, current) => ({
           isIndefinite: true,
-          value: [...(acc.value as unknown[]), current.value],
-          paths: [...acc.paths, current.paths] as string | string[],
+          value: [...acc.value, current.value],
+          paths: [...acc.paths, current.paths] as string[],
         }),
         { value: [], paths: [], isIndefinite: true },
       );
@@ -424,19 +425,14 @@ export class Handler {
     let paths: string[] = [];
 
     payload.forEach((item) => {
-      const res = this.handleSubscript(item, tree);
+      const result = this.handleSubscript(item, tree);
 
-      if (isUndefined(res)) {
+      if (isUndefined(result)) {
         return;
       }
 
-      if (res.isIndefinite) {
-        values = values.concat(res.value);
-        paths = paths.concat(res.paths);
-      } else {
-        values = [...values, res.value];
-        paths = paths.concat(res.paths);
-      }
+      values = result.isIndefinite ? values.concat(result.value) : [...values, result.value];
+      paths = paths.concat(result.paths);
     });
 
     return { value: values, paths, isIndefinite: true };
