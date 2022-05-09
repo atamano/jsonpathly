@@ -1,36 +1,41 @@
-import { ANTLRInputStream, CommonTokenStream, RecognitionException, Recognizer } from 'antlr4ts';
-import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import antlr4 from 'antlr4';
 import { JSONPathSyntaxError } from './errors';
-import { JSONPathLexer } from './generated/JSONPathLexer';
-import { JSONPathListener } from './generated/JSONPathListener';
-import { JSONPathParser } from './generated/JSONPathParser';
-import CustomJSONPathListener from './Listener';
+import JSONPathLexer from './generated/JSONPathLexer';
+import JSONPathParser from './generated/JSONPathParser';
+import Listener from './Listener';
 import { Root } from './types';
 
 export function parseInternal(input: string): Root {
-  const inputStream = new ANTLRInputStream(input);
+  const inputStream = new antlr4.InputStream(input);
   const lexer = new JSONPathLexer(inputStream);
-  const tokenStream = new CommonTokenStream(lexer);
+  const tokenStream = new antlr4.CommonTokenStream(lexer);
   const parser = new JSONPathParser(tokenStream);
+
   parser.removeErrorListeners();
   parser.addErrorListener({
-    syntaxError: <T>(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      _recognizer: Recognizer<T, any>,
-      _offendingSymbol: T | undefined,
+    syntaxError: (
+      _recognizer: antlr4.Recognizer,
+      _offendingSymbol: any,
       line: number,
       charPositionInLine: number,
       msg: string,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      _e: RecognitionException | undefined,
+      _e: any,
     ): void => {
       throw new JSONPathSyntaxError(line, charPositionInLine, msg);
     },
-  });
-  const listener = new CustomJSONPathListener();
+  } as any);
+
+  const listener = new Listener();
+  parser.buildParseTrees = true;
 
   const tree = parser.jsonpath();
-  ParseTreeWalker.DEFAULT.walk(listener as JSONPathListener, tree);
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+  // @ts-ignore
+  antlr4.tree.ParseTreeWalker.DEFAULT.walk(listener, tree);
 
   return listener.getTree();
 }

@@ -79,34 +79,33 @@ describe('paths', () => {
 
     expect(res1).toEqual(res3);
   });
-});
 
-describe('exceptions', () => {
-  const PAYLOAD = {
-    string: 'string',
-    array: [1, 2, 3, 4],
-    nested: {
-      object: 1,
-    },
-  };
-  const testCases = [
-    { payload: PAYLOAD, path: `$.string`, expected: [`$["string"]`], opts: {} },
-    { payload: PAYLOAD, path: `$.array.2`, expected: [`$["array"][2]`], opts: {} },
-    { payload: PAYLOAD, path: `$.bad`, expected: [], opts: {} },
-    { payload: PAYLOAD, path: `$.array[?(@ > 3)]`, expected: [`$["array"][3]`], opts: {} },
-    { payload: PAYLOAD, path: `$.array["badQUote']`, expected: [], opts: { hideExceptions: true } },
-  ];
-
-  test.each(testCases)('paths(%s)', ({ payload, path, expected, opts }) => {
-    const res = paths(payload, path, opts as PathsOptions);
-
-    expect(res).toEqual(expected);
-  });
-
-  test('should throw exception', () => {
-    const t = (): void => {
-      paths({}, 'bad');
+  describe('exceptions', () => {
+    const PAYLOAD = {
+      string: 'string',
+      array: [1, 2, 3, 4],
+      nested: {
+        object: 1,
+      },
     };
-    expect(t).toThrow(Error);
+    const testCases = [
+      { payload: PAYLOAD, path: `$.string`, expected: [`$["string"]`], opts: {} },
+      { payload: PAYLOAD, path: `$.array.2`, expected: [`$["array"][2]`], opts: {} },
+      { payload: PAYLOAD, path: `$.bad`, expected: [], opts: {} },
+      { payload: PAYLOAD, path: `$.array[?(@ > 3)]`, expected: [`$["array"][3]`], opts: {} },
+      { payload: PAYLOAD, path: `$.array["badQUote']`, expected: [], opts: { hideExceptions: true } },
+    ];
+
+    test.each(testCases)('paths(%s)', ({ payload, path, expected, opts }) => {
+      const res = paths(payload, path, opts as PathsOptions);
+
+      expect(res).toEqual(expected);
+    });
+
+    test('should throw exception', () => {
+      expect(() => {
+        paths({}, 'bad');
+      }).toThrow(Error);
+    });
   });
 });

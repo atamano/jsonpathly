@@ -554,10 +554,9 @@ describe('query', () => {
     });
 
     test('should throw exception on missing operator', () => {
-      const t = (): void => {
+      expect(() => {
         query(PAYLOAD, '$.arraySimpleObjects[?(@.number>3 4)]..number');
-      };
-      expect(t).toThrow(Error);
+      }).toThrow(Error);
     });
   });
 
@@ -577,10 +576,9 @@ describe('query', () => {
     ];
 
     test.each(testCases)('error(%s)', ({ path, err }) => {
-      const t = (): void => {
+      expect(() => {
         query({ test: 1 }, path);
-      };
-      expect(t).toThrow(err);
+      }).toThrow(err);
     });
   });
 

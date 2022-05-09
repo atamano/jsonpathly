@@ -1,10 +1,14 @@
 {
     "transform": {
-        "^.+\\.(t|j)sx?$": "ts-jest"
+        "^.+\\.jsx?$": "babel-jest",
+        "^.+\\.ts?$": "ts-jest"
     },
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
     "modulePathIgnorePatterns": [
         "dist"
+    ],
+    "transformIgnorePatterns": [
+        "node_modules/(?!antlr4/.*)"
     ],
     "coveragePathIgnorePatterns": [
         "parser/generated"

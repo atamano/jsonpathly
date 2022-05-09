@@ -1,9 +1,21 @@
 {
-    "extends": "./tsconfig.base.json",
-    "compilerOptions": {
-        "module": "commonjs",
-        "outDir": "dist/cjs",
-        "declarationDir": "dist/types"
-    }
- }
-
+  "compilerOptions": {
+    "forceConsistentCasingInFileNames": true,
+    "target": "es6",
+    "rootDir": "./src", 
+    "noImplicitAny": true,
+    "outDir": "./types",
+    "sourceMap": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,                             
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "types": ["node", "jest"],
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
