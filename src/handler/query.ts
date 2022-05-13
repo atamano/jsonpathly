@@ -7,7 +7,7 @@ export type QueryOptions = {
   returnArray?: boolean;
 };
 
-const querySingle = (payload: unknown, path: string, options: QueryOptions = {}): unknown => {
+const querySingle = (payload: unknown, path: string, options: QueryOptions): unknown => {
   const tree = parseInternal(path);
 
   const handler = new Handler(payload);
@@ -23,7 +23,7 @@ const querySingle = (payload: unknown, path: string, options: QueryOptions = {})
   return result?.value;
 };
 
-const queryMany = (payload: unknown, paths: string[], options: QueryOptions = {}): unknown => {
+const queryMany = (payload: unknown, paths: string[], options: QueryOptions): unknown => {
   const results: unknown[] = [];
   for (const path of paths) {
     const res = querySingle(payload, path, options);
@@ -48,5 +48,6 @@ export const query = (payload: unknown, paths: string | string[], options: Query
     if (!!options.returnArray) {
       return [];
     }
+    return;
   }
 };

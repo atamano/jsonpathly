@@ -248,6 +248,7 @@ export class Handler<T extends unknown = unknown> {
     if (index < value.length) {
       return { value: value[index], paths: paths.concat(`[${index}]`) };
     }
+    return;
   };
 
   private handleSlices = ({ value, paths }: ValuePath, tree: Slices): ValuePath[] => {

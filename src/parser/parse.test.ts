@@ -79,9 +79,8 @@ describe('parse', () => {
     expect(tree).toBeNull();
   });
   test('should throw exceptions', () => {
-    const t = (): void => {
+    expect(() => {
       parse('bad');
-    };
-    expect(t).toThrow(Error);
+    }).toThrow(Error);
   });
 });

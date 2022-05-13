@@ -1,26 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { RuleContext } from 'antlr4ts/RuleContext';
-import { JSONPathListener } from './generated/JSONPathListener';
-import {
-  ArrayContext,
-  BracketContentContext,
-  BracketContext,
-  DotContentContext,
-  DotdotContentContext,
-  ExpressionContext,
-  FilterargContext,
-  FilterExpressionContext,
-  FilterpathContext,
-  IndexesContext,
-  JsonpathContext,
-  JSONPathParser,
-  ObjContext,
-  RegexContext,
-  SlicesContext,
-  SubscriptContext,
-  UnionsContext,
-  ValueContext,
-} from './generated/JSONPathParser';
+
+import JSONPathListener from './generated/JSONPathListener';
+import JSONPathParser from './generated/JSONPathParser';
 import {
   BracketExpression,
   BracketExpressionContent,
@@ -87,7 +70,7 @@ type TypeGardReturn<K> = K extends (a: any) => a is infer T ? T : never;
 const isBracketMember = (item: BracketMemberContent | BracketExpressionContent): item is BracketMemberContent =>
   ['identifier', 'numericLiteral', 'stringLiteral'].includes(item.type);
 
-export default class Listener implements JSONPathListener {
+export default class Listener extends JSONPathListener {
   _stack: JsonPathElement[] = [];
 
   public getTree(): Root {
@@ -96,7 +79,7 @@ export default class Listener implements JSONPathListener {
 
   private popWithCheck<T extends keyof typeof TYPE_CHECK_MAPPER>(
     key: T,
-    ctx: RuleContext | null,
+    ctx: any | null,
   ): TypeGardReturn<typeof TYPE_CHECK_MAPPER[T]> {
     const value = this._stack.pop();
 
@@ -105,14 +88,14 @@ export default class Listener implements JSONPathListener {
     }
 
     /* istanbul ignore next */
-    throw new Error(`bad type returned for ${key} with token: ${ctx?.text}`);
+    throw new Error(`bad type returned for ${key} with token: ${ctx?.getText()}`);
   }
 
   private push(node: JsonPathElement): void {
     this._stack.push(node);
   }
 
-  public exitJsonpath(ctx: JsonpathContext): void {
+  public exitJsonpath(ctx: any): void {
     if (ctx.ROOT_VALUE()) {
       const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
 
@@ -120,10 +103,10 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitBracketContent(ctx: BracketContentContext): void {
+  public exitBracketContent(ctx: any): void {
     switch (true) {
       case !!ctx.IDENTIFIER(): {
-        const text = ctx.IDENTIFIER()!.text;
+        const text = ctx.IDENTIFIER()!.getText();
 
         this.push({ type: 'identifier', value: text });
         break;
@@ -151,13 +134,13 @@ export default class Listener implements JSONPathListener {
         break;
       }
       case !!ctx.STRING(): {
-        const value = ctx.STRING()!.text.slice(1, -1);
+        const value = ctx.STRING()!.getText().slice(1, -1);
 
         this.push({ type: 'stringLiteral', value });
         break;
       }
       case !!ctx.NUMBER(): {
-        const number = Number.parseInt(ctx.NUMBER()!.text);
+        const number = Number.parseInt(ctx.NUMBER()!.getText());
 
         this.push({
           type: 'numericLiteral',
@@ -174,7 +157,7 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitBracket(ctx: BracketContext): void {
+  public exitBracket(ctx: any): void {
     const value = this.popWithCheck('bracketContent', ctx);
 
     if (isBracketMember(value)) {
@@ -191,14 +174,14 @@ export default class Listener implements JSONPathListener {
     });
   }
 
-  public exitDotdotContent(ctx: DotdotContentContext): void {
+  public exitDotdotContent(ctx: any): void {
     switch (true) {
       case !!ctx.STAR(): {
         this.push({ type: 'wildcard' });
         break;
       }
       case !!ctx.IDENTIFIER(): {
-        const value = ctx.IDENTIFIER()!.text;
+        const value = ctx.IDENTIFIER()!.getText();
 
         this.push({ type: 'identifier', value });
         break;
@@ -212,20 +195,20 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitDotContent(ctx: DotContentContext): void {
+  public exitDotContent(ctx: any): void {
     switch (true) {
       case !!ctx.STAR(): {
         this.push({ type: 'wildcard' });
         break;
       }
       case !!ctx.IDENTIFIER(): {
-        const text = ctx.IDENTIFIER()!.text;
+        const text = ctx.IDENTIFIER()!.getText();
 
         this.push({ type: 'identifier', value: text });
         break;
       }
       case !!ctx.NUMBER(): {
-        const number = Number.parseInt(ctx.NUMBER()!.text);
+        const number = Number.parseInt(ctx.NUMBER()!.getText());
 
         this.push({
           type: 'numericLiteral',
@@ -236,7 +219,7 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitSubscript(ctx: SubscriptContext): void {
+  public exitSubscript(ctx: any): void {
     switch (true) {
       case !!ctx.DOT(): {
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
@@ -280,7 +263,7 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitFilterpath(ctx: FilterpathContext): void {
+  public exitFilterpath(ctx: any): void {
     switch (true) {
       case !!ctx.ROOT_VALUE(): {
         const next = ctx.subscript() ? this.popWithCheck('subscript', ctx) : null;
@@ -297,11 +280,11 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitUnions(ctx: UnionsContext): void {
+  public exitUnions(ctx: any): void {
     const nodes: (StringLiteral | Identifier)[] = [];
 
     for (let index = 0; index < ctx.IDENTIFIER().length; index += 1) {
-      const value = ctx.IDENTIFIER(index)!.text;
+      const value = ctx.IDENTIFIER(index)!.getText();
 
       nodes.push({
         type: 'identifier',
@@ -310,7 +293,7 @@ export default class Listener implements JSONPathListener {
     }
 
     for (let index = 0; index < ctx.STRING().length; index += 1) {
-      const value = ctx.STRING(index)!.text.slice(1, -1);
+      const value = ctx.STRING(index)!.getText().slice(1, -1);
 
       nodes.push({
         type: 'stringLiteral',
@@ -324,11 +307,11 @@ export default class Listener implements JSONPathListener {
     });
   }
 
-  public exitIndexes(ctx: IndexesContext): void {
+  public exitIndexes(ctx: any): void {
     const nodes: NumericLiteral[] = [];
 
     for (let index = 0; index < ctx.NUMBER().length; index += 1) {
-      const number = Number.parseInt(ctx.NUMBER(index)!.text);
+      const number = Number.parseInt(ctx.NUMBER(index)!.getText());
 
       nodes.push({
         type: 'numericLiteral',
@@ -342,50 +325,56 @@ export default class Listener implements JSONPathListener {
     });
   }
 
-  public exitSlices(ctx: SlicesContext): void {
+  public exitSlices(ctx: any): void {
     let start: number | null = null;
     let end: number | null = null;
     let step: number | null = null;
 
-    const number0 = ctx.tryGetToken(JSONPathParser.NUMBER, 0);
-    const number1 = ctx.tryGetToken(JSONPathParser.NUMBER, 1);
-    const number2 = ctx.tryGetToken(JSONPathParser.NUMBER, 2);
+    const number0 = ctx.getToken(JSONPathParser.NUMBER, 0);
+    const number1 = ctx.getToken(JSONPathParser.NUMBER, 1);
+    const number2 = ctx.getToken(JSONPathParser.NUMBER, 2);
 
-    const colon0 = ctx.tryGetToken(JSONPathParser.COLON, 0);
-    const colon1 = ctx.tryGetToken(JSONPathParser.COLON, 1);
+    const colon0 = ctx.getToken(JSONPathParser.COLON, 0);
+    const colon1 = ctx.getToken(JSONPathParser.COLON, 1);
 
     if (colon1 && number2) {
-      step = Number.parseInt(ctx.NUMBER(2).text);
-    } else if (colon1 && number1 && number1.sourceInterval.a > colon1.sourceInterval.a) {
-      step = Number.parseInt(ctx.NUMBER(1).text);
-    } else if (colon1 && number0 && number0.sourceInterval.a > colon1.sourceInterval.a) {
-      step = Number.parseInt(ctx.NUMBER(0).text);
+      step = Number.parseInt(ctx.NUMBER(2).getText());
+    } else if (colon1 && number1 && number1.getSourceInterval().start > colon1.getSourceInterval().start) {
+      step = Number.parseInt(ctx.NUMBER(1).getText());
+    } else if (colon1 && number0 && number0.getSourceInterval().start > colon1.getSourceInterval().start) {
+      step = Number.parseInt(ctx.NUMBER(0).getText());
     }
 
-    if (!colon1 && colon0 && number1 && number1.sourceInterval.a > colon0.sourceInterval.a) {
-      end = Number.parseInt(ctx.NUMBER(1).text);
-    } else if (!colon1 && colon0 && !number1 && number0 && number0.sourceInterval.a > colon0.sourceInterval.a) {
-      end = Number.parseInt(ctx.NUMBER(0).text);
-    } else if (colon1 && colon0 && number1 && number1.sourceInterval.a < colon1.sourceInterval.a) {
-      end = Number.parseInt(ctx.NUMBER(1).text);
+    if (!colon1 && colon0 && number1 && number1.getSourceInterval().start > colon0.getSourceInterval().start) {
+      end = Number.parseInt(ctx.NUMBER(1).getText());
+    } else if (
+      !colon1 &&
+      colon0 &&
+      !number1 &&
+      number0 &&
+      number0.getSourceInterval().start > colon0.getSourceInterval().start
+    ) {
+      end = Number.parseInt(ctx.NUMBER(0).getText());
+    } else if (colon1 && colon0 && number1 && number1.getSourceInterval().start < colon1.getSourceInterval().start) {
+      end = Number.parseInt(ctx.NUMBER(1).getText());
     } else if (
       colon1 &&
       colon0 &&
       number0 &&
-      number0.sourceInterval.a > colon0.sourceInterval.a &&
-      number0.sourceInterval.a < colon1.sourceInterval.a
+      number0.getSourceInterval().start > colon0.getSourceInterval().start &&
+      number0.getSourceInterval().start < colon1.getSourceInterval().start
     ) {
-      end = Number.parseInt(ctx.NUMBER(0).text);
+      end = Number.parseInt(ctx.NUMBER(0).getText());
     }
 
-    if (colon0 && number0 && number0.sourceInterval.a < colon0.sourceInterval.a) {
-      start = Number.parseInt(ctx.NUMBER(0).text);
+    if (colon0 && number0 && number0.getSourceInterval().start < colon0.getSourceInterval().start) {
+      start = Number.parseInt(ctx.NUMBER(0).getText());
     }
 
     this.push({ type: 'slices', start, end, step });
   }
 
-  public exitFilterExpression(ctx: FilterExpressionContext): void {
+  public exitFilterExpression(ctx: any): void {
     const value = this.popWithCheck('expressionContent', ctx);
 
     this.push({
@@ -394,9 +383,9 @@ export default class Listener implements JSONPathListener {
     });
   }
 
-  public exitRegex(ctx: RegexContext): void {
-    const value = ctx.REGEX_EXPR().text;
-    const opts = ctx.REGEX_OPT()?.text || '';
+  public exitRegex(ctx: any): void {
+    const value = ctx.REGEX_EXPR().getText();
+    const opts = ctx.REGEX_OPT()?.getText() || '';
 
     this.push({
       type: 'value',
@@ -406,7 +395,7 @@ export default class Listener implements JSONPathListener {
     });
   }
 
-  public exitExpression(ctx: ExpressionContext): void {
+  public exitExpression(ctx: any): void {
     switch (true) {
       case !!ctx.NOT(): {
         const value = this.popWithCheck('expressionContent', ctx);
@@ -454,7 +443,7 @@ export default class Listener implements JSONPathListener {
         this.push({ type: 'comparator', operator: 'empty', left, right: null });
         break;
       }
-      case !!ctx.tryGetRuleContext(1, FilterargContext): {
+      case !!ctx.getTypedRuleContext(JSONPathParser.FilterargContext, 1): {
         const right = this.popWithCheck('operationContent', ctx);
         const left = this.popWithCheck('operationContent', ctx);
 
@@ -517,12 +506,12 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitObj(ctx: ObjContext): void {
+  public exitObj(ctx: any): void {
     const obj: Record<string, unknown> = {};
 
     for (const pairCtx of ctx.pair()) {
       const value = this.popWithCheck('value', ctx);
-      const key = pairCtx.STRING().text.slice(1, -1);
+      const key = pairCtx.STRING().getText().slice(1, -1);
 
       obj[key] = value.value;
     }
@@ -530,7 +519,7 @@ export default class Listener implements JSONPathListener {
     this.push({ type: 'value', subtype: 'object', value: obj });
   }
 
-  public exitArray(ctx: ArrayContext): void {
+  public exitArray(ctx: any): void {
     const array: unknown[] = [];
 
     for (let index = 0; index < ctx.value().length; index += 1) {
@@ -542,9 +531,9 @@ export default class Listener implements JSONPathListener {
     this.push({ type: 'value', subtype: 'array', value: array });
   }
 
-  public exitFilterarg(ctx: FilterargContext): void {
+  public exitFilterarg(ctx: any): void {
     switch (true) {
-      case !!ctx.tryGetRuleContext(1, FilterargContext): {
+      case !!ctx.getTypedRuleContext(JSONPathParser.FilterargContext, 1): {
         switch (true) {
           case !!ctx.STAR(): {
             const right = this.popWithCheck('operationContent', ctx);
@@ -599,16 +588,16 @@ export default class Listener implements JSONPathListener {
     }
   }
 
-  public exitValue(ctx: ValueContext): void {
+  public exitValue(ctx: any): void {
     switch (true) {
       case !!ctx.STRING(): {
-        const text = ctx.STRING()!.text.slice(1, -1);
+        const text = ctx.STRING()!.getText().slice(1, -1);
 
         this.push({ type: 'value', subtype: 'string', value: text });
         break;
       }
       case !!ctx.NUMBER(): {
-        const text = ctx.NUMBER()!.text;
+        const text = ctx.NUMBER()!.getText();
 
         if (text !== `${Number.parseInt(text)}`) {
           this.push({ type: 'value', subtype: 'number', value: Number.parseFloat(text) });
