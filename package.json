@@ -1,6 +1,6 @@
 {
   "name": "jsonpathly",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "description": "Query json with jsonpath expressions",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
