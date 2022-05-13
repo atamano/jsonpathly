@@ -515,7 +515,7 @@ describe('query', () => {
         expected: [5, 7],
       },
       {
-        path: `$.arraySimpleObjects[?(@.number>['$.number']+3)]..number`,
+        path: `$.arraySimpleObjects[?(@.number>$['number']+3)]..number`,
         expected: [5, 7],
       },
       {
