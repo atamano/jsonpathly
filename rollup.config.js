@@ -2,7 +2,7 @@ import { babel } from '@rollup/plugin-babel';
 import commonjs from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-import builtins from 'rollup-plugin-node-builtins';
+import nodePolyfills from 'rollup-plugin-polyfill-node';
 import 'core-js';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -21,7 +21,7 @@ export default {
     },
   ],
   plugins: [
-    builtins(),
+    nodePolyfills(),
     nodeResolve(),
     babel({ babelHelpers: 'bundled' }),
     commonjs({}),
