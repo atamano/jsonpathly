@@ -14,12 +14,10 @@ export default {
     {
       file: main,
       format: 'cjs',
-      sourcemap: true,
     },
     {
       file: module,
       format: 'esm',
-      sourcemap: true,
     },
   ],
   plugins: [

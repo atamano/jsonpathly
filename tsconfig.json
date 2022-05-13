@@ -5,7 +5,6 @@
     "rootDir": "./src", 
     "noImplicitAny": true,
     "outDir": "./types",
-    "sourceMap": true,
     "moduleResolution": "node",
     "strict": true,
     "allowJs": true,
