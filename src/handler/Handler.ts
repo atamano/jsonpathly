@@ -18,10 +18,12 @@ import {
 } from '../parser/types';
 import { isArray, isDefined, isNumber, isPlainObject, isString, isUndefined } from './helper';
 
-type ValuePath<T extends unknown = unknown> = { value: T; paths: string | string[]; isIndefinite?: boolean };
-
 const getNumericLiteralIndex = (index: number, total: number): number =>
   index < 0 && total ? total + (index % total) : index;
+const formatStringLiteralPath = (paths: string | string[], v: string): string | string[] => paths.concat(`["${v}"]`);
+const formatNumericLiteralPath = (paths: string | string[], v: number): string | string[] => paths.concat(`[${v}]`);
+
+type ValuePath<T extends unknown = unknown> = { value: T; paths: string | string[]; isIndefinite?: boolean };
 
 export class Handler<T extends unknown = unknown> {
   rootPayload: ValuePath<T>;
@@ -35,7 +37,7 @@ export class Handler<T extends unknown = unknown> {
       return;
     }
 
-    return { value: payload.value[tree.value], paths: payload.paths.concat(`["${tree.value}"]`) };
+    return { value: payload.value[tree.value], paths: formatStringLiteralPath(payload.paths, tree.value) };
   };
 
   private handleWildcard = ({ value, paths }: ValuePath): ValuePath[] => {
@@ -46,11 +48,11 @@ export class Handler<T extends unknown = unknown> {
     if (isArray(value)) {
       return value.map((item, index) => ({
         value: item,
-        paths: paths.concat(`[${index}]`),
+        paths: formatNumericLiteralPath(paths, index),
       }));
     }
 
-    return Object.keys(value).map((key) => ({ value: value[key], paths: paths.concat(`["${key}"]`) }));
+    return Object.keys(value).map((key) => ({ value: value[key], paths: formatStringLiteralPath(paths, key) }));
   };
 
   private handleOperationContent = (payload: ValuePath, tree: OperationContent): ValuePath | undefined => {
@@ -170,7 +172,6 @@ export class Handler<T extends unknown = unknown> {
         if (!isNumber(leftValue) || !isNumber(rightValue)) {
           return false;
         }
-
         return leftValue > rightValue;
       }
       case 'ge': {
@@ -180,23 +181,23 @@ export class Handler<T extends unknown = unknown> {
         return leftValue >= rightValue;
       }
       case 'in': {
-        if (isArray(rightValue)) {
-          return rightValue.includes(leftValue);
+        if (!isArray(rightValue)) {
+          return false;
         }
-        return false;
+        return rightValue.includes(leftValue);
       }
       case 'nin': {
-        if (isArray(rightValue)) {
-          return !rightValue.includes(leftValue);
+        if (!isArray(rightValue)) {
+          return false;
         }
-        return false;
+        return !rightValue.includes(leftValue);
       }
       case 'reg': {
-        if (isString(leftValue) && isString(rightValue)) {
-          const value = rightValue.slice(1, -1);
-          return !!leftValue.match(new RegExp(value, tree.right.opts));
+        if (!isString(leftValue) || !isString(rightValue)) {
+          return false;
         }
-        return false;
+        const value = rightValue.slice(1, -1);
+        return !!leftValue.match(new RegExp(value, tree.right.opts));
       }
     }
   };
@@ -246,7 +247,7 @@ export class Handler<T extends unknown = unknown> {
     const index = getNumericLiteralIndex(tree.value, value.length);
 
     if (index < value.length) {
-      return { value: value[index], paths: paths.concat(`[${index}]`) };
+      return { value: value[index], paths: formatNumericLiteralPath(paths, index) };
     }
     return;
   };
@@ -266,7 +267,7 @@ export class Handler<T extends unknown = unknown> {
     value.forEach((item, index) => {
       if (index >= start && index < end) {
         if (count % step === 0) {
-          results.push({ value: item, paths: paths.concat(`[${index}]`) });
+          results.push({ value: item, paths: formatNumericLiteralPath(paths, index) });
         }
         count += 1;
       }
@@ -280,7 +281,7 @@ export class Handler<T extends unknown = unknown> {
       return;
     }
 
-    return { value: value[tree.value], paths: paths.concat(`["${tree.value}"]`) };
+    return { value: value[tree.value], paths: formatStringLiteralPath(paths, tree.value) };
   };
 
   private handleUnions = (payload: ValuePath, tree: Unions): ValuePath[] => {
@@ -346,12 +347,15 @@ export class Handler<T extends unknown = unknown> {
 
     if (isPlainObject(value)) {
       Object.keys(value).forEach((key) => {
-        const result = this.handleDotdot({ value: value[key], paths: payload.paths.concat(`["${key}"]`) }, tree);
+        const result = this.handleDotdot(
+          { value: value[key], paths: formatStringLiteralPath(payload.paths, key) },
+          tree,
+        );
         results = results.concat(result);
       });
     } else if (isArray(value)) {
       value.forEach((item, index) => {
-        const result = this.handleDotdot({ value: item, paths: payload.paths.concat(`[${index}]`) }, tree);
+        const result = this.handleDotdot({ value: item, paths: formatNumericLiteralPath(payload.paths, index) }, tree);
         results = results.concat(result);
       });
     }
@@ -382,7 +386,7 @@ export class Handler<T extends unknown = unknown> {
 
         if (isArray(payloadValue)) {
           payloadValue.forEach((value, index) => {
-            const item = { value, paths: payload.paths.concat(`[${index}]`) };
+            const item = { value, paths: formatNumericLiteralPath(payload.paths, index) };
             if (this.handleFilterExpressionContent(item, tree.value)) {
               results = results.concat(item);
             }
