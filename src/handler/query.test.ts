@@ -145,6 +145,7 @@ describe('query', () => {
 
     describe('with filters', () => {
       const PAYLOAD = {
+        number: 2,
         nested: {
           nested: [{ number: 1, exist: true }, { number: 2 }, { number: 3 }],
         },
@@ -190,6 +191,11 @@ describe('query', () => {
         {
           payload: PAYLOAD,
           path: `$..nested[?(@.exist)]`,
+          expected: [PAYLOAD.nested.nested[0]],
+        },
+        {
+          payload: PAYLOAD,
+          path: `$..nested[?(@.number < $.number)]`,
           expected: [PAYLOAD.nested.nested[0]],
         },
         {
@@ -506,6 +512,10 @@ describe('query', () => {
     const testCases = [
       {
         path: `$.arraySimpleObjects[?(@.number>$.number+3)]..number`,
+        expected: [5, 7],
+      },
+      {
+        path: `$.arraySimpleObjects[?(@.number>['$.number']+3)]..number`,
         expected: [5, 7],
       },
       {

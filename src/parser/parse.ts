@@ -8,6 +8,50 @@ import JSONPathParser from './generated/JSONPathParser';
 import Listener from './Listener';
 import { Root } from './types';
 
+const customErrorListener = {
+  syntaxError: (
+    _recognizer: antlr4.Recognizer,
+    _offendingSymbol: any,
+    line: number,
+    charPositionInLine: number,
+    msg: string,
+    _e: any,
+  ): void => {
+    throw new JSONPathSyntaxError(line, charPositionInLine, msg);
+  },
+  reportAmbiguity: function (
+    _recognizer: antlr4.Recognizer,
+    _dfa: any,
+    _startIndex: number,
+    _stopIndex: number,
+    _exact: any,
+    _ambigAlts: any,
+    _configs: any,
+  ): void {
+    return;
+  },
+  reportAttemptingFullContext: function (
+    _recognizer: antlr4.Recognizer,
+    _dfa: any,
+    _startIndex: number,
+    _stopIndex: number,
+    _conflictingAlts: any,
+    _configs: any,
+  ): void {
+    return;
+  },
+  reportContextSensitivity: function (
+    _recognizer: antlr4.Recognizer,
+    _dfa: any,
+    _startIndex: number,
+    _stopIndex: number,
+    _conflictingAlts: any,
+    _configs: any,
+  ): void {
+    return;
+  },
+};
+
 export function parseInternal(input: string): Root {
   const inputStream = new antlr4.InputStream(input);
   const lexer = new JSONPathLexer(inputStream);
@@ -15,18 +59,7 @@ export function parseInternal(input: string): Root {
   const parser = new JSONPathParser(tokenStream);
 
   parser.removeErrorListeners();
-  parser.addErrorListener({
-    syntaxError: (
-      _recognizer: antlr4.Recognizer,
-      _offendingSymbol: any,
-      line: number,
-      charPositionInLine: number,
-      msg: string,
-      _e: any,
-    ): void => {
-      throw new JSONPathSyntaxError(line, charPositionInLine, msg);
-    },
-  } as any);
+  parser.addErrorListener(customErrorListener);
 
   const listener = new Listener();
   parser.buildParseTrees = true;
