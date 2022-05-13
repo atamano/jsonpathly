@@ -1,9 +1,11 @@
+# JsonPATHLY
+
 <img src="https://user-images.githubusercontent.com/9162276/166061295-a41b7d28-a1e9-4d17-9103-132a1ca20de8.png" width="350">
 
 [![CircleCI](https://circleci.com/gh/atamano/jsonpathly/tree/master.svg?style=shield&circle-token=442d6d9d566a5ed1472048e669f0155ed44d6648)](https://circleci.com/gh/atamano/jsonpathly/tree/master)
 [![codecov](https://codecov.io/gh/atamano/jsonpathly/branch/master/graph/badge.svg?token=QSSZGZMULF)](https://codecov.io/gh/atamano/jsonpathly)
 
-**A Typescript DSL for reading JSON documents.**
+**A secured and eval free typescript DSL for reading JSON documents.**
 
 [Link to the Demo](https://atamano.github.io/jsonpathly-demo/)
 
@@ -145,3 +147,22 @@ const jsonpath = jp.stringify({
 });
 // "$..author"
 ```
+
+## Differences from other javascript implementations
+
+Main reason you should use this library is for security and stability.
+
+#### Evaluating Expressions
+
+Script expressions (i.e, `(...)`) are not allowed to prevent any XSS injections and Filter expressions (i.e, `?(...)`) do not use `eval` or `static-eval` for the same reason. Instead, jsonpathly has its own parser and its own evaluator. So for example, `$[(@.number +5 > $otherNumber * 10 + 2)]` is valid but `?(alert("hello"))` will return a bad syntax error (it would trigger an alert in some javascript libraries).
+
+#### Grammar
+
+This project uses ANTLR [grammar](https://github.com/atamano/jsonpathly/blob/master/src/parser/generated/JSONPath.g4) to parse JSONPath expressions and build a typed abstract syntax tree (AST).
+
+#### Implementation
+
+Implementation match with the main [java jsonpath library](https://github.com/json-path/JsonPath) with minor differences:
+
+- unions such as $.object[key1, key2] would return [ object[key1], object[key2] ] instead of a truncated object.
+- functions (.length(), max(), min() ...) are not handled yet
