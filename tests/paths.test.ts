@@ -1,5 +1,5 @@
-import { paths, PathsOptions } from './paths';
-import { query } from './query';
+import { paths, PathsOptions } from '../src/handler/paths';
+import { query } from '../src/handler/query';
 
 describe('paths', () => {
   const PAYLOAD = {

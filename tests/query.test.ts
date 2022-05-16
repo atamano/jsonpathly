@@ -1,5 +1,5 @@
-import { JSONPathSyntaxError } from '../parser/errors';
-import { query } from './query';
+import { JSONPathSyntaxError } from '../src/parser/errors';
+import { query } from '../src/handler/query';
 
 describe('query', () => {
   describe('with dot notations', () => {
