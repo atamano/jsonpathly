@@ -41,74 +41,76 @@ const names = jp.query(cities, '$..name');
 // [ "London", "Berlin", "Madrid", "Rome" ]
 ```
 
-JsonPath expressions always refer to a JSON structure in the same way as XPath expression are used in combination
-with an XML document. The "root member object" in JsonPath is always referred to as `$` regardless if it is an
-object or array.
+JsonPath expressions are used to access elements in a JSON structure, similar to how XPath expressions are used with XML documents. The starting point in JsonPath is referred to as "$" and can be either an object or array.
 
-JsonPath expressions can use the dot–notation
+JsonPath expressions can use either dot notation, such as 
 
 `$.store.book[0].title`
 
-or the bracket–notation
+or bracket notation, like
 
 `$['store']['book'][0]['title']`
 
 ## Operators
 
+The following table lists the available operators for JsonPath expressions:
+
 | Operator                  | Description                                                     |
 | :------------------------ | :-------------------------------------------------------------- |
-| `$`                       | The root element to query. This starts all path expressions.    |
-| `@`                       | The current node being processed by a filter predicate.         |
-| `*`                       | Wildcard. Available anywhere a name or numeric are required.    |
-| `..`                      | Deep scan. Available anywhere a name is required.               |
-| `.<name>`                 | Dot-notated child                                               |
-| `['<name>' (, '<name>')]` | Bracket-notated child or children                               |
-| `[<number> (, <number>)]` | Array index or indexes                                          |
-| `[start:end:step]`        | A python like array slice operator                              |
-| `[?(<expression>)]`       | Filter expression. Expression must evaluate to a boolean value. |
+| `$`                       | Refers to the root element of the JSON structure. It starts all path expressions.    |
+| `@`                       | Refers to the current node being processed by a filter predicate.      |
+| `*`                       | Acts as a wildcard, and can be used anywhere.    |
+| `..<name>`                      | Enables deep scanning, and can be used anywhere. A name is required.               |
+| `.<name>`                 | Refers to a dot-notated child element.                                          |
+| `['<name>' (, '<name>')]` | Refers to bracket-notated child elements.                         |
+| `[<number> (, <number>)]` | Refers to array index or indexes.                                    |
+| `[start:end:step]`        | A python-style array slicing operator.                            |
+| `[?(<expression>)]`       | A filter expression that must evaluate to a boolean value. |
 
 ## Filter Operators
 
-Filters are logical expressions used to filter arrays. A typical filter would be `[?(@.age > 18)]` where `@` represents the current item being processed. More complex filters can be created with logical operators `&&` and `||`. String literals must be enclosed by single or double quotes (`[?(@.color == 'blue')]` or `[?(@.color == "blue")]`).
+Filters are used to select specific elements from arrays based on logical expressions. The expression [?(@.age > 18)] filters items where the "age" property is greater than 18, with @ referring to the current item being processed. Complex filters can be created using the logical operators && and ||. When working with string literals, they must be surrounded by single or double quotes, such as [?(@.color == 'blue')] or [?(@.color == "blue")].
+
+The following table lists different operators and their descriptions:
 
 | Operator | Description                                                         |
 | :------- | :------------------------------------------------------------------ |
-| ==       | left is equal to right (note that 1 is not equal to '1')            |
-| !=       | left is not equal to right                                          |
-| <        | left is less than right                                             |
-| <=       | left is less or equal to right                                      |
-| >        | left is greater than right                                          |
-| >=       | left is greater than or equal to right                              |
-| in       | left exists in right [?(@.size in ['S', 'M'])]                      |
-| nin      | left does not exists in right                                       |
-| subsetof | left is a subset of right [?(@.sizes subsetof ['S', 'M', 'L'])]     |
-| anyof    | left has an intersection with right [?(@.sizes anyof ['M', 'L'])]   |
-| noneof   | left has no intersection with right [?(@.sizes noneof ['M', 'L'])]  |
-| sizeof   | size of left (array or string) should match right (array or string) |
-| size     | size of left (array or string) should match right (number)          |
-| empty    | left (array or string) should be empty                              |
+| ==       | left is equal to the right (note that 1 is not equal to '1')            |
+| !=       | left is not equal to the right                                          |
+| <        | left is less than the right                                            |
+| <=       | left is less than or equal to the right                                    |
+| >        | left is greater than the right                                         |
+| >=       | left is greater than or equal to the right                              |
+| in       | left exists in the right (e.g. `[?(@.size in ['S', 'M'])]`)                      |
+| nin      | left does not exist in the right                                       |
+| subsetof | left is a subset of the right (e.g. [?(@.sizes subsetof ['S', 'M', 'L'])])     |
+| anyof    | left has items in common with the right (e.g. [?(@.sizes anyof ['M', 'L'])])   |
+| noneof   | left has no items in common with the right (e.g. [?(@.sizes noneof ['M', 'L'])]) |
+| sizeof   | size of the left must match the size of the right (both must be arrays or strings) |
+| size     | size of the left must match the right (right must be a number)          |
+| empty    | left (array or string) must be empty                             |
 
 ## Methods
 
 #### jp.query(obj, pathExpression[, options])
 
-Find elements in `obj` matching `pathExpression`. Returns an array of elements that satisfy the provided JSONPath expression, or an empty array if none were matched.
+Used to find elements in the obj data that match the given pathExpression. The function returns an array of elements that match the expression or an empty array if none are found. 
 
 ```javascript
 import jp from 'jsonpathly';
 
-const authors = jp.query(data, '$..author');
-// [ 'Nigel Rees', 'Evelyn Waugh', 'Herman Melville', 'J. R. R. Tolkien' ]
+const players = jp.query(data, '$..players');
+// [ 'Nigel Short', 'Garry Kasparov', 'Vladimir Kramnik', 'Magnus Carlsen' ]
 ```
 
 | Option         | Description                                                              |
 | :------------- | :----------------------------------------------------------------------- |
-| hideExceptions | This option makes sure no exceptions are propagated from path evaluation |
-| returnArray    | This option configures JsonPath to return an array                       |
+| hideExceptions | Suppresses any exceptions that may be raised during the path evaluation |
+| returnArray    | Forces array return                       |
 
 #### jp.paths(obj, pathExpression[, options])
 
-Find paths to elements in `obj` matching `pathExpression`. Returns an array of element paths that satisfy the provided JSONPath expression.
+Get the paths to elements in obj that match pathExpression. The result is a list of paths to elements that fulfill the specified JSONPath expression.
 
 ```javascript
 const paths = jp.paths(data, '$..author');
@@ -122,11 +124,11 @@ const paths = jp.paths(data, '$..author');
 
 | Option         | Description                                                              |
 | :------------- | :----------------------------------------------------------------------- |
-| hideExceptions | This option makes sure no exceptions are propagated from path evaluation |
+| hideExceptions | This option ensures that no exceptions are thrown during path evaluation. |
 
 #### jp.parse(pathExpression[, options])
 
-Returns a typed tree representing a jsonpath expression
+Generates a structured tree representation of a JSONPath expression, with each node being of a specific type.
 
 ```javascript
 const tree = jp.parse('$..author');
@@ -135,7 +137,7 @@ const tree = jp.parse('$..author');
 
 | Option         | Description                                                              |
 | :------------- | :----------------------------------------------------------------------- |
-| hideExceptions | This option makes sure no exceptions are propagated from path evaluation |
+| hideExceptions | This option ensures that no exceptions are thrown during path evaluation. |
 
 #### jp.stringify(tree)
 
@@ -155,15 +157,14 @@ Main reason you should use this library is for security and stability.
 
 #### Evaluating Expressions
 
-Script expressions (i.e, `(...)`) are not allowed to prevent any XSS injections and Filter expressions (i.e, `?(...)`) do not use `eval` or `static-eval` for the same reason. Instead, jsonpathly has its own parser and its own evaluator. So for example, `$[(@.number +5 > $.otherNumber * 10 + 2)]` is valid but `?(alert("hello"))` will return a bad syntax error (it would trigger an alert in some javascript libraries).
+Script expressions (i.e., (...)) are disallowed to prevent XSS injections. Filter expressions (i.e., ?(...)) also avoid using eval or static-eval for security reasons. Instead, jsonpathly has its own parser and evaluator. For example, "$[(@.number +5 > $.otherNumber * 10 + 2)]" is valid, but "?(alert("hello"))" will produce a syntax error (which would trigger an alert in some JavaScript libraries).
 
 #### Grammar
 
-This project uses ANTLR [grammar](https://github.com/atamano/jsonpathly/blob/master/src/parser/generated/JSONPath.g4) to parse JSONPath expressions and build a typed abstract syntax tree (AST).
+The project uses ANTLR [grammar](https://github.com/atamano/jsonpathly/blob/master/src/parser/generated/JSONPath.g4) to parse JSONPath expressions and construct a typed abstract syntax tree (AST).
 
 #### Implementation
 
-Implementation match with the main [java jsonpath library](https://github.com/json-path/JsonPath) with minor differences:
-
-- unions such as $.object[key1, key2] would return [ object[key1], object[key2] ] instead of a truncated object.
-- functions (.length(), max(), min() ...) are not handled yet
+The implementation is similar to the main [Java JSONPath library](https://github.com/json-path/JsonPath), with minor differences:
+- unions like "$.object[key1, key2]" would return [object[key1], object[key2]] instead of a truncated object
+- functions such as ".length()," "max()," and "min()" are not yet supported.
