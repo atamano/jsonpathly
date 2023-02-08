@@ -27,23 +27,23 @@ $ yarn add jsonpathly
 ## Getting Started
 
 ```javascript
-import jp from 'jsonpathly';
+import jp from "jsonpathly";
 
 const cities = [
-  { name: 'London', population: 8615246 },
-  { name: 'Berlin', population: 3517424 },
-  { name: 'Madrid', population: 3165235 },
-  { name: 'Rome', population: 2870528 },
+  { name: "London", population: 8615246 },
+  { name: "Berlin", population: 3517424 },
+  { name: "Madrid", population: 3165235 },
+  { name: "Rome", population: 2870528 },
 ];
 
-const names = jp.query(cities, '$..name');
+const names = jp.query(cities, "$..name");
 
 // [ "London", "Berlin", "Madrid", "Rome" ]
 ```
 
 JsonPath expressions are used to access elements in a JSON structure, similar to how XPath expressions are used with XML documents. The starting point in JsonPath is referred to as "$" and can be either an object or array.
 
-JsonPath expressions can use either dot notation, such as 
+JsonPath expressions can use either dot notation, such as
 
 `$.store.book[0].title`
 
@@ -55,17 +55,17 @@ or bracket notation, like
 
 The following table lists the available operators for JsonPath expressions:
 
-| Operator                  | Description                                                     |
-| :------------------------ | :-------------------------------------------------------------- |
-| `$`                       | Refers to the root element of the JSON structure. It starts all path expressions.    |
-| `@`                       | Refers to the current node being processed by a filter predicate.      |
-| `*`                       | Acts as a wildcard, and can be used anywhere.    |
-| `..<name>`                      | Enables deep scanning, and can be used anywhere. A name is required.               |
-| `.<name>`                 | Refers to a dot-notated child element.                                          |
-| `['<name>' (, '<name>')]` | Refers to bracket-notated child elements.                         |
-| `[<number> (, <number>)]` | Refers to array index or indexes.                                    |
-| `[start:end:step]`        | A python-style array slicing operator.                            |
-| `[?(<expression>)]`       | A filter expression that must evaluate to a boolean value. |
+| Operator                  | Description                                                                       |
+| :------------------------ | :-------------------------------------------------------------------------------- |
+| `$`                       | Refers to the root element of the JSON structure. It starts all path expressions. |
+| `@`                       | Refers to the current node being processed by a filter predicate.                 |
+| `*`                       | Acts as a wildcard, and can be used anywhere.                                     |
+| `..<name>`                | Enables deep scanning, and can be used anywhere. A name is required.              |
+| `.<name>`                 | Refers to a dot-notated child element.                                            |
+| `['<name>' (, '<name>')]` | Refers to bracket-notated child elements.                                         |
+| `[<number> (, <number>)]` | Refers to array index or indexes.                                                 |
+| `[start:end:step]`        | A python-style array slicing operator.                                            |
+| `[?(<expression>)]`       | A filter expression that must evaluate to a boolean value.                        |
 
 ## Filter Operators
 
@@ -73,47 +73,47 @@ Filters are used to select specific elements from arrays based on logical expres
 
 The following table lists different operators and their descriptions:
 
-| Operator | Description                                                         |
-| :------- | :------------------------------------------------------------------ |
-| ==       | left is equal to the right (note that 1 is not equal to '1')            |
-| !=       | left is not equal to the right                                          |
-| <        | left is less than the right                                            |
-| <=       | left is less than or equal to the right                                    |
-| >        | left is greater than the right                                         |
-| >=       | left is greater than or equal to the right                              |
-| in       | left exists in the right (e.g. `[?(@.size in ['S', 'M'])]`)                      |
-| nin      | left does not exist in the right                                       |
-| subsetof | left is a subset of the right (e.g. [?(@.sizes subsetof ['S', 'M', 'L'])])     |
-| anyof    | left has items in common with the right (e.g. [?(@.sizes anyof ['M', 'L'])])   |
-| noneof   | left has no items in common with the right (e.g. [?(@.sizes noneof ['M', 'L'])]) |
+| Operator | Description                                                                        |
+| :------- | :--------------------------------------------------------------------------------- |
+| ==       | left is equal to the right (note that 1 is not equal to '1')                       |
+| !=       | left is not equal to the right                                                     |
+| <        | left is less than the right                                                        |
+| <=       | left is less than or equal to the right                                            |
+| >        | left is greater than the right                                                     |
+| >=       | left is greater than or equal to the right                                         |
+| in       | left exists in the right (e.g. `[?(@.size in ['S', 'M'])]`)                        |
+| nin      | left does not exist in the right                                                   |
+| subsetof | left is a subset of the right (e.g. [?(@.sizes subsetof ['S', 'M', 'L'])])         |
+| anyof    | left has items in common with the right (e.g. [?(@.sizes anyof ['M', 'L'])])       |
+| noneof   | left has no items in common with the right (e.g. [?(@.sizes noneof ['M', 'L'])])   |
 | sizeof   | size of the left must match the size of the right (both must be arrays or strings) |
-| size     | size of the left must match the right (right must be a number)          |
-| empty    | left (array or string) must be empty                             |
+| size     | size of the left must match the right (right must be a number)                     |
+| empty    | left (array or string) must be empty                                               |
 
 ## Methods
 
 #### jp.query(obj, pathExpression[, options])
 
-Used to find elements in the obj data that match the given pathExpression. The function returns an array of elements that match the expression or an empty array if none are found. 
+Used to find elements in the obj data that match the given pathExpression. The function returns an array of elements that match the expression or an empty array if none are found.
 
 ```javascript
-import jp from 'jsonpathly';
+import jp from "jsonpathly";
 
-const players = jp.query(data, '$..players');
+const players = jp.query(data, "$..players");
 // [ 'Nigel Short', 'Garry Kasparov', 'Vladimir Kramnik', 'Magnus Carlsen' ]
 ```
 
-| Option         | Description                                                              |
-| :------------- | :----------------------------------------------------------------------- |
+| Option         | Description                                                             |
+| :------------- | :---------------------------------------------------------------------- |
 | hideExceptions | Suppresses any exceptions that may be raised during the path evaluation |
-| returnArray    | Forces array return                       |
+| returnArray    | Forces array return                                                     |
 
 #### jp.paths(obj, pathExpression[, options])
 
 Get the paths to elements in obj that match pathExpression. The result is a list of paths to elements that fulfill the specified JSONPath expression.
 
 ```javascript
-const paths = jp.paths(data, '$..author');
+const paths = jp.paths(data, "$..author");
 // [
 //   '$["store"]["book"][0]["author"]',
 //   '$["store"]["book"][1]["author"]',
@@ -122,8 +122,8 @@ const paths = jp.paths(data, '$..author');
 // ]
 ```
 
-| Option         | Description                                                              |
-| :------------- | :----------------------------------------------------------------------- |
+| Option         | Description                                                               |
+| :------------- | :------------------------------------------------------------------------ |
 | hideExceptions | This option ensures that no exceptions are thrown during path evaluation. |
 
 #### jp.parse(pathExpression[, options])
@@ -131,12 +131,12 @@ const paths = jp.paths(data, '$..author');
 Generates a structured tree representation of a JSONPath expression, with each node being of a specific type.
 
 ```javascript
-const tree = jp.parse('$..author');
+const tree = jp.parse("$..author");
 // { type: 'root', next: { type: 'subscript', value: { type: 'dotdot', value: { type: "identifier", value: "author" } } } }
 ```
 
-| Option         | Description                                                              |
-| :------------- | :----------------------------------------------------------------------- |
+| Option         | Description                                                               |
+| :------------- | :------------------------------------------------------------------------ |
 | hideExceptions | This option ensures that no exceptions are thrown during path evaluation. |
 
 #### jp.stringify(tree)
@@ -145,8 +145,11 @@ Returns a jsonpath string from a tree representing jsonpath expression (jp.parse
 
 ```javascript
 const jsonpath = jp.stringify({
-  type: 'root',
-  next: { type: 'subscript', value: { type: 'dotdot', value: { type: 'identifier', value: 'author' } } },
+  type: "root",
+  next: {
+    type: "subscript",
+    value: { type: "dotdot", value: { type: "identifier", value: "author" } },
+  },
 });
 // "$..author"
 ```
@@ -166,5 +169,6 @@ The project uses ANTLR [grammar](https://github.com/atamano/jsonpathly/blob/mast
 #### Implementation
 
 The implementation is similar to the main [Java JSONPath library](https://github.com/json-path/JsonPath), with minor differences:
+
 - unions like "$.object[key1, key2]" would return [object[key1], object[key2]] instead of a truncated object
 - functions such as ".length()," "max()," and "min()" are not yet supported.
