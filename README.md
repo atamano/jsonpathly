@@ -2,7 +2,7 @@
 
 <img src="https://user-images.githubusercontent.com/9162276/166061295-a41b7d28-a1e9-4d17-9103-132a1ca20de8.png" width="350">
 
-[![CircleCI](https://circleci.com/gh/atamano/jsonpathly/tree/master.svg?style=shield&circle-token=442d6d9d566a5ed1472048e669f0155ed44d6648)](https://circleci.com/gh/atamano/jsonpathly/tree/master)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/atamano/jsonpathly/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/atamano/jsonpathly/tree/master)
 [![npm version](https://badge.fury.io/js/jsonpathly.svg)](https://badge.fury.io/js/jsonpathly)
 [![codecov](https://codecov.io/gh/atamano/jsonpathly/branch/master/graph/badge.svg?token=QSSZGZMULF)](https://codecov.io/gh/atamano/jsonpathly)
 
