@@ -2,17 +2,17 @@
   "compilerOptions": {
     "forceConsistentCasingInFileNames": true,
     "target": "es6",
-    "rootDir": "./src", 
+    "rootDir": "./src",
     "noImplicitAny": true,
     "outDir": "./types",
     "moduleResolution": "node",
     "strict": true,
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
-    "declaration": true,                             
+    "declaration": true,
     "emitDeclarationOnly": true,
     "types": ["node", "jest"],
-    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "typeRoots": ["./src/types", "./node_modules/@types"]
   },
   "include": ["src"],
   "exclude": ["node_modules"]

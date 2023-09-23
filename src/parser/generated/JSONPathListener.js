@@ -1,4 +1,4 @@
-// Generated from src/parser/generated/JSONPath.g4 by ANTLR 4.9.3
+// Generated from src/parser/generated/JSONPath.g4 by ANTLR 4.13.1
 // jshint ignore: start
 import antlr4 from 'antlr4';
 

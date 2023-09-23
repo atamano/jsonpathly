@@ -1,24 +1,11 @@
 {
-    "transform": {
-        "^.+\\.jsx?$": "babel-jest",
-        "^.+\\.ts?$": "ts-jest"
-    },
-    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
-    "modulePathIgnorePatterns": [
-        "dist"
-    ],
-    "transformIgnorePatterns": [
-        "node_modules/(?!antlr4/.*)"
-    ],
-    "coveragePathIgnorePatterns": [
-        "parser/generated"
-    ],
-    "moduleFileExtensions": [
-        "ts",
-        "tsx",
-        "js",
-        "jsx",
-        "json",
-        "node"
-    ]
+  "transform": {
+    "^.+\\.js$": "babel-jest",
+    "^.+\\.ts$": "ts-jest"
+  },
+  "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(js|ts)$",
+  "modulePathIgnorePatterns": ["dist"],
+  "transformIgnorePatterns": ["node_modules/(?!antlr4/.*)"],
+  "coveragePathIgnorePatterns": ["parser/generated"],
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
 }
