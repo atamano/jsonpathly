@@ -1,17 +1,18 @@
 import { query } from '../src/handler/query';
-import testuits from './test_suits';
+// import testuits from './test_suits';
 import { JSONPathSyntaxError } from '../src/parser/errors';
+import { expect } from 'chai';
 
-describe.skip('test_suits', () => {
-  it.each(testuits)('$title -> $query', ({ query: q, payload, results }) => {
-    const res = query(payload, q, { returnArray: true });
-    if (results !== 'NOT_SUPPORTED') {
-      expect(res).toEqual(results);
-    } else {
-      expect(true).toEqual(true);
-    }
-  });
-});
+// describe.skip('test_suits', () => {
+//   testuits.forEach(({ query: q, payload, results }) => {
+//     const res = query(payload, q, { returnArray: true });
+//     if (results !== 'NOT_SUPPORTED') {
+//       expect(res).to.deep.equal(results);
+//     } else {
+//       expect(true).to.deep.equal(true);
+//     }
+//   });
+// });
 
 describe('query', () => {
   describe('with dot notations', () => {
@@ -35,10 +36,10 @@ describe('query', () => {
       { payload: [PAYLOAD], path: `$.string`, expected: undefined },
     ];
 
-    test.each(testCases)('query(%s)', ({ payload, path, expected }) => {
+    testCases.forEach(({ payload, path, expected }) => {
       const res = query(payload, path);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 
@@ -102,10 +103,10 @@ describe('query', () => {
         },
       ];
 
-      test.each(testCases)('query(%s)', ({ payload, path, expected }) => {
+      testCases.forEach(({ payload, path, expected }) => {
         const res = query(payload, path);
 
-        expect(res).toEqual(expected);
+        expect(res).to.deep.equal(expected);
       });
     });
 
@@ -148,10 +149,10 @@ describe('query', () => {
         { payload: [PAYLOAD], path: `$..*.object.test`, expected: ['1'] },
       ];
 
-      test.each(testCases)('query(%s)', ({ payload, path, expected }) => {
+      testCases.forEach(({ payload, path, expected }) => {
         const res = query(payload, path);
 
-        expect(res).toEqual(expected);
+        expect(res).to.deep.equal(expected);
       });
     });
 
@@ -222,10 +223,10 @@ describe('query', () => {
         },
       ];
 
-      test.each(testCases)('query(%s)', ({ payload, path, expected }) => {
+      testCases.forEach(({ payload, path, expected }) => {
         const res = query(payload, path);
 
-        expect(res).toEqual(expected);
+        expect(res).to.deep.equal(expected);
       });
     });
   });
@@ -250,10 +251,10 @@ describe('query', () => {
       { payload: PAYLOAD, path: `$.number.0`, expected: undefined },
     ];
 
-    test.each(testCases)('query(%s)', ({ payload, path, expected }) => {
+    testCases.forEach(({ payload, path, expected }) => {
       const res = query(payload, path);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 
@@ -282,10 +283,10 @@ describe('query', () => {
       { payload: PAYLOAD, path: `$[*]["object"]`, expected: [PAYLOAD.nestedObject.object] },
     ];
 
-    test.each(testCases)('query(%s)', ({ payload, path, expected }) => {
+    testCases.forEach(({ payload, path, expected }) => {
       const res = query(payload, path);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 
@@ -312,10 +313,10 @@ describe('query', () => {
       { payload: PAYLOAD, path: `$.arrayOfNumber[0:2:2]`, expected: [1] },
     ];
 
-    test.each(testCases)('query(%s)', ({ payload, path, expected }) => {
+    testCases.forEach(({ payload, path, expected }) => {
       const res = query(payload, path);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 
@@ -504,10 +505,10 @@ describe('query', () => {
       },
     ];
 
-    test.each(testCases)('query(%s)', ({ path, expected }) => {
+    testCases.forEach(({ path, expected }) => {
       const res = query(PAYLOAD, path);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 
@@ -572,16 +573,16 @@ describe('query', () => {
       },
     ];
 
-    test.each(testCases)('query(%s)', ({ path, expected }) => {
+    testCases.forEach(({ path, expected }) => {
       const res = query(PAYLOAD, path);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
 
-    test('should throw exception on missing operator', () => {
+    it('should throw exception on missing operator', () => {
       expect(() => {
         query(PAYLOAD, '$.arraySimpleObjects[?(@.number>3 4)]..number');
-      }).toThrow(Error);
+      }).to.throw(Error);
     });
   });
 
@@ -600,10 +601,10 @@ describe('query', () => {
       { path: `$[[1:2:3]]`, err: JSONPathSyntaxError },
     ];
 
-    test.each(testCases)('error(%s)', ({ path, err }) => {
+    testCases.forEach(({ path, err }) => {
       expect(() => {
         query({ test: 1 }, path);
-      }).toThrow(err);
+      }).to.throw(err);
     });
   });
 
@@ -644,10 +645,10 @@ describe('query', () => {
       },
     ];
 
-    test.each(testCases)('query(%s)', ({ path, expected }) => {
+    testCases.forEach(({ path, expected }) => {
       const res = query(PAYLOAD, path);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 
@@ -677,10 +678,10 @@ describe('query', () => {
       },
     ];
 
-    test.each(testCases)('query(%s)', ({ path, expected }) => {
+    testCases.forEach(({ path, expected }) => {
       const res = query(PAYLOAD, path, { returnArray: true });
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 
@@ -694,10 +695,10 @@ describe('query', () => {
       { payload: [1], path: `$[?(@ =~ /.*/g )]`, expected: [] },
     ];
 
-    test.each(testCases)('query(%s)', ({ payload, path, expected }) => {
+    testCases.forEach(({ payload, path, expected }) => {
       const res = query(payload, path);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 
@@ -722,10 +723,10 @@ describe('query', () => {
       { path: `$[[1:2:3]]`, expected: undefined, options: { hideExceptions: true } },
     ];
 
-    test.each(testCases)('error(%s)', ({ path, expected, options }) => {
+    testCases.forEach(({ path, expected, options }) => {
       const res = query({ test: 1 }, path, options);
 
-      expect(res).toEqual(expected);
+      expect(res).to.deep.equal(expected);
     });
   });
 });

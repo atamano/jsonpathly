@@ -1,5 +1,6 @@
 import { parse } from '../src/parser/parse';
 import { stringify } from '../src/parser/stringify';
+import { expect } from 'chai';
 
 describe('parse', () => {
   const textCases = [
@@ -63,24 +64,24 @@ describe('parse', () => {
     [`$..*`, ''],
   ];
 
-  test.each(textCases)('parsed then stringified jsonpath should not differ (%s)', (input, expected) => {
+  textCases.forEach(([input, expected]) => {
     const tree = parse(input);
 
     if (expected) {
-      expect(stringify(tree || null)).toEqual(expected);
+      expect(stringify(tree || null)).to.deep.equal(expected);
     } else {
-      expect(stringify(tree || null)).toEqual(input.replace(/'/g, '"'));
+      expect(stringify(tree || null)).to.deep.equal(input.replace(/'/g, '"'));
     }
   });
 
-  test('should not throw exceptions', () => {
+  it('should not throw exceptions', () => {
     const tree = parse('bad', { hideExceptions: true });
 
-    expect(tree).toBeNull();
+    expect(tree).to.be.null;
   });
-  test('should throw exceptions', () => {
+  it('should throw exceptions', () => {
     expect(() => {
       parse('bad');
-    }).toThrow(Error);
+    }).to.throw(Error);
   });
 });
