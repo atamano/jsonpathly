@@ -74,11 +74,13 @@ describe('paths', () => {
   ];
 
   testCases.forEach(({ payload, path }) => {
-    const res1 = query(payload, path, { returnArray: true });
-    const res2 = paths(payload, path);
-    const res3 = query(payload, res2 as string[]);
+    it(path, () => {
+      const res1 = query(payload, path, { returnArray: true });
+      const res2 = paths(payload, path);
+      const res3 = query(payload, res2 as string[]);
 
-    expect(res1).to.deep.equal(res3);
+      expect(res1).to.deep.equal(res3);
+    });
   });
 
   describe('exceptions', () => {
@@ -98,9 +100,11 @@ describe('paths', () => {
     ];
 
     testCases.forEach(({ payload, path, expected, opts }) => {
-      const res = paths(payload, path, opts as PathsOptions);
+      it(path, () => {
+        const res = paths(payload, path, opts as PathsOptions);
 
-      expect(res).to.deep.equal(expected);
+        expect(res).to.deep.equal(expected);
+      });
     });
 
     it('should throw exception', () => {

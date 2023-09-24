@@ -337,6 +337,12 @@ export default class Listener extends JSONPathListener {
     const colon0 = ctx.getToken(JSONPathParser.COLON, 0);
     const colon1 = ctx.getToken(JSONPathParser.COLON, 1);
 
+    // [0:...]
+    if (colon0 && number0 && number0.getSourceInterval().start < colon0.getSourceInterval().start) {
+      start = Number.parseInt(ctx.NUMBER(0).getText());
+    }
+
+    // [0:1:2]
     if (colon1 && number2) {
       step = Number.parseInt(ctx.NUMBER(2).getText());
     } else if (colon1 && number1 && number1.getSourceInterval().start > colon1.getSourceInterval().start) {
@@ -345,8 +351,10 @@ export default class Listener extends JSONPathListener {
       step = Number.parseInt(ctx.NUMBER(0).getText());
     }
 
+    // [0:1]
     if (!colon1 && colon0 && number1 && number1.getSourceInterval().start > colon0.getSourceInterval().start) {
       end = Number.parseInt(ctx.NUMBER(1).getText());
+      // [0:]
     } else if (
       !colon1 &&
       colon0 &&
@@ -355,8 +363,10 @@ export default class Listener extends JSONPathListener {
       number0.getSourceInterval().start > colon0.getSourceInterval().start
     ) {
       end = Number.parseInt(ctx.NUMBER(0).getText());
+      // [0:1:]
     } else if (colon1 && colon0 && number1 && number1.getSourceInterval().start < colon1.getSourceInterval().start) {
       end = Number.parseInt(ctx.NUMBER(1).getText());
+      // [:0:...]
     } else if (
       colon1 &&
       colon0 &&
@@ -365,10 +375,6 @@ export default class Listener extends JSONPathListener {
       number0.getSourceInterval().start < colon1.getSourceInterval().start
     ) {
       end = Number.parseInt(ctx.NUMBER(0).getText());
-    }
-
-    if (colon0 && number0 && number0.getSourceInterval().start < colon0.getSourceInterval().start) {
-      start = Number.parseInt(ctx.NUMBER(0).getText());
     }
 
     this.push({ type: 'slices', start, end, step });

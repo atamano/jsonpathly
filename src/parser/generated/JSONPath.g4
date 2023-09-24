@@ -1,5 +1,9 @@
 grammar JSONPath;
 
+////////////
+// TOKENS //
+///////////
+
 CURRENT_VALUE : '@' ;
 DOTDOT : '..' ;
 ROOT_VALUE : '$' ;
@@ -45,6 +49,61 @@ DIV: '/';
 
 REGEX_OPT: [gimsuy]*;
 REGEX_EXPR: '/'.*?'/';
+KEY: [a-zA-Z_][a-zA-Z0-9_]*;
+
+WS
+   : [ \t\n\r] + -> skip
+   ;
+NUMBER
+   : '-'? INT ('.' [0-9] +)? EXP?
+   ;
+
+STRING
+   : '"' (ESC_DOUBLE | SAFECODEPOINT_DOUBLE)* '"'
+   | '\'' (ESC_SINGLE | SAFECODEPOINT_SINGLE)* '\''
+   ;
+
+///////////////
+// FRAGMENTS //
+//////////////
+
+fragment ESC_SINGLE
+   : '\\' (['\\/bfnrt] | UNICODE)
+   ;
+
+fragment ESC_DOUBLE
+   : '\\' (["\\/bfnrt] | UNICODE)
+   ;
+
+fragment UNICODE
+   : 'u' HEX HEX HEX HEX
+   ;
+
+fragment HEX
+   : [0-9a-fA-F]
+   ;
+
+fragment SAFECODEPOINT_SINGLE
+   : ~ ['\\\u0000-\u001F]
+   ;
+
+fragment SAFECODEPOINT_DOUBLE
+   : ~ ["\\\u0000-\u001F]
+   ;
+
+fragment INT
+   : [0-9]+
+   ;
+// with leading zeros
+
+fragment EXP
+   : [Ee] [+\-]? INT
+   ;
+// \- since - means "range" inside [...]
+
+/////////////
+// QUERIES //
+////////////
 
 jsonpath
    : ROOT_VALUE subscript? EOF
@@ -124,22 +183,11 @@ filterpath
    : ( ROOT_VALUE | CURRENT_VALUE ) subscript?
    ;
 
-KEY
-   :  [a-zA-Z_][a-zA-Z0-9_]*
-   ;
-
 identifier
    : KEY
    | TRUE
    | FALSE
    | NULL
-   ;
-
-
-/* c.f., https://github.com/antlr/grammars-v4/blob/master/json/JSON.g4 */
-
-json
-   : value
    ;
 
 obj
@@ -166,52 +214,3 @@ value
    | NULL
    ;
 
-
-STRING
-   : '"' (ESC_DOUBLE | SAFECODEPOINT_DOUBLE)* '"'
-   | '\'' (ESC_SINGLE | SAFECODEPOINT_SINGLE)* '\''
-   ;
-
-fragment ESC_SINGLE
-   : '\\' (['\\/bfnrt] | UNICODE)
-   ;
-
-fragment ESC_DOUBLE
-   : '\\' (["\\/bfnrt] | UNICODE)
-   ;
-
-fragment UNICODE
-   : 'u' HEX HEX HEX HEX
-   ;
-
-fragment HEX
-   : [0-9a-fA-F]
-   ;
-
-fragment SAFECODEPOINT_SINGLE
-   : ~ ['\\\u0000-\u001F]
-   ;
-
-fragment SAFECODEPOINT_DOUBLE
-   : ~ ["\\\u0000-\u001F]
-   ;
-
-NUMBER
-   : '-'? INT ('.' [0-9] +)? EXP?
-   ;
-
-fragment INT
-   : '0' | [1-9] [0-9]*
-   ;
-
-// no leading zeros
-
-fragment EXP
-   : [Ee] [+\-]? INT
-   ;
-
-// \- since - means "range" inside [...]
-
-WS
-   : [ \t\n\r] + -> skip
-   ;

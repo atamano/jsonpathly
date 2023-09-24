@@ -65,13 +65,18 @@ describe('parse', () => {
   ];
 
   textCases.forEach(([input, expected]) => {
-    const tree = parse(input);
+    it(input, (done) => {
+      expect(() => {
+        const tree = parse(input);
 
-    if (expected) {
-      expect(stringify(tree || null)).to.deep.equal(expected);
-    } else {
-      expect(stringify(tree || null)).to.deep.equal(input.replace(/'/g, '"'));
-    }
+        if (expected) {
+          expect(stringify(tree || null)).to.deep.equal(expected);
+        } else {
+          expect(stringify(tree || null)).to.deep.equal(input.replace(/'/g, '"'));
+        }
+        done();
+      }).not.to.throw(Error);
+    });
   });
 
   it('should not throw exceptions', () => {

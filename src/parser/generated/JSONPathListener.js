@@ -140,15 +140,6 @@ export default class JSONPathListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by JSONPathParser#json.
-	enterJson(ctx) {
-	}
-
-	// Exit a parse tree produced by JSONPathParser#json.
-	exitJson(ctx) {
-	}
-
-
 	// Enter a parse tree produced by JSONPathParser#obj.
 	enterObj(ctx) {
 	}

@@ -2,84 +2,83 @@
 // jshint ignore: start
 import antlr4 from 'antlr4';
 import JSONPathListener from './JSONPathListener.js';
-const serializedATN = [4,1,44,237,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,
+const serializedATN = [4,1,44,233,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,
 4,2,5,7,5,2,6,7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,
-2,13,7,13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,1,
-0,1,0,3,0,43,8,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,54,8,1,1,1,1,1,
-1,1,1,1,1,1,3,1,61,8,1,1,1,5,1,64,8,1,10,1,12,1,67,9,1,1,2,1,2,1,2,3,2,72,
-8,2,1,2,1,2,1,2,3,2,77,8,2,1,2,1,2,3,2,81,8,2,3,2,83,8,2,1,3,1,3,1,3,3,3,
-88,8,3,1,4,1,4,1,4,3,4,93,8,4,1,5,1,5,1,5,1,5,1,6,1,6,1,6,1,6,1,6,1,6,1,
-6,1,6,3,6,107,8,6,1,7,1,7,1,7,1,7,1,7,1,8,1,8,1,8,4,8,117,8,8,11,8,12,8,
-118,1,9,1,9,1,9,4,9,124,8,9,11,9,12,9,125,1,9,1,9,1,9,4,9,131,8,9,11,9,12,
-9,132,3,9,135,8,9,1,10,3,10,138,8,10,1,10,1,10,3,10,142,8,10,1,10,1,10,3,
-10,146,8,10,3,10,148,8,10,1,11,1,11,3,11,152,8,11,1,12,1,12,1,12,1,12,1,
-12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,
-1,12,1,12,1,12,3,12,176,8,12,1,12,1,12,1,12,5,12,181,8,12,10,12,12,12,184,
-9,12,1,13,1,13,3,13,188,8,13,1,14,1,14,1,15,1,15,1,16,1,16,1,16,1,16,5,16,
-198,8,16,10,16,12,16,201,9,16,1,16,1,16,1,16,1,16,3,16,207,8,16,1,17,1,17,
-1,17,1,17,1,18,1,18,1,18,1,18,5,18,217,8,18,10,18,12,18,220,9,18,1,18,1,
-18,1,18,1,18,3,18,226,8,18,1,19,1,19,1,19,1,19,1,19,1,19,1,19,3,19,235,8,
-19,1,19,0,2,2,24,20,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,
-38,0,6,2,0,5,5,38,38,1,0,36,37,2,0,7,12,14,20,2,0,6,6,23,23,2,0,1,1,3,3,
-2,0,24,26,41,41,264,0,40,1,0,0,0,2,53,1,0,0,0,4,82,1,0,0,0,6,87,1,0,0,0,
-8,92,1,0,0,0,10,94,1,0,0,0,12,106,1,0,0,0,14,108,1,0,0,0,16,113,1,0,0,0,
-18,134,1,0,0,0,20,137,1,0,0,0,22,149,1,0,0,0,24,175,1,0,0,0,26,185,1,0,0,
-0,28,189,1,0,0,0,30,191,1,0,0,0,32,206,1,0,0,0,34,208,1,0,0,0,36,225,1,0,
-0,0,38,234,1,0,0,0,40,42,5,3,0,0,41,43,3,4,2,0,42,41,1,0,0,0,42,43,1,0,0,
-0,43,44,1,0,0,0,44,45,5,0,0,1,45,1,1,0,0,0,46,47,6,1,-1,0,47,48,5,33,0,0,
-48,49,3,2,1,0,49,50,5,34,0,0,50,54,1,0,0,0,51,54,3,38,19,0,52,54,3,26,13,
-0,53,46,1,0,0,0,53,51,1,0,0,0,53,52,1,0,0,0,54,65,1,0,0,0,55,56,10,4,0,0,
-56,57,7,0,0,0,57,64,3,2,1,5,58,60,10,3,0,0,59,61,7,1,0,0,60,59,1,0,0,0,60,
-61,1,0,0,0,61,62,1,0,0,0,62,64,3,2,1,4,63,55,1,0,0,0,63,58,1,0,0,0,64,67,
-1,0,0,0,65,63,1,0,0,0,65,66,1,0,0,0,66,3,1,0,0,0,67,65,1,0,0,0,68,69,5,2,
-0,0,69,71,3,6,3,0,70,72,3,4,2,0,71,70,1,0,0,0,71,72,1,0,0,0,72,83,1,0,0,
-0,73,74,5,4,0,0,74,76,3,8,4,0,75,77,3,4,2,0,76,75,1,0,0,0,76,77,1,0,0,0,
-77,83,1,0,0,0,78,80,3,10,5,0,79,81,3,4,2,0,80,79,1,0,0,0,80,81,1,0,0,0,81,
-83,1,0,0,0,82,68,1,0,0,0,82,73,1,0,0,0,82,78,1,0,0,0,83,5,1,0,0,0,84,88,
-5,5,0,0,85,88,3,28,14,0,86,88,3,10,5,0,87,84,1,0,0,0,87,85,1,0,0,0,87,86,
-1,0,0,0,88,7,1,0,0,0,89,93,5,5,0,0,90,93,5,43,0,0,91,93,3,28,14,0,92,89,
-1,0,0,0,92,90,1,0,0,0,92,91,1,0,0,0,93,9,1,0,0,0,94,95,5,29,0,0,95,96,3,
-12,6,0,96,97,5,30,0,0,97,11,1,0,0,0,98,107,3,18,9,0,99,107,3,16,8,0,100,
-107,3,20,10,0,101,107,5,5,0,0,102,107,5,43,0,0,103,107,5,42,0,0,104,107,
-3,28,14,0,105,107,3,14,7,0,106,98,1,0,0,0,106,99,1,0,0,0,106,100,1,0,0,0,
-106,101,1,0,0,0,106,102,1,0,0,0,106,103,1,0,0,0,106,104,1,0,0,0,106,105,
-1,0,0,0,107,13,1,0,0,0,108,109,5,35,0,0,109,110,5,33,0,0,110,111,3,24,12,
-0,111,112,5,34,0,0,112,15,1,0,0,0,113,116,5,43,0,0,114,115,5,32,0,0,115,
-117,5,43,0,0,116,114,1,0,0,0,117,118,1,0,0,0,118,116,1,0,0,0,118,119,1,0,
-0,0,119,17,1,0,0,0,120,123,5,42,0,0,121,122,5,32,0,0,122,124,5,42,0,0,123,
-121,1,0,0,0,124,125,1,0,0,0,125,123,1,0,0,0,125,126,1,0,0,0,126,135,1,0,
-0,0,127,130,3,28,14,0,128,129,5,32,0,0,129,131,3,28,14,0,130,128,1,0,0,0,
-131,132,1,0,0,0,132,130,1,0,0,0,132,133,1,0,0,0,133,135,1,0,0,0,134,120,
-1,0,0,0,134,127,1,0,0,0,135,19,1,0,0,0,136,138,5,43,0,0,137,136,1,0,0,0,
-137,138,1,0,0,0,138,139,1,0,0,0,139,141,5,31,0,0,140,142,5,43,0,0,141,140,
-1,0,0,0,141,142,1,0,0,0,142,147,1,0,0,0,143,145,5,31,0,0,144,146,5,43,0,
-0,145,144,1,0,0,0,145,146,1,0,0,0,146,148,1,0,0,0,147,143,1,0,0,0,147,148,
-1,0,0,0,148,21,1,0,0,0,149,151,5,40,0,0,150,152,5,39,0,0,151,150,1,0,0,0,
-151,152,1,0,0,0,152,23,1,0,0,0,153,154,6,12,-1,0,154,155,5,22,0,0,155,156,
-5,33,0,0,156,157,3,24,12,0,157,158,5,34,0,0,158,176,1,0,0,0,159,160,5,33,
-0,0,160,161,3,24,12,0,161,162,5,34,0,0,162,176,1,0,0,0,163,164,3,2,1,0,164,
-165,7,2,0,0,165,166,3,2,1,0,166,176,1,0,0,0,167,168,3,2,1,0,168,169,5,13,
-0,0,169,170,3,22,11,0,170,176,1,0,0,0,171,172,3,2,1,0,172,173,5,21,0,0,173,
-176,1,0,0,0,174,176,3,26,13,0,175,153,1,0,0,0,175,159,1,0,0,0,175,163,1,
-0,0,0,175,167,1,0,0,0,175,171,1,0,0,0,175,174,1,0,0,0,176,182,1,0,0,0,177,
-178,10,5,0,0,178,179,7,3,0,0,179,181,3,24,12,6,180,177,1,0,0,0,181,184,1,
-0,0,0,182,180,1,0,0,0,182,183,1,0,0,0,183,25,1,0,0,0,184,182,1,0,0,0,185,
-187,7,4,0,0,186,188,3,4,2,0,187,186,1,0,0,0,187,188,1,0,0,0,188,27,1,0,0,
-0,189,190,7,5,0,0,190,29,1,0,0,0,191,192,3,38,19,0,192,31,1,0,0,0,193,194,
-5,27,0,0,194,199,3,34,17,0,195,196,5,32,0,0,196,198,3,34,17,0,197,195,1,
-0,0,0,198,201,1,0,0,0,199,197,1,0,0,0,199,200,1,0,0,0,200,202,1,0,0,0,201,
-199,1,0,0,0,202,203,5,28,0,0,203,207,1,0,0,0,204,205,5,27,0,0,205,207,5,
-28,0,0,206,193,1,0,0,0,206,204,1,0,0,0,207,33,1,0,0,0,208,209,5,42,0,0,209,
-210,5,31,0,0,210,211,3,38,19,0,211,35,1,0,0,0,212,213,5,29,0,0,213,218,3,
-38,19,0,214,215,5,32,0,0,215,217,3,38,19,0,216,214,1,0,0,0,217,220,1,0,0,
-0,218,216,1,0,0,0,218,219,1,0,0,0,219,221,1,0,0,0,220,218,1,0,0,0,221,222,
-5,30,0,0,222,226,1,0,0,0,223,224,5,29,0,0,224,226,5,30,0,0,225,212,1,0,0,
-0,225,223,1,0,0,0,226,37,1,0,0,0,227,235,5,42,0,0,228,235,5,43,0,0,229,235,
-3,32,16,0,230,235,3,36,18,0,231,235,5,24,0,0,232,235,5,25,0,0,233,235,5,
-26,0,0,234,227,1,0,0,0,234,228,1,0,0,0,234,229,1,0,0,0,234,230,1,0,0,0,234,
-231,1,0,0,0,234,232,1,0,0,0,234,233,1,0,0,0,235,39,1,0,0,0,29,42,53,60,63,
-65,71,76,80,82,87,92,106,118,125,132,134,137,141,145,147,151,175,182,187,
-199,206,218,225,234];
+2,13,7,13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,1,0,1,0,3,0,
+41,8,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,52,8,1,1,1,1,1,1,1,1,1,1,
+1,3,1,59,8,1,1,1,5,1,62,8,1,10,1,12,1,65,9,1,1,2,1,2,1,2,3,2,70,8,2,1,2,
+1,2,1,2,3,2,75,8,2,1,2,1,2,3,2,79,8,2,3,2,81,8,2,1,3,1,3,1,3,3,3,86,8,3,
+1,4,1,4,1,4,3,4,91,8,4,1,5,1,5,1,5,1,5,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,3,
+6,105,8,6,1,7,1,7,1,7,1,7,1,7,1,8,1,8,1,8,4,8,115,8,8,11,8,12,8,116,1,9,
+1,9,1,9,4,9,122,8,9,11,9,12,9,123,1,9,1,9,1,9,4,9,129,8,9,11,9,12,9,130,
+3,9,133,8,9,1,10,3,10,136,8,10,1,10,1,10,3,10,140,8,10,1,10,1,10,3,10,144,
+8,10,3,10,146,8,10,1,11,1,11,3,11,150,8,11,1,12,1,12,1,12,1,12,1,12,1,12,
+1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,12,1,
+12,1,12,3,12,174,8,12,1,12,1,12,1,12,5,12,179,8,12,10,12,12,12,182,9,12,
+1,13,1,13,3,13,186,8,13,1,14,1,14,1,15,1,15,1,15,1,15,5,15,194,8,15,10,15,
+12,15,197,9,15,1,15,1,15,1,15,1,15,3,15,203,8,15,1,16,1,16,1,16,1,16,1,17,
+1,17,1,17,1,17,5,17,213,8,17,10,17,12,17,216,9,17,1,17,1,17,1,17,1,17,3,
+17,222,8,17,1,18,1,18,1,18,1,18,1,18,1,18,1,18,3,18,231,8,18,1,18,0,2,2,
+24,19,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,0,6,2,0,5,5,38,
+38,1,0,36,37,2,0,7,12,14,20,2,0,6,6,23,23,2,0,1,1,3,3,2,0,24,26,41,41,261,
+0,38,1,0,0,0,2,51,1,0,0,0,4,80,1,0,0,0,6,85,1,0,0,0,8,90,1,0,0,0,10,92,1,
+0,0,0,12,104,1,0,0,0,14,106,1,0,0,0,16,111,1,0,0,0,18,132,1,0,0,0,20,135,
+1,0,0,0,22,147,1,0,0,0,24,173,1,0,0,0,26,183,1,0,0,0,28,187,1,0,0,0,30,202,
+1,0,0,0,32,204,1,0,0,0,34,221,1,0,0,0,36,230,1,0,0,0,38,40,5,3,0,0,39,41,
+3,4,2,0,40,39,1,0,0,0,40,41,1,0,0,0,41,42,1,0,0,0,42,43,5,0,0,1,43,1,1,0,
+0,0,44,45,6,1,-1,0,45,46,5,33,0,0,46,47,3,2,1,0,47,48,5,34,0,0,48,52,1,0,
+0,0,49,52,3,36,18,0,50,52,3,26,13,0,51,44,1,0,0,0,51,49,1,0,0,0,51,50,1,
+0,0,0,52,63,1,0,0,0,53,54,10,4,0,0,54,55,7,0,0,0,55,62,3,2,1,5,56,58,10,
+3,0,0,57,59,7,1,0,0,58,57,1,0,0,0,58,59,1,0,0,0,59,60,1,0,0,0,60,62,3,2,
+1,4,61,53,1,0,0,0,61,56,1,0,0,0,62,65,1,0,0,0,63,61,1,0,0,0,63,64,1,0,0,
+0,64,3,1,0,0,0,65,63,1,0,0,0,66,67,5,2,0,0,67,69,3,6,3,0,68,70,3,4,2,0,69,
+68,1,0,0,0,69,70,1,0,0,0,70,81,1,0,0,0,71,72,5,4,0,0,72,74,3,8,4,0,73,75,
+3,4,2,0,74,73,1,0,0,0,74,75,1,0,0,0,75,81,1,0,0,0,76,78,3,10,5,0,77,79,3,
+4,2,0,78,77,1,0,0,0,78,79,1,0,0,0,79,81,1,0,0,0,80,66,1,0,0,0,80,71,1,0,
+0,0,80,76,1,0,0,0,81,5,1,0,0,0,82,86,5,5,0,0,83,86,3,28,14,0,84,86,3,10,
+5,0,85,82,1,0,0,0,85,83,1,0,0,0,85,84,1,0,0,0,86,7,1,0,0,0,87,91,5,5,0,0,
+88,91,5,43,0,0,89,91,3,28,14,0,90,87,1,0,0,0,90,88,1,0,0,0,90,89,1,0,0,0,
+91,9,1,0,0,0,92,93,5,29,0,0,93,94,3,12,6,0,94,95,5,30,0,0,95,11,1,0,0,0,
+96,105,3,18,9,0,97,105,3,16,8,0,98,105,3,20,10,0,99,105,5,5,0,0,100,105,
+5,43,0,0,101,105,5,44,0,0,102,105,3,28,14,0,103,105,3,14,7,0,104,96,1,0,
+0,0,104,97,1,0,0,0,104,98,1,0,0,0,104,99,1,0,0,0,104,100,1,0,0,0,104,101,
+1,0,0,0,104,102,1,0,0,0,104,103,1,0,0,0,105,13,1,0,0,0,106,107,5,35,0,0,
+107,108,5,33,0,0,108,109,3,24,12,0,109,110,5,34,0,0,110,15,1,0,0,0,111,114,
+5,43,0,0,112,113,5,32,0,0,113,115,5,43,0,0,114,112,1,0,0,0,115,116,1,0,0,
+0,116,114,1,0,0,0,116,117,1,0,0,0,117,17,1,0,0,0,118,121,5,44,0,0,119,120,
+5,32,0,0,120,122,5,44,0,0,121,119,1,0,0,0,122,123,1,0,0,0,123,121,1,0,0,
+0,123,124,1,0,0,0,124,133,1,0,0,0,125,128,3,28,14,0,126,127,5,32,0,0,127,
+129,3,28,14,0,128,126,1,0,0,0,129,130,1,0,0,0,130,128,1,0,0,0,130,131,1,
+0,0,0,131,133,1,0,0,0,132,118,1,0,0,0,132,125,1,0,0,0,133,19,1,0,0,0,134,
+136,5,43,0,0,135,134,1,0,0,0,135,136,1,0,0,0,136,137,1,0,0,0,137,139,5,31,
+0,0,138,140,5,43,0,0,139,138,1,0,0,0,139,140,1,0,0,0,140,145,1,0,0,0,141,
+143,5,31,0,0,142,144,5,43,0,0,143,142,1,0,0,0,143,144,1,0,0,0,144,146,1,
+0,0,0,145,141,1,0,0,0,145,146,1,0,0,0,146,21,1,0,0,0,147,149,5,40,0,0,148,
+150,5,39,0,0,149,148,1,0,0,0,149,150,1,0,0,0,150,23,1,0,0,0,151,152,6,12,
+-1,0,152,153,5,22,0,0,153,154,5,33,0,0,154,155,3,24,12,0,155,156,5,34,0,
+0,156,174,1,0,0,0,157,158,5,33,0,0,158,159,3,24,12,0,159,160,5,34,0,0,160,
+174,1,0,0,0,161,162,3,2,1,0,162,163,7,2,0,0,163,164,3,2,1,0,164,174,1,0,
+0,0,165,166,3,2,1,0,166,167,5,13,0,0,167,168,3,22,11,0,168,174,1,0,0,0,169,
+170,3,2,1,0,170,171,5,21,0,0,171,174,1,0,0,0,172,174,3,26,13,0,173,151,1,
+0,0,0,173,157,1,0,0,0,173,161,1,0,0,0,173,165,1,0,0,0,173,169,1,0,0,0,173,
+172,1,0,0,0,174,180,1,0,0,0,175,176,10,5,0,0,176,177,7,3,0,0,177,179,3,24,
+12,6,178,175,1,0,0,0,179,182,1,0,0,0,180,178,1,0,0,0,180,181,1,0,0,0,181,
+25,1,0,0,0,182,180,1,0,0,0,183,185,7,4,0,0,184,186,3,4,2,0,185,184,1,0,0,
+0,185,186,1,0,0,0,186,27,1,0,0,0,187,188,7,5,0,0,188,29,1,0,0,0,189,190,
+5,27,0,0,190,195,3,32,16,0,191,192,5,32,0,0,192,194,3,32,16,0,193,191,1,
+0,0,0,194,197,1,0,0,0,195,193,1,0,0,0,195,196,1,0,0,0,196,198,1,0,0,0,197,
+195,1,0,0,0,198,199,5,28,0,0,199,203,1,0,0,0,200,201,5,27,0,0,201,203,5,
+28,0,0,202,189,1,0,0,0,202,200,1,0,0,0,203,31,1,0,0,0,204,205,5,44,0,0,205,
+206,5,31,0,0,206,207,3,36,18,0,207,33,1,0,0,0,208,209,5,29,0,0,209,214,3,
+36,18,0,210,211,5,32,0,0,211,213,3,36,18,0,212,210,1,0,0,0,213,216,1,0,0,
+0,214,212,1,0,0,0,214,215,1,0,0,0,215,217,1,0,0,0,216,214,1,0,0,0,217,218,
+5,30,0,0,218,222,1,0,0,0,219,220,5,29,0,0,220,222,5,30,0,0,221,208,1,0,0,
+0,221,219,1,0,0,0,222,35,1,0,0,0,223,231,5,44,0,0,224,231,5,43,0,0,225,231,
+3,30,15,0,226,231,3,34,17,0,227,231,5,24,0,0,228,231,5,25,0,0,229,231,5,
+26,0,0,230,223,1,0,0,0,230,224,1,0,0,0,230,225,1,0,0,0,230,226,1,0,0,0,230,
+227,1,0,0,0,230,228,1,0,0,0,230,229,1,0,0,0,231,37,1,0,0,0,29,40,51,58,61,
+63,69,74,78,80,85,90,104,116,123,130,132,135,139,143,145,149,173,180,185,
+195,202,214,221,230];
 
 
 const atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
@@ -106,12 +105,12 @@ export default class JSONPathParser extends antlr4.Parser {
                              "BRACKET_LEFT", "BRACKET_RIGHT", "COLON", "COMMA", 
                              "PAREN_LEFT", "PAREN_RIGHT", "QUESTION", "MINUS_SP", 
                              "PLUS", "DIV", "REGEX_OPT", "REGEX_EXPR", "KEY", 
-                             "STRING", "NUMBER", "WS" ];
+                             "WS", "NUMBER", "STRING" ];
     static ruleNames = [ "jsonpath", "filterarg", "subscript", "dotdotContent", 
                          "dotContent", "bracket", "bracketContent", "filterExpression", 
                          "indexes", "unions", "slices", "regex", "expression", 
-                         "filterpath", "identifier", "json", "obj", "pair", 
-                         "array", "value" ];
+                         "filterpath", "identifier", "obj", "pair", "array", 
+                         "value" ];
 
     constructor(input) {
         super(input);
@@ -161,17 +160,17 @@ export default class JSONPathParser extends antlr4.Parser {
 	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 40;
+	        this.state = 38;
 	        this.match(JSONPathParser.ROOT_VALUE);
-	        this.state = 42;
+	        this.state = 40;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
 	        if((((_la) & ~0x1f) === 0 && ((1 << _la) & 536870932) !== 0)) {
-	            this.state = 41;
+	            this.state = 39;
 	            this.subscript();
 	        }
 
-	        this.state = 44;
+	        this.state = 42;
 	        this.match(JSONPathParser.EOF);
 	    } catch (re) {
 	    	if(re instanceof antlr4.error.RecognitionException) {
@@ -201,15 +200,15 @@ export default class JSONPathParser extends antlr4.Parser {
 	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 53;
+	        this.state = 51;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
 	        case 33:
-	            this.state = 47;
+	            this.state = 45;
 	            this.match(JSONPathParser.PAREN_LEFT);
-	            this.state = 48;
+	            this.state = 46;
 	            this.filterarg(0);
-	            this.state = 49;
+	            this.state = 47;
 	            this.match(JSONPathParser.PAREN_RIGHT);
 	            break;
 	        case 24:
@@ -217,21 +216,21 @@ export default class JSONPathParser extends antlr4.Parser {
 	        case 26:
 	        case 27:
 	        case 29:
-	        case 42:
 	        case 43:
-	            this.state = 51;
+	        case 44:
+	            this.state = 49;
 	            this.value();
 	            break;
 	        case 1:
 	        case 3:
-	            this.state = 52;
+	            this.state = 50;
 	            this.filterpath();
 	            break;
 	        default:
 	            throw new antlr4.error.NoViableAltException(this);
 	        }
 	        this._ctx.stop = this._input.LT(-1);
-	        this.state = 65;
+	        this.state = 63;
 	        this._errHandler.sync(this);
 	        var _alt = this._interp.adaptivePredict(this._input,4,this._ctx)
 	        while(_alt!=2 && _alt!=antlr4.atn.ATN.INVALID_ALT_NUMBER) {
@@ -240,18 +239,18 @@ export default class JSONPathParser extends antlr4.Parser {
 	                    this.triggerExitRuleEvent();
 	                }
 	                _prevctx = localctx;
-	                this.state = 63;
+	                this.state = 61;
 	                this._errHandler.sync(this);
 	                var la_ = this._interp.adaptivePredict(this._input,3,this._ctx);
 	                switch(la_) {
 	                case 1:
 	                    localctx = new FilterargContext(this, _parentctx, _parentState);
 	                    this.pushNewRecursionContext(localctx, _startState, JSONPathParser.RULE_filterarg);
-	                    this.state = 55;
+	                    this.state = 53;
 	                    if (!( this.precpred(this._ctx, 4))) {
 	                        throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 4)");
 	                    }
-	                    this.state = 56;
+	                    this.state = 54;
 	                    _la = this._input.LA(1);
 	                    if(!(_la===5 || _la===38)) {
 	                    this._errHandler.recoverInline(this);
@@ -260,22 +259,22 @@ export default class JSONPathParser extends antlr4.Parser {
 	                    	this._errHandler.reportMatch(this);
 	                        this.consume();
 	                    }
-	                    this.state = 57;
+	                    this.state = 55;
 	                    this.filterarg(5);
 	                    break;
 
 	                case 2:
 	                    localctx = new FilterargContext(this, _parentctx, _parentState);
 	                    this.pushNewRecursionContext(localctx, _startState, JSONPathParser.RULE_filterarg);
-	                    this.state = 58;
+	                    this.state = 56;
 	                    if (!( this.precpred(this._ctx, 3))) {
 	                        throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 3)");
 	                    }
-	                    this.state = 60;
+	                    this.state = 58;
 	                    this._errHandler.sync(this);
 	                    _la = this._input.LA(1);
 	                    if(_la===36 || _la===37) {
-	                        this.state = 59;
+	                        this.state = 57;
 	                        _la = this._input.LA(1);
 	                        if(!(_la===36 || _la===37)) {
 	                        this._errHandler.recoverInline(this);
@@ -286,13 +285,13 @@ export default class JSONPathParser extends antlr4.Parser {
 	                        }
 	                    }
 
-	                    this.state = 62;
+	                    this.state = 60;
 	                    this.filterarg(4);
 	                    break;
 
 	                } 
 	            }
-	            this.state = 67;
+	            this.state = 65;
 	            this._errHandler.sync(this);
 	            _alt = this._interp.adaptivePredict(this._input,4,this._ctx);
 	        }
@@ -317,48 +316,48 @@ export default class JSONPathParser extends antlr4.Parser {
 	    let localctx = new SubscriptContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 4, JSONPathParser.RULE_subscript);
 	    try {
-	        this.state = 82;
+	        this.state = 80;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
 	        case 2:
 	            this.enterOuterAlt(localctx, 1);
-	            this.state = 68;
+	            this.state = 66;
 	            this.match(JSONPathParser.DOTDOT);
-	            this.state = 69;
+	            this.state = 67;
 	            this.dotdotContent();
-	            this.state = 71;
+	            this.state = 69;
 	            this._errHandler.sync(this);
 	            var la_ = this._interp.adaptivePredict(this._input,5,this._ctx);
 	            if(la_===1) {
-	                this.state = 70;
+	                this.state = 68;
 	                this.subscript();
 
 	            }
 	            break;
 	        case 4:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 73;
+	            this.state = 71;
 	            this.match(JSONPathParser.DOT);
-	            this.state = 74;
+	            this.state = 72;
 	            this.dotContent();
-	            this.state = 76;
+	            this.state = 74;
 	            this._errHandler.sync(this);
 	            var la_ = this._interp.adaptivePredict(this._input,6,this._ctx);
 	            if(la_===1) {
-	                this.state = 75;
+	                this.state = 73;
 	                this.subscript();
 
 	            }
 	            break;
 	        case 29:
 	            this.enterOuterAlt(localctx, 3);
-	            this.state = 78;
+	            this.state = 76;
 	            this.bracket();
-	            this.state = 80;
+	            this.state = 78;
 	            this._errHandler.sync(this);
 	            var la_ = this._interp.adaptivePredict(this._input,7,this._ctx);
 	            if(la_===1) {
-	                this.state = 79;
+	                this.state = 77;
 	                this.subscript();
 
 	            }
@@ -386,12 +385,12 @@ export default class JSONPathParser extends antlr4.Parser {
 	    let localctx = new DotdotContentContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 6, JSONPathParser.RULE_dotdotContent);
 	    try {
-	        this.state = 87;
+	        this.state = 85;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
 	        case 5:
 	            this.enterOuterAlt(localctx, 1);
-	            this.state = 84;
+	            this.state = 82;
 	            this.match(JSONPathParser.STAR);
 	            break;
 	        case 24:
@@ -399,12 +398,12 @@ export default class JSONPathParser extends antlr4.Parser {
 	        case 26:
 	        case 41:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 85;
+	            this.state = 83;
 	            this.identifier();
 	            break;
 	        case 29:
 	            this.enterOuterAlt(localctx, 3);
-	            this.state = 86;
+	            this.state = 84;
 	            this.bracket();
 	            break;
 	        default:
@@ -430,17 +429,17 @@ export default class JSONPathParser extends antlr4.Parser {
 	    let localctx = new DotContentContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 8, JSONPathParser.RULE_dotContent);
 	    try {
-	        this.state = 92;
+	        this.state = 90;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
 	        case 5:
 	            this.enterOuterAlt(localctx, 1);
-	            this.state = 89;
+	            this.state = 87;
 	            this.match(JSONPathParser.STAR);
 	            break;
 	        case 43:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 90;
+	            this.state = 88;
 	            this.match(JSONPathParser.NUMBER);
 	            break;
 	        case 24:
@@ -448,7 +447,7 @@ export default class JSONPathParser extends antlr4.Parser {
 	        case 26:
 	        case 41:
 	            this.enterOuterAlt(localctx, 3);
-	            this.state = 91;
+	            this.state = 89;
 	            this.identifier();
 	            break;
 	        default:
@@ -475,11 +474,11 @@ export default class JSONPathParser extends antlr4.Parser {
 	    this.enterRule(localctx, 10, JSONPathParser.RULE_bracket);
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 94;
+	        this.state = 92;
 	        this.match(JSONPathParser.BRACKET_LEFT);
-	        this.state = 95;
+	        this.state = 93;
 	        this.bracketContent();
-	        this.state = 96;
+	        this.state = 94;
 	        this.match(JSONPathParser.BRACKET_RIGHT);
 	    } catch (re) {
 	    	if(re instanceof antlr4.error.RecognitionException) {
@@ -501,55 +500,55 @@ export default class JSONPathParser extends antlr4.Parser {
 	    let localctx = new BracketContentContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 12, JSONPathParser.RULE_bracketContent);
 	    try {
-	        this.state = 106;
+	        this.state = 104;
 	        this._errHandler.sync(this);
 	        var la_ = this._interp.adaptivePredict(this._input,11,this._ctx);
 	        switch(la_) {
 	        case 1:
 	            this.enterOuterAlt(localctx, 1);
-	            this.state = 98;
+	            this.state = 96;
 	            this.unions();
 	            break;
 
 	        case 2:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 99;
+	            this.state = 97;
 	            this.indexes();
 	            break;
 
 	        case 3:
 	            this.enterOuterAlt(localctx, 3);
-	            this.state = 100;
+	            this.state = 98;
 	            this.slices();
 	            break;
 
 	        case 4:
 	            this.enterOuterAlt(localctx, 4);
-	            this.state = 101;
+	            this.state = 99;
 	            this.match(JSONPathParser.STAR);
 	            break;
 
 	        case 5:
 	            this.enterOuterAlt(localctx, 5);
-	            this.state = 102;
+	            this.state = 100;
 	            this.match(JSONPathParser.NUMBER);
 	            break;
 
 	        case 6:
 	            this.enterOuterAlt(localctx, 6);
-	            this.state = 103;
+	            this.state = 101;
 	            this.match(JSONPathParser.STRING);
 	            break;
 
 	        case 7:
 	            this.enterOuterAlt(localctx, 7);
-	            this.state = 104;
+	            this.state = 102;
 	            this.identifier();
 	            break;
 
 	        case 8:
 	            this.enterOuterAlt(localctx, 8);
-	            this.state = 105;
+	            this.state = 103;
 	            this.filterExpression();
 	            break;
 
@@ -575,13 +574,13 @@ export default class JSONPathParser extends antlr4.Parser {
 	    this.enterRule(localctx, 14, JSONPathParser.RULE_filterExpression);
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 108;
+	        this.state = 106;
 	        this.match(JSONPathParser.QUESTION);
-	        this.state = 109;
+	        this.state = 107;
 	        this.match(JSONPathParser.PAREN_LEFT);
-	        this.state = 110;
+	        this.state = 108;
 	        this.expression(0);
-	        this.state = 111;
+	        this.state = 109;
 	        this.match(JSONPathParser.PAREN_RIGHT);
 	    } catch (re) {
 	    	if(re instanceof antlr4.error.RecognitionException) {
@@ -605,17 +604,17 @@ export default class JSONPathParser extends antlr4.Parser {
 	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 113;
+	        this.state = 111;
 	        this.match(JSONPathParser.NUMBER);
-	        this.state = 116; 
+	        this.state = 114; 
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
 	        do {
-	            this.state = 114;
+	            this.state = 112;
 	            this.match(JSONPathParser.COMMA);
-	            this.state = 115;
+	            this.state = 113;
 	            this.match(JSONPathParser.NUMBER);
-	            this.state = 118; 
+	            this.state = 116; 
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
 	        } while(_la===32);
@@ -640,22 +639,22 @@ export default class JSONPathParser extends antlr4.Parser {
 	    this.enterRule(localctx, 18, JSONPathParser.RULE_unions);
 	    var _la = 0;
 	    try {
-	        this.state = 134;
+	        this.state = 132;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case 42:
+	        case 44:
 	            this.enterOuterAlt(localctx, 1);
-	            this.state = 120;
+	            this.state = 118;
 	            this.match(JSONPathParser.STRING);
-	            this.state = 123; 
+	            this.state = 121; 
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
 	            do {
-	                this.state = 121;
+	                this.state = 119;
 	                this.match(JSONPathParser.COMMA);
-	                this.state = 122;
+	                this.state = 120;
 	                this.match(JSONPathParser.STRING);
-	                this.state = 125; 
+	                this.state = 123; 
 	                this._errHandler.sync(this);
 	                _la = this._input.LA(1);
 	            } while(_la===32);
@@ -665,17 +664,17 @@ export default class JSONPathParser extends antlr4.Parser {
 	        case 26:
 	        case 41:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 127;
+	            this.state = 125;
 	            this.identifier();
-	            this.state = 130; 
+	            this.state = 128; 
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
 	            do {
-	                this.state = 128;
+	                this.state = 126;
 	                this.match(JSONPathParser.COMMA);
-	                this.state = 129;
+	                this.state = 127;
 	                this.identifier();
-	                this.state = 132; 
+	                this.state = 130; 
 	                this._errHandler.sync(this);
 	                _la = this._input.LA(1);
 	            } while(_la===32);
@@ -705,35 +704,35 @@ export default class JSONPathParser extends antlr4.Parser {
 	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
+	        this.state = 135;
+	        this._errHandler.sync(this);
+	        _la = this._input.LA(1);
+	        if(_la===43) {
+	            this.state = 134;
+	            this.match(JSONPathParser.NUMBER);
+	        }
+
 	        this.state = 137;
-	        this._errHandler.sync(this);
-	        _la = this._input.LA(1);
-	        if(_la===43) {
-	            this.state = 136;
-	            this.match(JSONPathParser.NUMBER);
-	        }
-
-	        this.state = 139;
 	        this.match(JSONPathParser.COLON);
-	        this.state = 141;
+	        this.state = 139;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
 	        if(_la===43) {
-	            this.state = 140;
+	            this.state = 138;
 	            this.match(JSONPathParser.NUMBER);
 	        }
 
-	        this.state = 147;
+	        this.state = 145;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
 	        if(_la===31) {
-	            this.state = 143;
+	            this.state = 141;
 	            this.match(JSONPathParser.COLON);
-	            this.state = 145;
+	            this.state = 143;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
 	            if(_la===43) {
-	                this.state = 144;
+	                this.state = 142;
 	                this.match(JSONPathParser.NUMBER);
 	            }
 
@@ -760,13 +759,13 @@ export default class JSONPathParser extends antlr4.Parser {
 	    this.enterRule(localctx, 22, JSONPathParser.RULE_regex);
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 149;
+	        this.state = 147;
 	        this.match(JSONPathParser.REGEX_EXPR);
-	        this.state = 151;
+	        this.state = 149;
 	        this._errHandler.sync(this);
 	        var la_ = this._interp.adaptivePredict(this._input,20,this._ctx);
 	        if(la_===1) {
-	            this.state = 150;
+	            this.state = 148;
 	            this.match(JSONPathParser.REGEX_OPT);
 
 	        }
@@ -798,34 +797,34 @@ export default class JSONPathParser extends antlr4.Parser {
 	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 175;
+	        this.state = 173;
 	        this._errHandler.sync(this);
 	        var la_ = this._interp.adaptivePredict(this._input,21,this._ctx);
 	        switch(la_) {
 	        case 1:
-	            this.state = 154;
+	            this.state = 152;
 	            this.match(JSONPathParser.NOT);
-	            this.state = 155;
+	            this.state = 153;
 	            this.match(JSONPathParser.PAREN_LEFT);
-	            this.state = 156;
+	            this.state = 154;
 	            this.expression(0);
-	            this.state = 157;
+	            this.state = 155;
 	            this.match(JSONPathParser.PAREN_RIGHT);
 	            break;
 
 	        case 2:
-	            this.state = 159;
+	            this.state = 157;
 	            this.match(JSONPathParser.PAREN_LEFT);
-	            this.state = 160;
+	            this.state = 158;
 	            this.expression(0);
-	            this.state = 161;
+	            this.state = 159;
 	            this.match(JSONPathParser.PAREN_RIGHT);
 	            break;
 
 	        case 3:
-	            this.state = 163;
+	            this.state = 161;
 	            this.filterarg(0);
-	            this.state = 164;
+	            this.state = 162;
 	            _la = this._input.LA(1);
 	            if(!((((_la) & ~0x1f) === 0 && ((1 << _la) & 2088832) !== 0))) {
 	            this._errHandler.recoverInline(this);
@@ -834,34 +833,34 @@ export default class JSONPathParser extends antlr4.Parser {
 	            	this._errHandler.reportMatch(this);
 	                this.consume();
 	            }
-	            this.state = 165;
+	            this.state = 163;
 	            this.filterarg(0);
 	            break;
 
 	        case 4:
-	            this.state = 167;
+	            this.state = 165;
 	            this.filterarg(0);
-	            this.state = 168;
+	            this.state = 166;
 	            this.match(JSONPathParser.REG);
-	            this.state = 169;
+	            this.state = 167;
 	            this.regex();
 	            break;
 
 	        case 5:
-	            this.state = 171;
+	            this.state = 169;
 	            this.filterarg(0);
-	            this.state = 172;
+	            this.state = 170;
 	            this.match(JSONPathParser.EMPT);
 	            break;
 
 	        case 6:
-	            this.state = 174;
+	            this.state = 172;
 	            this.filterpath();
 	            break;
 
 	        }
 	        this._ctx.stop = this._input.LT(-1);
-	        this.state = 182;
+	        this.state = 180;
 	        this._errHandler.sync(this);
 	        var _alt = this._interp.adaptivePredict(this._input,22,this._ctx)
 	        while(_alt!=2 && _alt!=antlr4.atn.ATN.INVALID_ALT_NUMBER) {
@@ -872,11 +871,11 @@ export default class JSONPathParser extends antlr4.Parser {
 	                _prevctx = localctx;
 	                localctx = new ExpressionContext(this, _parentctx, _parentState);
 	                this.pushNewRecursionContext(localctx, _startState, JSONPathParser.RULE_expression);
-	                this.state = 177;
+	                this.state = 175;
 	                if (!( this.precpred(this._ctx, 5))) {
 	                    throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 5)");
 	                }
-	                this.state = 178;
+	                this.state = 176;
 	                _la = this._input.LA(1);
 	                if(!(_la===6 || _la===23)) {
 	                this._errHandler.recoverInline(this);
@@ -885,10 +884,10 @@ export default class JSONPathParser extends antlr4.Parser {
 	                	this._errHandler.reportMatch(this);
 	                    this.consume();
 	                }
-	                this.state = 179;
+	                this.state = 177;
 	                this.expression(6); 
 	            }
-	            this.state = 184;
+	            this.state = 182;
 	            this._errHandler.sync(this);
 	            _alt = this._interp.adaptivePredict(this._input,22,this._ctx);
 	        }
@@ -915,7 +914,7 @@ export default class JSONPathParser extends antlr4.Parser {
 	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 185;
+	        this.state = 183;
 	        _la = this._input.LA(1);
 	        if(!(_la===1 || _la===3)) {
 	        this._errHandler.recoverInline(this);
@@ -924,11 +923,11 @@ export default class JSONPathParser extends antlr4.Parser {
 	        	this._errHandler.reportMatch(this);
 	            this.consume();
 	        }
-	        this.state = 187;
+	        this.state = 185;
 	        this._errHandler.sync(this);
 	        var la_ = this._interp.adaptivePredict(this._input,23,this._ctx);
 	        if(la_===1) {
-	            this.state = 186;
+	            this.state = 184;
 	            this.subscript();
 
 	        }
@@ -954,7 +953,7 @@ export default class JSONPathParser extends antlr4.Parser {
 	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 189;
+	        this.state = 187;
 	        _la = this._input.LA(1);
 	        if(!(((((_la - 24)) & ~0x1f) === 0 && ((1 << (_la - 24)) & 131079) !== 0))) {
 	        this._errHandler.recoverInline(this);
@@ -979,65 +978,42 @@ export default class JSONPathParser extends antlr4.Parser {
 
 
 
-	json() {
-	    let localctx = new JsonContext(this, this._ctx, this.state);
-	    this.enterRule(localctx, 30, JSONPathParser.RULE_json);
-	    try {
-	        this.enterOuterAlt(localctx, 1);
-	        this.state = 191;
-	        this.value();
-	    } catch (re) {
-	    	if(re instanceof antlr4.error.RecognitionException) {
-		        localctx.exception = re;
-		        this._errHandler.reportError(this, re);
-		        this._errHandler.recover(this, re);
-		    } else {
-		    	throw re;
-		    }
-	    } finally {
-	        this.exitRule();
-	    }
-	    return localctx;
-	}
-
-
-
 	obj() {
 	    let localctx = new ObjContext(this, this._ctx, this.state);
-	    this.enterRule(localctx, 32, JSONPathParser.RULE_obj);
+	    this.enterRule(localctx, 30, JSONPathParser.RULE_obj);
 	    var _la = 0;
 	    try {
-	        this.state = 206;
+	        this.state = 202;
 	        this._errHandler.sync(this);
 	        var la_ = this._interp.adaptivePredict(this._input,25,this._ctx);
 	        switch(la_) {
 	        case 1:
 	            this.enterOuterAlt(localctx, 1);
-	            this.state = 193;
+	            this.state = 189;
 	            this.match(JSONPathParser.BRACE_LEFT);
-	            this.state = 194;
+	            this.state = 190;
 	            this.pair();
-	            this.state = 199;
+	            this.state = 195;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
 	            while(_la===32) {
-	                this.state = 195;
+	                this.state = 191;
 	                this.match(JSONPathParser.COMMA);
-	                this.state = 196;
+	                this.state = 192;
 	                this.pair();
-	                this.state = 201;
+	                this.state = 197;
 	                this._errHandler.sync(this);
 	                _la = this._input.LA(1);
 	            }
-	            this.state = 202;
+	            this.state = 198;
 	            this.match(JSONPathParser.BRACE_RIGHT);
 	            break;
 
 	        case 2:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 204;
+	            this.state = 200;
 	            this.match(JSONPathParser.BRACE_LEFT);
-	            this.state = 205;
+	            this.state = 201;
 	            this.match(JSONPathParser.BRACE_RIGHT);
 	            break;
 
@@ -1060,14 +1036,14 @@ export default class JSONPathParser extends antlr4.Parser {
 
 	pair() {
 	    let localctx = new PairContext(this, this._ctx, this.state);
-	    this.enterRule(localctx, 34, JSONPathParser.RULE_pair);
+	    this.enterRule(localctx, 32, JSONPathParser.RULE_pair);
 	    try {
 	        this.enterOuterAlt(localctx, 1);
-	        this.state = 208;
+	        this.state = 204;
 	        this.match(JSONPathParser.STRING);
-	        this.state = 209;
+	        this.state = 205;
 	        this.match(JSONPathParser.COLON);
-	        this.state = 210;
+	        this.state = 206;
 	        this.value();
 	    } catch (re) {
 	    	if(re instanceof antlr4.error.RecognitionException) {
@@ -1087,40 +1063,40 @@ export default class JSONPathParser extends antlr4.Parser {
 
 	array() {
 	    let localctx = new ArrayContext(this, this._ctx, this.state);
-	    this.enterRule(localctx, 36, JSONPathParser.RULE_array);
+	    this.enterRule(localctx, 34, JSONPathParser.RULE_array);
 	    var _la = 0;
 	    try {
-	        this.state = 225;
+	        this.state = 221;
 	        this._errHandler.sync(this);
 	        var la_ = this._interp.adaptivePredict(this._input,27,this._ctx);
 	        switch(la_) {
 	        case 1:
 	            this.enterOuterAlt(localctx, 1);
-	            this.state = 212;
+	            this.state = 208;
 	            this.match(JSONPathParser.BRACKET_LEFT);
-	            this.state = 213;
+	            this.state = 209;
 	            this.value();
-	            this.state = 218;
+	            this.state = 214;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
 	            while(_la===32) {
-	                this.state = 214;
+	                this.state = 210;
 	                this.match(JSONPathParser.COMMA);
-	                this.state = 215;
+	                this.state = 211;
 	                this.value();
-	                this.state = 220;
+	                this.state = 216;
 	                this._errHandler.sync(this);
 	                _la = this._input.LA(1);
 	            }
-	            this.state = 221;
+	            this.state = 217;
 	            this.match(JSONPathParser.BRACKET_RIGHT);
 	            break;
 
 	        case 2:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 223;
+	            this.state = 219;
 	            this.match(JSONPathParser.BRACKET_LEFT);
-	            this.state = 224;
+	            this.state = 220;
 	            this.match(JSONPathParser.BRACKET_RIGHT);
 	            break;
 
@@ -1143,44 +1119,44 @@ export default class JSONPathParser extends antlr4.Parser {
 
 	value() {
 	    let localctx = new ValueContext(this, this._ctx, this.state);
-	    this.enterRule(localctx, 38, JSONPathParser.RULE_value);
+	    this.enterRule(localctx, 36, JSONPathParser.RULE_value);
 	    try {
-	        this.state = 234;
+	        this.state = 230;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case 42:
+	        case 44:
 	            this.enterOuterAlt(localctx, 1);
-	            this.state = 227;
+	            this.state = 223;
 	            this.match(JSONPathParser.STRING);
 	            break;
 	        case 43:
 	            this.enterOuterAlt(localctx, 2);
-	            this.state = 228;
+	            this.state = 224;
 	            this.match(JSONPathParser.NUMBER);
 	            break;
 	        case 27:
 	            this.enterOuterAlt(localctx, 3);
-	            this.state = 229;
+	            this.state = 225;
 	            this.obj();
 	            break;
 	        case 29:
 	            this.enterOuterAlt(localctx, 4);
-	            this.state = 230;
+	            this.state = 226;
 	            this.array();
 	            break;
 	        case 24:
 	            this.enterOuterAlt(localctx, 5);
-	            this.state = 231;
+	            this.state = 227;
 	            this.match(JSONPathParser.TRUE);
 	            break;
 	        case 25:
 	            this.enterOuterAlt(localctx, 6);
-	            this.state = 232;
+	            this.state = 228;
 	            this.match(JSONPathParser.FALSE);
 	            break;
 	        case 26:
 	            this.enterOuterAlt(localctx, 7);
-	            this.state = 233;
+	            this.state = 229;
 	            this.match(JSONPathParser.NULL);
 	            break;
 	        default:
@@ -1245,9 +1221,9 @@ JSONPathParser.DIV = 38;
 JSONPathParser.REGEX_OPT = 39;
 JSONPathParser.REGEX_EXPR = 40;
 JSONPathParser.KEY = 41;
-JSONPathParser.STRING = 42;
+JSONPathParser.WS = 42;
 JSONPathParser.NUMBER = 43;
-JSONPathParser.WS = 44;
+JSONPathParser.STRING = 44;
 
 JSONPathParser.RULE_jsonpath = 0;
 JSONPathParser.RULE_filterarg = 1;
@@ -1264,11 +1240,10 @@ JSONPathParser.RULE_regex = 11;
 JSONPathParser.RULE_expression = 12;
 JSONPathParser.RULE_filterpath = 13;
 JSONPathParser.RULE_identifier = 14;
-JSONPathParser.RULE_json = 15;
-JSONPathParser.RULE_obj = 16;
-JSONPathParser.RULE_pair = 17;
-JSONPathParser.RULE_array = 18;
-JSONPathParser.RULE_value = 19;
+JSONPathParser.RULE_obj = 15;
+JSONPathParser.RULE_pair = 16;
+JSONPathParser.RULE_array = 17;
+JSONPathParser.RULE_value = 18;
 
 class JsonpathContext extends antlr4.ParserRuleContext {
 
@@ -2127,41 +2102,6 @@ class IdentifierContext extends antlr4.ParserRuleContext {
 
 
 
-class JsonContext extends antlr4.ParserRuleContext {
-
-    constructor(parser, parent, invokingState) {
-        if(parent===undefined) {
-            parent = null;
-        }
-        if(invokingState===undefined || invokingState===null) {
-            invokingState = -1;
-        }
-        super(parent, invokingState);
-        this.parser = parser;
-        this.ruleIndex = JSONPathParser.RULE_json;
-    }
-
-	value() {
-	    return this.getTypedRuleContext(ValueContext,0);
-	};
-
-	enterRule(listener) {
-	    if(listener instanceof JSONPathListener ) {
-	        listener.enterJson(this);
-		}
-	}
-
-	exitRule(listener) {
-	    if(listener instanceof JSONPathListener ) {
-	        listener.exitJson(this);
-		}
-	}
-
-
-}
-
-
-
 class ObjContext extends antlr4.ParserRuleContext {
 
     constructor(parser, parent, invokingState) {
@@ -2404,7 +2344,6 @@ JSONPathParser.RegexContext = RegexContext;
 JSONPathParser.ExpressionContext = ExpressionContext; 
 JSONPathParser.FilterpathContext = FilterpathContext; 
 JSONPathParser.IdentifierContext = IdentifierContext; 
-JSONPathParser.JsonContext = JsonContext; 
 JSONPathParser.ObjContext = ObjContext; 
 JSONPathParser.PairContext = PairContext; 
 JSONPathParser.ArrayContext = ArrayContext; 

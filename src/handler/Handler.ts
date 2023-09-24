@@ -18,8 +18,7 @@ import {
 } from '../parser/types';
 import { isArray, isDefined, isNumber, isPlainObject, isString, isUndefined } from './helper';
 
-const getNumericLiteralIndex = (index: number, total: number): number =>
-  index < 0 && total ? total + (index % total) : index;
+const getNumericLiteralIndex = (index: number, total: number): number => (index < 0 ? total + index : index);
 const formatStringLiteralPath = (paths: string | string[], v: string): string | string[] => paths.concat(`["${v}"]`);
 const formatNumericLiteralPath = (paths: string | string[], v: number): string | string[] => paths.concat(`[${v}]`);
 
@@ -246,7 +245,7 @@ export class Handler<T extends unknown = unknown> {
 
     const index = getNumericLiteralIndex(tree.value, value.length);
 
-    if (index < value.length) {
+    if (index < value.length && index >= 0) {
       return { value: value[index], paths: formatNumericLiteralPath(paths, index) };
     }
     return;
