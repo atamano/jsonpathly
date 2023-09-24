@@ -239,7 +239,7 @@ export class Handler<T extends unknown = unknown> {
   };
 
   private handleNumericLiteral = ({ value, paths }: ValuePath, tree: NumericLiteral): ValuePath | undefined => {
-    if (!isArray(value) && !isString(value)) {
+    if (!isArray(value)) {
       return;
     }
 
@@ -324,7 +324,7 @@ export class Handler<T extends unknown = unknown> {
         break;
       }
       case 'bracketExpression': {
-        if (isPlainObject(value)) {
+        if (isPlainObject(value) || isArray(value)) {
           const result = this.handleBracketExpressionContent(payload, treeValue.value);
           results = results.concat(result);
         }

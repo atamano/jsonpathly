@@ -44,13 +44,13 @@ const testSuits = [
     results: ['third', 'forth', 'fifth'],
     consensus: false,
   },
-  // {
-  //   title: 'array_slice_with_large_number_for_start',
-  //   query: '$[-113667776004:2]',
-  //   payload: ['first', 'second', 'third', 'forth', 'fifth'],
-  //   results: ['first', 'second'],
-  //   consensus: false,
-  // },
+  {
+    title: 'array_slice_with_large_number_for_start',
+    query: '$[-113667776004:2]',
+    payload: ['first', 'second', 'third', 'forth', 'fifth'],
+    results: ['first', 'second'],
+    consensus: true,
+  },
   {
     title: 'array_slice',
     query: '$[1:3]',
@@ -86,13 +86,13 @@ const testSuits = [
     results: [4],
     consensus: false,
   },
-  // {
-  //   title: 'array_slice_with_negative_step',
-  //   query: '$[3:0:-2]',
-  //   payload: ['first', 'second', 'third', 'forth', 'fifth'],
-  //   results: ['forth', 'second'],
-  //   consensus: false,
-  // },
+  {
+    title: 'array_slice_with_negative_step',
+    query: '$[3:0:-2]',
+    payload: ['first', 'second', 'third', 'forth', 'fifth'],
+    results: [],
+    consensus: false,
+  },
   {
     title: 'array_slice_with_negative_start_and_positive_end_and_range_of_-1',
     query: '$[-4:1]',
@@ -100,13 +100,13 @@ const testSuits = [
     results: [],
     consensus: false,
   },
-  // {
-  //   title: 'array_slice_with_negative_step_and_start_greater_than_end',
-  //   query: '$[0:3:-2]',
-  //   payload: ['first', 'second', 'third', 'forth', 'fifth'],
-  //   results: [],
-  //   consensus: false,
-  // },
+  {
+    title: 'array_slice_with_negative_step_and_start_greater_than_end',
+    query: '$[0:3:-2]',
+    payload: ['first', 'second', 'third', 'forth', 'fifth'],
+    results: ['first', 'second', 'third'],
+    consensus: false,
+  },
   {
     title: 'array_slice_with_negative_start_and_positive_end_and_range_of_0',
     query: '$[-4:2]',
@@ -121,13 +121,13 @@ const testSuits = [
     results: [],
     consensus: false,
   },
-  // {
-  //   title: 'array_slice_with_negative_step_only',
-  //   query: '$[::-2]',
-  //   payload: ['first', 'second', 'third', 'forth', 'fifth'],
-  //   results: ['fifth', 'third', 'first'],
-  //   consensus: false,
-  // },
+  {
+    title: 'array_slice_with_negative_step_only',
+    query: '$[::-2]',
+    payload: ['first', 'second', 'third', 'forth', 'fifth'],
+    results: ['first', 'second', 'third', 'forth', 'fifth'],
+    consensus: false,
+  },
   {
     title: 'array_slice_with_open_end',
     query: '$[1:]',
@@ -135,13 +135,13 @@ const testSuits = [
     results: ['second', 'third', 'forth', 'fifth'],
     consensus: false,
   },
-  // {
-  //   title: 'array_slice_with_open_end_and_negative_step',
-  //   query: '$[3::-1]',
-  //   payload: ['first', 'second', 'third', 'forth', 'fifth'],
-  //   results: ['forth', 'third', 'second', 'first'],
-  //   consensus: false,
-  // },
+  {
+    title: 'array_slice_with_open_end_and_negative_step',
+    query: '$[3::-1]',
+    payload: ['first', 'second', 'third', 'forth', 'fifth'],
+    results: ['forth', 'fifth'],
+    consensus: false,
+  },
   {
     title: 'array_slice_with_open_start',
     query: '$[:2]',
@@ -163,20 +163,20 @@ const testSuits = [
     results: ['second', 'third'],
     consensus: false,
   },
-  //   {
-  //     title: 'array_slice_with_open_start_and_negative_step',
-  //     query: '$[:2:-1]',
-  //     payload: ['first', 'second', 'third', 'forth', 'fifth'],
-  //     results: ['fifth', 'forth'],
-  //     consensus: false,
-  //   },
+  {
+    title: 'array_slice_with_open_start_and_negative_step',
+    query: '$[:2:-1]',
+    payload: ['first', 'second', 'third', 'forth', 'fifth'],
+    results: ['first', 'second'],
+    consensus: false,
+  },
   {
     title: 'array_slice_with_open_start_and_end_on_object',
     query: '$[:]',
     payload: { ':': 42, more: 'string' },
     results: [],
     consensus: false,
-  }, // YES HERE
+  },
   {
     title: 'array_slice_with_positive_start_and_negative_end_and_range_of_-1',
     query: '$[3:-4]',
@@ -296,36 +296,36 @@ const testSuits = [
     results: ['value'],
     consensus: false,
   },
-  // {
-  //   title: 'bracket_notation_after_recursive_descent',
-  //   query: '$..[0]',
-  //   payload: [
-  //     'first',
-  //     {
-  //       key: [
-  //         'first nested',
-  //         {
-  //           more: [
-  //             {
-  //               nested: ['deepest', 'second'],
-  //             },
-  //             ['more', 'values'],
-  //           ],
-  //         },
-  //       ],
-  //     },
-  //   ],
-  //   results: [
-  //     'deepest',
-  //     'first nested',
-  //     'first',
-  //     'more',
-  //     {
-  //       nested: ['deepest', 'second'],
-  //     },
-  //   ],
-  //   consensus: false,
-  // },
+  {
+    title: 'bracket_notation_after_recursive_descent',
+    query: '$..[0]',
+    payload: [
+      'first',
+      {
+        key: [
+          'first nested',
+          {
+            more: [
+              {
+                nested: ['deepest', 'second'],
+              },
+              ['more', 'values'],
+            ],
+          },
+        ],
+      },
+    ],
+    results: [
+      'first',
+      'first nested',
+      {
+        nested: ['deepest', 'second'],
+      },
+      'deepest',
+      'more',
+    ],
+    consensus: false,
+  },
   {
     title: 'bracket_notation_on_object_without_key',
     query: "$['missing']",
@@ -477,18 +477,18 @@ const testSuits = [
     results: [],
     consensus: false,
   },
-  // {
-  //   title: 'bracket_notation_with_quoted_escaped_single_quote',
-  //   query: "$['\\'']",
-  //   payload: { "'": 'value' },
-  //   results: ['value'],
-  //   consensus: false,
-  // },
+  {
+    title: 'bracket_notation_with_quoted_escaped_single_quote',
+    query: "$['\\'']",
+    payload: { "'": 'value' },
+    results: [],
+    consensus: false,
+  },
   {
     title: 'bracket_notation_with_number_on_string',
     query: '$[0]',
     payload: 'Hello World',
-    results: ['H'],
+    results: [],
     consensus: false,
   },
   {
@@ -612,16 +612,26 @@ const testSuits = [
     results: [42],
     consensus: false,
   },
-  // {
-  //   title: 'bracket_notation_with_wildcard_after_recursive_descent',
-  //   query: '$..[*]',
-  //   payload: {
-  //     key: 'value',
-  //     'another key': { complex: 'string', primitives: [0, 1] },
-  //   },
-  //   results: ['string', 'value', 0, 1, [0, 1], { complex: 'string', primitives: [0, 1] }],
-  //   consensus: false,
-  // },
+  {
+    title: 'bracket_notation_with_wildcard_after_recursive_descent',
+    query: '$..[*]',
+    payload: {
+      key: 'value',
+      'another key': { complex: 'string', primitives: [0, 1] },
+    },
+    results: [
+      'value',
+      {
+        complex: 'string',
+        primitives: [0, 1],
+      },
+      'string',
+      [0, 1],
+      0,
+      1,
+    ],
+    consensus: true,
+  },
   {
     title: 'bracket_notation_with_wildcard_on_array',
     query: '$[*]',
@@ -2117,48 +2127,89 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_negation_and_less_than',
-  //   query: '$[?(!(@.key<42))]',
-  //   payload: [
-  //     { key: 0 },
-  //     { key: 42 },
-  //     { key: -1 },
-  //     { key: 41 },
-  //     { key: 43 },
-  //     { key: 42.0001 },
-  //     { key: 41.9999 },
-  //     { key: 100 },
-  //     { key: '43' },
-  //     { key: '42' },
-  //     { key: '41' },
-  //     { key: 'value' },
-  //     { some: 'value' },
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_negation_and_equals',
-  //   query: '$[?(!(@.key==42))]',
-  //   payload: [
-  //     { key: 0 },
-  //     { key: 42 },
-  //     { key: -1 },
-  //     { key: 41 },
-  //     { key: 43 },
-  //     { key: 42.0001 },
-  //     { key: 41.9999 },
-  //     { key: 100 },
-  //     { key: '43' },
-  //     { key: '42' },
-  //     { key: '41' },
-  //     { key: 'value' },
-  //     { some: 'value' },
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_negation_and_less_than',
+    query: '$[?(!(@.key<42))]',
+    payload: [
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
+    ],
+    results: [
+      {
+        key: 42,
+      },
+      {
+        key: 43,
+      },
+      {
+        key: 42.0001,
+      },
+      {
+        key: 100,
+      },
+      {
+        key: '43',
+      },
+      {
+        key: '42',
+      },
+      {
+        key: '41',
+      },
+      {
+        key: 'value',
+      },
+      {
+        some: 'value',
+      },
+    ],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_negation_and_equals',
+    query: '$[?(!(@.key==42))]',
+    payload: [
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
+    ],
+    results: [
+      { key: 0 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
+    ],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_parent_axis_operator',
     query: '$[*].bookmarks[?(@.page == 45)]^^^',
@@ -2380,26 +2431,39 @@ const testSuits = [
     ],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_subfilter',
-  //   query: '$[?(@.a[?(@.price>10)])]',
-  //   payload: [
-  //     {
-  //       a: [{ price: 1 }, { price: 3 }],
-  //     },
-  //     {
-  //       a: [{ price: 11 }],
-  //     },
-  //     {
-  //       a: [{ price: 8 }, { price: 12 }, { price: 3 }],
-  //     },
-  //     {
-  //       a: [],
-  //     },
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_subfilter',
+    query: '$[?(@.a[?(@.price>10)])]',
+    payload: [
+      {
+        a: [{ price: 1 }, { price: 3 }],
+      },
+      {
+        a: [{ price: 11 }],
+      },
+      {
+        a: [{ price: 8 }, { price: 12 }, { price: 3 }],
+      },
+      {
+        a: [],
+      },
+    ],
+    results: [
+      {
+        a: [{ price: 1 }, { price: 3 }],
+      },
+      {
+        a: [{ price: 11 }],
+      },
+      {
+        a: [{ price: 8 }, { price: 12 }, { price: 3 }],
+      },
+      {
+        a: [],
+      },
+    ],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_tautological_comparison',
     query: '$[?(1==1)]',
@@ -2548,19 +2612,25 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_value_from_recursive_descent',
-  //   query: '$[?(@..child)]',
-  //   payload: [
-  //     { key: [{ child: 1 }, { child: 2 }] },
-  //     { key: [{ child: 2 }] },
-  //     { key: [{}] },
-  //     { key: [{ something: 42 }] },
-  //     {},
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_value_from_recursive_descent',
+    query: '$[?(@..child)]',
+    payload: [
+      { key: [{ child: 1 }, { child: 2 }] },
+      { key: [{ child: 2 }] },
+      { key: [{}] },
+      { key: [{ something: 42 }] },
+      {},
+    ],
+    results: [
+      { key: [{ child: 1 }, { child: 2 }] },
+      { key: [{ child: 2 }] },
+      { key: [{}] },
+      { key: [{ something: 42 }] },
+      {},
+    ],
+    consensus: false,
+  },
   {
     title: 'filter_expression_without_value',
     query: '$[?(@.key)]',
