@@ -1525,73 +1525,77 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_equals_array_for_array_slice_with_range_1',
-  //   query: '$[?(@[0:1]==[1])]',
-  //   payload: [[1, 2, 3], [1], [2, 3], 1, 2],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_equals_array_for_dot_notation_with_star',
-  //   query: '$[?(@.*==[1,2])]',
-  //   payload: [[1, 2], [2, 3], [1], [2], [1, 2, 3], 1, 2, 3],
-  //   results: [[1, 2]],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_equals_array',
-  //   query: '$[?(@.d==["v1","v2"])]',
-  //   payload: [
-  //     {
-  //       d: ['v1', 'v2'],
-  //     },
-  //     {
-  //       d: ['a', 'b'],
-  //     },
-  //     {
-  //       d: 'v1',
-  //     },
-  //     {
-  //       d: 'v2',
-  //     },
-  //     {
-  //       d: {},
-  //     },
-  //     {
-  //       d: [],
-  //     },
-  //     {
-  //       d: null,
-  //     },
-  //     {
-  //       d: -1,
-  //     },
-  //     {
-  //       d: 0,
-  //     },
-  //     {
-  //       d: 1,
-  //     },
-  //     {
-  //       d: "['v1','v2']",
-  //     },
-  //     {
-  //       d: "['v1', 'v2']",
-  //     },
-  //     {
-  //       d: 'v1,v2',
-  //     },
-  //     {
-  //       d: '["v1", "v2"]',
-  //     },
-  //     {
-  //       d: '["v1","v2"]',
-  //     },
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_equals_array_for_array_slice_with_range_1',
+    query: '$[?(@[0:1]==[1])]',
+    payload: [[1, 2, 3], [1], [2, 3], 1, 2],
+    results: [[1, 2, 3], [1]],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_equals_array_for_dot_notation_with_star',
+    query: '$[?(@.*==[1,2])]',
+    payload: [[1, 2], [2, 3], [1], [2], [1, 2, 3], 1, 2, 3],
+    results: [[1, 2]],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_equals_array',
+    query: '$[?(@.d==["v1","v2"])]',
+    payload: [
+      {
+        d: ['v1', 'v2'],
+      },
+      {
+        d: ['a', 'b'],
+      },
+      {
+        d: 'v1',
+      },
+      {
+        d: 'v2',
+      },
+      {
+        d: {},
+      },
+      {
+        d: [],
+      },
+      {
+        d: null,
+      },
+      {
+        d: -1,
+      },
+      {
+        d: 0,
+      },
+      {
+        d: 1,
+      },
+      {
+        d: "['v1','v2']",
+      },
+      {
+        d: "['v1', 'v2']",
+      },
+      {
+        d: 'v1,v2',
+      },
+      {
+        d: '["v1", "v2"]',
+      },
+      {
+        d: '["v1","v2"]',
+      },
+    ],
+    results: [
+      {
+        d: ['v1', 'v2'],
+      },
+    ],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_equals_false',
     query: '$[?(@.key==false)]',
@@ -1667,13 +1671,13 @@ const testSuits = [
     results: [{ key: null }],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_equals_array_or_equals_true',
-  //   query: '$[?(@.d==["v1","v2"] || (@.d == true))]',
-  //   payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_equals_array_or_equals_true',
+    query: '$[?(@.d==["v1","v2"] || (@.d == true))]',
+    payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
+    results: [{ d: ['v1', 'v2'] }, { d: true }],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_equals_number_for_array_slice_with_range_1',
     query: '$[?(@[0:1]==1)]',
@@ -1784,23 +1788,23 @@ const testSuits = [
     results: [],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_equals_on_object',
-  //   query: '$[?(@.key==42)]',
-  //   payload: {
-  //     a: { key: 0 },
-  //     b: { key: 42 },
-  //     c: { key: -1 },
-  //     d: { key: 41 },
-  //     e: { key: 43 },
-  //     f: { key: 42.0001 },
-  //     g: { key: 41.9999 },
-  //     h: { key: 100 },
-  //     i: { some: 'value' },
-  //   },
-  //   results: [{ key: 42 }],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_equals_on_object',
+    query: '$[?(@.key==42)]',
+    payload: {
+      a: { key: 0 },
+      b: { key: 42 },
+      c: { key: -1 },
+      d: { key: 41 },
+      e: { key: 43 },
+      f: { key: 42.0001 },
+      g: { key: 41.9999 },
+      h: { key: 100 },
+      i: { some: 'value' },
+    },
+    results: [],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_equals_string_in_NFC',
     query: '$[?(@.key=="Motörhead")]',
@@ -1852,65 +1856,71 @@ const testSuits = [
     results: [42],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_equals_on_object_with_key_matching_query',
-  //   query: '$[?(@.id==2)]',
-  //   payload: { id: 2 },
-  //   results: [],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_equals_object',
-  //   query: '$[?(@.d=={"k":"v"})]',
-  //   payload: [
-  //     {
-  //       d: {
-  //         k: 'v',
-  //       },
-  //     },
-  //     {
-  //       d: {
-  //         a: 'b',
-  //       },
-  //     },
-  //     {
-  //       d: 'k',
-  //     },
-  //     {
-  //       d: 'v',
-  //     },
-  //     {
-  //       d: {},
-  //     },
-  //     {
-  //       d: [],
-  //     },
-  //     {
-  //       d: null,
-  //     },
-  //     {
-  //       d: -1,
-  //     },
-  //     {
-  //       d: 0,
-  //     },
-  //     {
-  //       d: 1,
-  //     },
-  //     {
-  //       d: '[object Object]',
-  //     },
-  //     {
-  //       d: '{"k": "v"}',
-  //     },
-  //     {
-  //       d: '{"k":"v"}',
-  //     },
-  //     'v',
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_equals_on_object_with_key_matching_query',
+    query: '$[?(@.id==2)]',
+    payload: { id: 2 },
+    results: [{ id: 2 }],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_equals_object',
+    query: '$[?(@.d=={"k":"v"})]',
+    payload: [
+      {
+        d: {
+          k: 'v',
+        },
+      },
+      {
+        d: {
+          a: 'b',
+        },
+      },
+      {
+        d: 'k',
+      },
+      {
+        d: 'v',
+      },
+      {
+        d: {},
+      },
+      {
+        d: [],
+      },
+      {
+        d: null,
+      },
+      {
+        d: -1,
+      },
+      {
+        d: 0,
+      },
+      {
+        d: 1,
+      },
+      {
+        d: '[object Object]',
+      },
+      {
+        d: '{"k": "v"}',
+      },
+      {
+        d: '{"k":"v"}',
+      },
+      'v',
+    ],
+    results: [
+      {
+        d: {
+          k: 'v',
+        },
+      },
+    ],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_equals_string_with_current_object_literal',
     query: '$[?(@.key=="hi@example.com")]',
@@ -1945,41 +1955,53 @@ const testSuits = [
     results: [{ key: true }],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_equals_with_path_and_path',
-  //   query: '$[?(@.key1==@.key2)]',
-  //   payload: [
-  //     { key1: 10, key2: 10 },
-  //     { key1: 42, key2: 50 },
-  //     { key1: 10 },
-  //     { key2: 10 },
-  //     {},
-  //     { key1: null, key2: null },
-  //     { key1: null },
-  //     { key2: null },
-  //     { key1: 0, key2: 0 },
-  //     { key1: 0 },
-  //     { key2: 0 },
-  //     { key1: -1, key2: -1 },
-  //     { key1: '', key2: '' },
-  //     { key1: false, key2: false },
-  //     { key1: false },
-  //     { key2: false },
-  //     { key1: true, key2: true },
-  //     { key1: [], key2: [] },
-  //     { key1: {}, key2: {} },
-  //     { key1: { a: 1, b: 2 }, key2: { b: 2, a: 1 } },
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_in_array_of_values',
-  //   query: '$[?(@.d in [2, 3])]',
-  //   payload: [{ d: 1 }, { d: 2 }, { d: 1 }, { d: 3 }, { d: 4 }],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_equals_with_path_and_path',
+    query: '$[?(@.key1==@.key2)]',
+    payload: [
+      { key1: 10, key2: 10 },
+      { key1: 42, key2: 50 },
+      { key1: 10 },
+      { key2: 10 },
+      {},
+      { key1: null, key2: null },
+      { key1: null },
+      { key2: null },
+      { key1: 0, key2: 0 },
+      { key1: 0 },
+      { key2: 0 },
+      { key1: -1, key2: -1 },
+      { key1: '', key2: '' },
+      { key1: false, key2: false },
+      { key1: false },
+      { key2: false },
+      { key1: true, key2: true },
+      { key1: [], key2: [] },
+      { key1: {}, key2: {} },
+      { key1: { a: 1, b: 2 }, key2: { b: 2, a: 1 } },
+    ],
+    results: [
+      { key1: 10, key2: 10 },
+      {},
+      { key1: null, key2: null },
+      { key1: 0, key2: 0 },
+      { key1: -1, key2: -1 },
+      { key1: '', key2: '' },
+      { key1: false, key2: false },
+      { key1: true, key2: true },
+      { key1: [], key2: [] },
+      { key1: {}, key2: {} },
+      { key1: { a: 1, b: 2 }, key2: { b: 2, a: 1 } },
+    ],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_in_array_of_values',
+    query: '$[?(@.d in [2, 3])]',
+    payload: [{ d: 1 }, { d: 2 }, { d: 1 }, { d: 3 }, { d: 4 }],
+    results: [{ d: 2 }, { d: 3 }],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_equals_string_with_unicode_character_escape',
     query: '$[?(@.key=="Mot\\u00f6rhead")]',
@@ -2312,32 +2334,44 @@ const testSuits = [
     ],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_non_singular_existence_test',
-  //   query: '$[?(@.a.*)]',
-  //   payload: [
-  //     { a: 0 },
-  //     { a: 'x' },
-  //     { a: false },
-  //     { a: true },
-  //     { a: null },
-  //     { a: [] },
-  //     { a: [1] },
-  //     { a: [1, 2] },
-  //     { a: {} },
-  //     { a: { x: 'y' } },
-  //     { a: { x: 'y', w: 'z' } },
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_negation_and_equals_array_or_equals_true',
-  //   query: '$[?(!(@.d==["v1","v2"]) || (@.d == true))]',
-  //   payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_non_singular_existence_test',
+    query: '$[?(@.a.*)]',
+    payload: [
+      { a: 0 },
+      { a: 'x' },
+      { a: false },
+      { a: true },
+      { a: null },
+      { a: [] },
+      { a: [1] },
+      { a: [1, 2] },
+      { a: {} },
+      { a: { x: 'y' } },
+      { a: { x: 'y', w: 'z' } },
+    ],
+    results: [
+      { a: 0 },
+      { a: 'x' },
+      { a: false },
+      { a: true },
+      { a: null },
+      { a: [] },
+      { a: [1] },
+      { a: [1, 2] },
+      { a: {} },
+      { a: { x: 'y' } },
+      { a: { x: 'y', w: 'z' } },
+    ],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_negation_and_equals_array_or_equals_true',
+    query: '$[?(!(@.d==["v1","v2"]) || (@.d == true))]',
+    payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
+    results: [{ d: ['a', 'b'] }, { d: true }],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_not_equals',
     query: '$[?(@.key!=42)]',
