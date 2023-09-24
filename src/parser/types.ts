@@ -132,7 +132,14 @@ export type Unions = {
   values: (StringLiteral | Identifier)[];
 };
 
-export type FilterExpressionContent = Comparator | GroupExpression | LogicalExpression | NotExpression | Current | Root;
+export type FilterExpressionContent =
+  | Comparator
+  | GroupExpression
+  | LogicalExpression
+  | NotExpression
+  | Current
+  | Root
+  | Value;
 
 export type FilterExpression = {
   type: 'filterExpression';

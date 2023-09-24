@@ -16,7 +16,7 @@ import {
   Subscript,
   Unions,
 } from '../parser/types';
-import { isArray, isDefined, isNumber, isPlainObject, isString, isUndefined } from './helper';
+import { isArray, isDefined, isEqual, isNumber, isPlainObject, isString, isUndefined } from './helper';
 
 const getNumericLiteralIndex = (index: number, total: number): number => (index < 0 ? total + index : index);
 const formatStringLiteralPath = (paths: string | string[], v: string): string | string[] => paths.concat(`["${v}"]`);
@@ -150,34 +150,46 @@ export class Handler<T extends unknown = unknown> {
         return leftValue.length === rightValue;
       }
       case 'eq': {
-        return leftValue === rightValue;
+        return isEqual(leftValue, rightValue);
       }
       case 'ne': {
-        return leftValue !== rightValue;
+        return !isEqual(leftValue, rightValue);
       }
       case 'lt': {
-        if (!isNumber(leftValue) || !isNumber(rightValue)) {
-          return false;
+        if (isNumber(leftValue) && isNumber(rightValue)) {
+          return leftValue < rightValue;
         }
-        return leftValue < rightValue;
+        if (isString(leftValue) && isString(rightValue)) {
+          return leftValue < rightValue;
+        }
+        return false;
       }
       case 'le': {
-        if (!isNumber(leftValue) || !isNumber(rightValue)) {
-          return false;
+        if (isNumber(leftValue) && isNumber(rightValue)) {
+          return leftValue <= rightValue;
         }
-        return leftValue <= rightValue;
+        if (isString(leftValue) && isString(rightValue)) {
+          return leftValue <= rightValue;
+        }
+        return false;
       }
       case 'gt': {
-        if (!isNumber(leftValue) || !isNumber(rightValue)) {
-          return false;
+        if (isNumber(leftValue) && isNumber(rightValue)) {
+          return leftValue > rightValue;
         }
-        return leftValue > rightValue;
+        if (isString(leftValue) && isString(rightValue)) {
+          return leftValue > rightValue;
+        }
+        return false;
       }
       case 'ge': {
-        if (!isNumber(leftValue) || !isNumber(rightValue)) {
-          return false;
+        if (isNumber(leftValue) && isNumber(rightValue)) {
+          return leftValue >= rightValue;
         }
-        return leftValue >= rightValue;
+        if (isString(leftValue) && isString(rightValue)) {
+          return leftValue >= rightValue;
+        }
+        return false;
       }
       case 'in': {
         if (!isArray(rightValue)) {
@@ -235,12 +247,19 @@ export class Handler<T extends unknown = unknown> {
       case 'current': {
         return isDefined(this.handleSubscript(payload, tree.next));
       }
+      case 'value': {
+        return !!tree.value;
+      }
     }
   };
 
   private handleNumericLiteral = ({ value, paths }: ValuePath, tree: NumericLiteral): ValuePath | undefined => {
-    if (!isArray(value)) {
+    if (!isArray(value) && !isPlainObject(value)) {
       return;
+    }
+
+    if (isPlainObject(value)) {
+      return this.handleStringLiteral({ value, paths }, { type: 'stringLiteral', value: `${tree.value}` });
     }
 
     const index = getNumericLiteralIndex(tree.value, value.length);

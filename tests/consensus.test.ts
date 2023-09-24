@@ -425,7 +425,7 @@ const testSuits = [
     title: 'bracket_notation_with_number_on_object',
     query: '$[0]',
     payload: { 0: 'value' },
-    results: [],
+    results: ['value'],
     consensus: false,
   },
   {
@@ -679,20 +679,21 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'bracket_notation_without_quotes',
-  //   query: '$[key]',
-  //   payload: { key: 'value' },
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'bracket_notation_with_number_-1_on_empty_array',
-  //   query: '$[-1]',
-  //   payload: [],
-  //   results: [],
-  //   consensus: false,
-  // },
+  {
+    title: 'bracket_notation_without_quotes',
+    query: '$[key]',
+    payload: { key: 'value' },
+    results: ['value'],
+    consensus: true,
+    isCustom: true,
+  },
+  {
+    title: 'bracket_notation_with_number_-1_on_empty_array',
+    query: '$[-1]',
+    payload: [],
+    results: [],
+    consensus: true,
+  },
   {
     title: 'dot_bracket_notation_without_quotes',
     query: '$.[key]',
@@ -717,20 +718,20 @@ const testSuits = [
     results: [1],
     consensus: false,
   },
-  // {
-  //   title: 'dot_notation_after_bracket_notation_after_recursive_descent',
-  //   query: '$..[1].key',
-  //   payload: {
-  //     k: [{ key: 'some value' }, { key: 42 }],
-  //     kk: [
-  //       [{ key: 100 }, { key: 200 }, { key: 300 }],
-  //       [{ key: 400 }, { key: 500 }, { key: 600 }],
-  //     ],
-  //     key: [0, 1],
-  //   },
-  //   results: [200, 42, 500],
-  //   consensus: false,
-  // },
+  {
+    title: 'dot_notation_after_bracket_notation_after_recursive_descent',
+    query: '$..[1].key',
+    payload: {
+      k: [{ key: 'some value' }, { key: 42 }],
+      kk: [
+        [{ key: 100 }, { key: 200 }, { key: 300 }],
+        [{ key: 400 }, { key: 500 }, { key: 600 }],
+      ],
+      key: [0, 1],
+    },
+    results: [42, 200, 500],
+    consensus: false,
+  },
   {
     title: 'current_with_dot_notation',
     query: '@.a',
@@ -810,48 +811,48 @@ const testSuits = [
     results: ['ey', 'see'],
     consensus: false,
   },
-  // {
-  //   title: 'dot_notation_after_recursive_descent_after_dot_notation',
-  //   query: '$.store..price',
-  //   payload: {
-  //     store: {
-  //       book: [
-  //         {
-  //           category: 'reference',
-  //           author: 'Nigel Rees',
-  //           title: 'Sayings of the Century',
-  //           price: 8.95,
-  //         },
-  //         {
-  //           category: 'fiction',
-  //           author: 'Evelyn Waugh',
-  //           title: 'Sword of Honour',
-  //           price: 12.99,
-  //         },
-  //         {
-  //           category: 'fiction',
-  //           author: 'Herman Melville',
-  //           title: 'Moby Dick',
-  //           isbn: '0-553-21311-3',
-  //           price: 8.99,
-  //         },
-  //         {
-  //           category: 'fiction',
-  //           author: 'J. R. R. Tolkien',
-  //           title: 'The Lord of the Rings',
-  //           isbn: '0-395-19395-8',
-  //           price: 22.99,
-  //         },
-  //       ],
-  //       bicycle: {
-  //         color: 'red',
-  //         price: 19.95,
-  //       },
-  //     },
-  //   },
-  //   results: [12.99, 19.95, 22.99, 8.95, 8.99],
-  //   consensus: false,
-  // },
+  {
+    title: 'dot_notation_after_recursive_descent_after_dot_notation',
+    query: '$.store..price',
+    payload: {
+      store: {
+        book: [
+          {
+            category: 'reference',
+            author: 'Nigel Rees',
+            title: 'Sayings of the Century',
+            price: 8.95,
+          },
+          {
+            category: 'fiction',
+            author: 'Evelyn Waugh',
+            title: 'Sword of Honour',
+            price: 12.99,
+          },
+          {
+            category: 'fiction',
+            author: 'Herman Melville',
+            title: 'Moby Dick',
+            isbn: '0-553-21311-3',
+            price: 8.99,
+          },
+          {
+            category: 'fiction',
+            author: 'J. R. R. Tolkien',
+            title: 'The Lord of the Rings',
+            isbn: '0-395-19395-8',
+            price: 22.99,
+          },
+        ],
+        bicycle: {
+          color: 'red',
+          price: 19.95,
+        },
+      },
+    },
+    results: [8.95, 12.99, 8.99, 22.99, 19.95],
+    consensus: false,
+  },
   {
     title: 'dot_notation_on_array',
     query: '$.key',
@@ -912,22 +913,23 @@ const testSuits = [
     results: [],
     consensus: false,
   },
-  // {
-  //   title: 'dot_notation_with_dash',
-  //   query: '$.key-dash',
-  //   payload: {
-  //     key: 42,
-  //     'key-': 43,
-  //     '-': 44,
-  //     dash: 45,
-  //     '-dash': 46,
-  //     '': 47,
-  //     'key-dash': 'value',
-  //     something: 'else',
-  //   },
-  //   results: ['value'],
-  //   consensus: false,
-  // },
+  {
+    title: 'dot_notation_with_dash',
+    query: '$.key-dash',
+    payload: {
+      key: 42,
+      'key-': 43,
+      '-': 44,
+      dash: 45,
+      '-dash': 46,
+      '': 47,
+      'key-dash': 'value',
+      something: 'else',
+    },
+    results: 'NOT_SUPPORTED',
+    consensus: true,
+    isCustom: true,
+  },
   {
     title: 'dot_notation_with_key_named_length_on_array',
     query: '$.length',
@@ -995,13 +997,13 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'dot_notation_with_non_ASCII_key',
-  //   query: '$.屬性',
-  //   payload: { 屬性: 'value' },
-  //   results: ['value'],
-  //   consensus: false,
-  // },
+  {
+    title: 'dot_notation_with_non_ASCII_key',
+    query: '$.屬性',
+    payload: { 屬性: 'value' },
+    results: ['value'],
+    consensus: false,
+  },
   {
     title: 'dot_notation_with_key_named_true',
     query: '$.true',
@@ -1016,49 +1018,49 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'dot_notation_with_number',
-  //   query: '$.2',
-  //   payload: ['first', 'second', 'third', 'forth', 'fifth'],
-  //   results: [],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'dot_notation_with_number_on_object',
-  //   query: '$.2',
-  //   payload: { 2: 'second', a: 'first', b: 'third' },
-  //   results: ['second'],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'dot_notation_with_number_-1',
-  //   query: '$.-1',
-  //   payload: ['first', 'second', 'third', 'forth', 'fifth'],
-  //   results: [],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'dot_notation_with_single_quotes_after_recursive_descent',
-  //   query: "$..'key'",
-  //   payload: {
-  //     object: {
-  //       object: {
-  //         key: 'value',
-  //         "'key'": 100,
-  //         array: [
-  //           { key: 'something', "'key'": 0 },
-  //           { key: { key: 'russian dolls' }, "'key'": { "'key'": 99 } },
-  //         ],
-  //       },
-  //       key: 'top',
-  //       "'key'": 42,
-  //     },
-  //     key: 'top',
-  //     "'key'": 42,
-  //   },
-  //   results: ['russian dolls', 'something', 'top', 'value', { key: 'russian dolls' }],
-  //   consensus: false,
-  // },
+  {
+    title: 'dot_notation_with_number',
+    query: '$.2',
+    payload: ['first', 'second', 'third', 'forth', 'fifth'],
+    results: ['third'],
+    consensus: false,
+  },
+  {
+    title: 'dot_notation_with_number_on_object',
+    query: '$.2',
+    payload: { 2: 'second', a: 'first', b: 'third' },
+    results: ['second'],
+    consensus: false,
+  },
+  {
+    title: 'dot_notation_with_number_-1',
+    query: '$.-1',
+    payload: ['first', 'second', 'third', 'forth', 'fifth'],
+    results: ['fifth'],
+    consensus: false,
+  },
+  {
+    title: 'dot_notation_with_single_quotes_after_recursive_descent',
+    query: "$..'key'",
+    payload: {
+      object: {
+        object: {
+          key: 'value',
+          "'key'": 100,
+          array: [
+            { key: 'something', "'key'": 0 },
+            { key: { key: 'russian dolls' }, "'key'": { "'key'": 99 } },
+          ],
+        },
+        key: 'top',
+        "'key'": 42,
+      },
+      key: 'top',
+      "'key'": 42,
+    },
+    results: 'NOT_SUPPORTED',
+    consensus: false,
+  },
   {
     title: 'dot_notation_with_wildcard_after_dot_notation_after_dot_notation_with_wildcard',
     query: '$.*.bar.*',
@@ -1073,43 +1075,43 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'dot_notation_with_wildcard_after_recursive_descent',
-  //   query: '$..*',
-  //   payload: {
-  //     key: 'value',
-  //     'another key': {
-  //       complex: 'string',
-  //       primitives: [0, 1],
-  //     },
-  //   },
-  //   results: [
-  //     'string',
-  //     'value',
-  //     0,
-  //     1,
-  //     [0, 1],
-  //     {
-  //       complex: 'string',
-  //       primitives: [0, 1],
-  //     },
-  //   ],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'dot_notation_with_wildcard_after_recursive_descent_on_null_value_array',
-  //   query: '$..*',
-  //   payload: [40, null, 42],
-  //   results: [40, 42, null],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'dot_notation_with_space_padded_key',
-  //   query: '$. a ',
-  //   payload: { ' a': 1, a: 2, ' a ': 3, '': 4 },
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'dot_notation_with_wildcard_after_recursive_descent',
+    query: '$..*',
+    payload: {
+      key: 'value',
+      'another key': {
+        complex: 'string',
+        primitives: [0, 1],
+      },
+    },
+    results: [
+      'value',
+      {
+        complex: 'string',
+        primitives: [0, 1],
+      },
+      'string',
+      [0, 1],
+      0,
+      1,
+    ],
+    consensus: false,
+  },
+  {
+    title: 'dot_notation_with_wildcard_after_recursive_descent_on_null_value_array',
+    query: '$..*',
+    payload: [40, null, 42],
+    results: [40, null, 42],
+    consensus: false,
+  },
+  {
+    title: 'dot_notation_with_space_padded_key',
+    query: '$. a ',
+    payload: { ' a': 1, a: 2, ' a ': 3, '': 4 },
+    results: [2],
+    consensus: false,
+  },
   {
     title: 'dot_notation_with_wildcard_after_dot_notation_with_wildcard_on_nested_arrays',
     query: '$.*.*',
@@ -1134,25 +1136,25 @@ const testSuits = [
     results: [],
     consensus: false,
   },
-  // {
-  //   title: 'dot_notation_with_wildcard_after_recursive_descent_on_scalar',
-  //   query: '$..*',
-  //   payload: 42,
-  //   results: [],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'dot_notation_with_wildcard_on_object',
-  //   query: '$.*',
-  //   payload: {
-  //     some: 'string',
-  //     int: 42,
-  //     object: { key: 'value' },
-  //     array: [0, 1],
-  //   },
-  //   results: ['string', 42, [0, 1], { key: 'value' }],
-  //   consensus: false,
-  // },
+  {
+    title: 'dot_notation_with_wildcard_after_recursive_descent_on_scalar',
+    query: '$..*',
+    payload: 42,
+    results: [],
+    consensus: false,
+  },
+  {
+    title: 'dot_notation_with_wildcard_on_object',
+    query: '$.*',
+    payload: {
+      some: 'string',
+      int: 42,
+      object: { key: 'value' },
+      array: [0, 1],
+    },
+    results: ['string', 42, { key: 'value' }, [0, 1]],
+    consensus: false,
+  },
   {
     title: 'dot_notation_without_dot',
     query: '$a',
@@ -1181,48 +1183,69 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_after_dot_notation_with_wildcard_after_recursive_descent',
-  //   query: '$..*[?(@.id>2)]',
-  //   payload: [
-  //     {
-  //       complext: {
-  //         one: [
-  //           {
-  //             name: 'first',
-  //             id: 1,
-  //           },
-  //           {
-  //             name: 'next',
-  //             id: 2,
-  //           },
-  //           {
-  //             name: 'another',
-  //             id: 3,
-  //           },
-  //           {
-  //             name: 'more',
-  //             id: 4,
-  //           },
-  //         ],
-  //         more: {
-  //           name: 'next to last',
-  //           id: 5,
-  //         },
-  //       },
-  //     },
-  //     {
-  //       name: 'last',
-  //       id: 6,
-  //     },
-  //   ],
-  //   results: [
-  //     { id: 3, name: 'another' },
-  //     { id: 4, name: 'more' },
-  //     { id: 5, name: 'next to last' },
-  //   ],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_after_dot_notation_with_wildcard_after_recursive_descent',
+    query: '$..*[?(@.id>2)]',
+    payload: [
+      {
+        complext: {
+          one: [
+            {
+              name: 'first',
+              id: 1,
+            },
+            {
+              name: 'next',
+              id: 2,
+            },
+            {
+              name: 'another',
+              id: 3,
+            },
+            {
+              name: 'more',
+              id: 4,
+            },
+          ],
+          more: {
+            name: 'next to last',
+            id: 5,
+          },
+        },
+      },
+      {
+        name: 'last',
+        id: 6,
+      },
+    ],
+    results: [
+      {
+        id: 6,
+        name: 'last',
+      },
+      {
+        id: 3,
+        name: 'another',
+      },
+      {
+        id: 4,
+        name: 'more',
+      },
+      {
+        id: 5,
+        name: 'next to last',
+      },
+      {
+        id: 3,
+        name: 'another',
+      },
+      {
+        id: 4,
+        name: 'more',
+      },
+    ],
+    consensus: false,
+  },
   {
     title: 'dot_notation_without_root_and_dot',
     query: 'key',
@@ -1251,32 +1274,39 @@ const testSuits = [
     results: [{ key: 43 }],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_boolean_and_operator_and_value_false',
-  //   query: '$[?(@.key>0 && false)]',
-  //   payload: [
-  //     { key: 1 },
-  //     { key: 3 },
-  //     { key: 'nice' },
-  //     { key: true },
-  //     { key: null },
-  //     { key: false },
-  //     { key: {} },
-  //     { key: [] },
-  //     { key: -1 },
-  //     { key: 0 },
-  //     { key: '' },
-  //   ],
-  //   results: [],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_on_object',
-  //   query: '$[?(@.key)]',
-  //   payload: { key: 42, another: { key: 1 } },
-  //   results: [{ key: 1 }],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_boolean_and_operator_and_value_false',
+    query: '$[?(@.key>0 && false)]',
+    payload: [
+      { key: 1 },
+      { key: 3 },
+      { key: 'nice' },
+      { key: true },
+      { key: null },
+      { key: false },
+      { key: {} },
+      { key: [] },
+      { key: -1 },
+      { key: 0 },
+      { key: '' },
+    ],
+    results: [],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_on_object',
+    query: '$[?(@.key)]',
+    payload: { key: 42, another: { key: 1 } },
+    results: [
+      {
+        another: {
+          key: 1,
+        },
+        key: 42,
+      },
+    ],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_boolean_or_operator',
     query: '$[?(@.key>43 || @.key<43)]',
@@ -1310,7 +1340,7 @@ const testSuits = [
       { key: 0 },
       { key: '' },
     ],
-    results: 'NOT_SUPPORTED',
+    results: [{ key: 1 }, { key: 3 }],
     consensus: false,
   },
   {
@@ -1344,13 +1374,13 @@ const testSuits = [
     results: [{ key: 42 }],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_bracket_notation_with_-1',
-  //   query: '$[?(@[-1]==2)]',
-  //   payload: [[2, 3], ['a'], [0, 2], [2]],
-  //   results: [[0, 2], [2]],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_bracket_notation_with_-1',
+    query: '$[?(@[-1]==2)]',
+    payload: [[2, 3], ['a'], [0, 2], [2]],
+    results: [[0, 2], [2]],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_boolean_or_operator_and_value_true',
     query: '$[?(@.key>0 || true)]',
@@ -1367,7 +1397,19 @@ const testSuits = [
       { key: 0 },
       { key: '' },
     ],
-    results: 'NOT_SUPPORTED',
+    results: [
+      { key: 1 },
+      { key: 3 },
+      { key: 'nice' },
+      { key: true },
+      { key: null },
+      { key: false },
+      { key: {} },
+      { key: [] },
+      { key: -1 },
+      { key: 0 },
+      { key: '' },
+    ],
     consensus: false,
   },
   {
@@ -1396,7 +1438,7 @@ const testSuits = [
       { key: 0 },
       { key: '' },
     ],
-    results: 'NOT_SUPPORTED',
+    results: [{ key: 1 }, { key: 3 }],
     consensus: false,
   },
   // {
@@ -1455,27 +1497,27 @@ const testSuits = [
     ],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_division',
-  //   query: '$[?(@.key/10==5)]',
-  //   payload: [{ key: 60 }, { key: 50 }, { key: 10 }, { key: -50 }, { 'key/10': 5 }],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_dot_notation_with_number',
-  //   query: "$[?(@.2 == 'second')]",
-  //   payload: [{ 2: 'second', a: 'first', b: 'third' }],
-  //   results: [{ 2: 'second', a: 'first', b: 'third' }],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_dot_notation_with_dash',
-  //   query: "$[?(@.key-dash == 'value')]",
-  //   payload: [{ 'key-dash': 'value' }],
-  //   results: [],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_division',
+    query: '$[?(@.key/10==5)]',
+    payload: [{ key: 60 }, { key: 50 }, { key: 10 }, { key: -50 }, { 'key/10': 5 }],
+    results: [{ key: 50 }],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_dot_notation_with_number',
+    query: "$[?(@.2 == 'second')]",
+    payload: [{ 2: 'second', a: 'first', b: 'third' }],
+    results: [{ 2: 'second', a: 'first', b: 'third' }],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_dot_notation_with_dash',
+    query: "$[?(@.key-dash == 'value')]",
+    payload: [{ 'key-dash': 'value' }],
+    results: 'NOT_SUPPORTED',
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_empty_expression',
     query: '$[?()]',
@@ -1494,7 +1536,7 @@ const testSuits = [
   //   title: 'filter_expression_with_equals_array_for_dot_notation_with_star',
   //   query: '$[?(@.*==[1,2])]',
   //   payload: [[1, 2], [2, 3], [1], [2], [1, 2, 3], 1, 2, 3],
-  //   results: 'NOT_SUPPORTED',
+  //   results: [[1, 2]],
   //   consensus: false,
   // },
   // {
@@ -1550,33 +1592,33 @@ const testSuits = [
   //   results: 'NOT_SUPPORTED',
   //   consensus: false,
   // },
-  // {
-  //   title: 'filter_expression_with_equals_false',
-  //   query: '$[?(@.key==false)]',
-  //   payload: [
-  //     { some: 'some value' },
-  //     { key: true },
-  //     { key: false },
-  //     { key: null },
-  //     { key: 'value' },
-  //     { key: '' },
-  //     { key: 0 },
-  //     { key: 1 },
-  //     { key: -1 },
-  //     { key: 42 },
-  //     { key: {} },
-  //     { key: [] },
-  //   ],
-  //   results: [{ key: false }],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_dot_notation_with_number_on_array',
-  //   query: "$[?(@.2 == 'third')]",
-  //   payload: [['first', 'second', 'third', 'forth', 'fifth']],
-  //   results: [],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_equals_false',
+    query: '$[?(@.key==false)]',
+    payload: [
+      { some: 'some value' },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
+    ],
+    results: [{ key: false }],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_dot_notation_with_number_on_array',
+    query: "$[?(@.2 == 'third')]",
+    payload: [['first', 'second', 'third', 'forth', 'fifth']],
+    results: [['first', 'second', 'third', 'forth', 'fifth']],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_equals',
     query: '$[?(@.key==42)]',
@@ -1639,13 +1681,13 @@ const testSuits = [
     results: [],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_equals_number_with_leading_zeros',
-  //   query: '$[?(@.key==010)]',
-  //   payload: [{ key: '010' }, { key: '10' }, { key: 10 }, { key: 0 }, { key: 8 }],
-  //   results: [{ key: 10 }],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_equals_number_with_leading_zeros',
+    query: '$[?(@.key==010)]',
+    payload: [{ key: '010' }, { key: '10' }, { key: 10 }, { key: 0 }, { key: 8 }],
+    results: [{ key: 10 }],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_equals_boolean_expression_value',
     query: '$[?((@.key<44)==false)]',
@@ -1660,73 +1702,81 @@ const testSuits = [
     results: [],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_equals_number_with_fraction',
-  //   query: '$[?(@.key==-0.123e2)]',
-  //   payload: [{ key: -12.3 }, { key: -0.123 }, { key: -12 }, { key: 12.3 }, { key: 2 }, { key: '-0.123e2' }],
-  //   results: [],
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_equals_number_for_bracket_notation_with_star',
-  //   query: '$[?(@[*]==2)]',
-  //   payload: [[1, 2], [2, 3], [1], [2], [1, 2, 3], 1, 2, 3],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_equals_array_with_single_quotes',
-  //   query: "$[?(@.d==['v1','v2'])]",
-  //   payload: [
-  //     {
-  //       d: ['v1', 'v2'],
-  //     },
-  //     {
-  //       d: ['a', 'b'],
-  //     },
-  //     {
-  //       d: 'v1',
-  //     },
-  //     {
-  //       d: 'v2',
-  //     },
-  //     {
-  //       d: {},
-  //     },
-  //     {
-  //       d: [],
-  //     },
-  //     {
-  //       d: null,
-  //     },
-  //     {
-  //       d: -1,
-  //     },
-  //     {
-  //       d: 0,
-  //     },
-  //     {
-  //       d: 1,
-  //     },
-  //     {
-  //       d: "['v1','v2']",
-  //     },
-  //     {
-  //       d: "['v1', 'v2']",
-  //     },
-  //     {
-  //       d: 'v1,v2',
-  //     },
-  //     {
-  //       d: '["v1", "v2"]',
-  //     },
-  //     {
-  //       d: '["v1","v2"]',
-  //     },
-  //   ],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_equals_number_with_fraction',
+    query: '$[?(@.key==-0.123e2)]',
+    payload: [{ key: -12.3 }, { key: -0.123 }, { key: -12 }, { key: 12.3 }, { key: 2 }, { key: '-0.123e2' }],
+    results: [
+      {
+        key: -12.3,
+      },
+    ],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_equals_number_for_bracket_notation_with_star',
+    query: '$[?(@[*]==2)]',
+    payload: [[1, 2], [2, 3], [1], [2], [1, 2, 3], 1, 2, 3],
+    results: [],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_equals_array_with_single_quotes',
+    query: "$[?(@.d==['v1','v2'])]",
+    payload: [
+      {
+        d: ['v1', 'v2'],
+      },
+      {
+        d: ['a', 'b'],
+      },
+      {
+        d: 'v1',
+      },
+      {
+        d: 'v2',
+      },
+      {
+        d: {},
+      },
+      {
+        d: [],
+      },
+      {
+        d: null,
+      },
+      {
+        d: -1,
+      },
+      {
+        d: 0,
+      },
+      {
+        d: 1,
+      },
+      {
+        d: "['v1','v2']",
+      },
+      {
+        d: "['v1', 'v2']",
+      },
+      {
+        d: 'v1,v2',
+      },
+      {
+        d: '["v1", "v2"]',
+      },
+      {
+        d: '["v1","v2"]',
+      },
+    ],
+    results: [
+      {
+        d: ['v1', 'v2'],
+      },
+    ],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_equals_on_array_without_match',
     query: '$[?(@.key==43)]',
@@ -1965,38 +2015,38 @@ const testSuits = [
     results: [{ key: 42 }, { key: 43 }, { key: 42.0001 }, { key: 100 }],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_in_current_object',
-  //   query: '$[?(2 in @.d)]',
-  //   payload: [{ d: [1, 2, 3] }, { d: [2] }, { d: [1] }, { d: [3, 4] }, { d: [4, 2] }],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
-  // {
-  //   title: 'filter_expression_with_greater_than_string',
-  //   query: '$[?(@.key>"VALUE")]',
-  //   payload: [
-  //     { key: 0 },
-  //     { key: 42 },
-  //     { key: -1 },
-  //     { key: 41 },
-  //     { key: 43 },
-  //     { key: 42.0001 },
-  //     { key: 41.9999 },
-  //     { key: 100 },
-  //     { key: '43' },
-  //     { key: '42' },
-  //     { key: '41' },
-  //     { key: 'alpha' },
-  //     { key: 'ALPHA' },
-  //     { key: 'value' },
-  //     { key: 'VALUE' },
-  //     { some: 'value' },
-  //     { some: 'VALUE' },
-  //   ],
-  //   results: [{ key: 'alpha' }, { key: 'value' }],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_in_current_object',
+    query: '$[?(2 in @.d)]',
+    payload: [{ d: [1, 2, 3] }, { d: [2] }, { d: [1] }, { d: [3, 4] }, { d: [4, 2] }],
+    results: [{ d: [1, 2, 3] }, { d: [2] }, { d: [4, 2] }],
+    consensus: false,
+  },
+  {
+    title: 'filter_expression_with_greater_than_string',
+    query: '$[?(@.key>"VALUE")]',
+    payload: [
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'alpha' },
+      { key: 'ALPHA' },
+      { key: 'value' },
+      { key: 'VALUE' },
+      { some: 'value' },
+      { some: 'VALUE' },
+    ],
+    results: [{ key: 'alpha' }, { key: 'value' }],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_less_than',
     query: '$[?(@.key<42)]',
@@ -2100,13 +2150,13 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_multiplication',
-  //   query: '$[?(@.key*2==100)]',
-  //   payload: [{ key: 60 }, { key: 50 }, { key: 10 }, { key: -50 }, { 'key*2': 100 }],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_multiplication',
+    query: '$[?(@.key*2==100)]',
+    payload: [{ key: 60 }, { key: 50 }, { key: 10 }, { key: -50 }, { 'key*2': 100 }],
+    results: [{ key: 50 }],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_negation_and_without_value',
     query: '$[?(!@.key)]',
@@ -2248,13 +2298,20 @@ const testSuits = [
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_not_equals_array_or_equals_true',
-  //   query: '$[?((@.d!=["v1","v2"]) || (@.d == true))]',
-  //   payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
-  //   results: 'NOT_SUPPORTED',
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_not_equals_array_or_equals_true',
+    query: '$[?((@.d!=["v1","v2"]) || (@.d == true))]',
+    payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
+    results: [
+      {
+        d: ['a', 'b'],
+      },
+      {
+        d: true,
+      },
+    ],
+    consensus: false,
+  },
   // {
   //   title: 'filter_expression_with_non_singular_existence_test',
   //   query: '$[?(@.a.*)]',
@@ -2591,18 +2648,18 @@ const testSuits = [
   //   ],
   //   consensus: false,
   // },
-  // {
-  //   title: 'filter_expression_with_value_false',
-  //   query: '$[?(false)]',
-  //   payload: [1, 3, 'nice', true, null, false, {}, [], -1, 0, ''],
-  //   results: [],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_value_false',
+    query: '$[?(false)]',
+    payload: [1, 3, 'nice', true, null, false, {}, [], -1, 0, ''],
+    results: [],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_value_true',
     query: '$[?(true)]',
     payload: [1, 3, 'nice', true, null, false, {}, [], -1, 0, ''],
-    results: 'NOT_SUPPORTED',
+    results: [1, 3, 'nice', true, null, false, {}, [], -1, 0, ''],
     consensus: false,
   },
   {

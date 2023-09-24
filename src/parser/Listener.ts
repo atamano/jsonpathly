@@ -61,7 +61,9 @@ const TYPE_CHECK_MAPPER = {
     ].includes(node.type),
   expressionContent: (node: JsonPathElement): node is FilterExpression['value'] =>
     'type' in node &&
-    ['comparator', 'groupExpression', 'logicalExpression', 'notExpression', 'current', 'root'].includes(node.type),
+    ['value', 'comparator', 'groupExpression', 'logicalExpression', 'notExpression', 'current', 'root'].includes(
+      node.type,
+    ),
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,7 +90,7 @@ export default class Listener extends JSONPathListener {
     }
 
     /* istanbul ignore next */
-    throw new Error(`bad type returned for ${key} with token: ${ctx?.getText()}`);
+    throw new Error(`bad type (${JSON.stringify(value)}) returned for ${key} with token: ${ctx?.getText()}`);
   }
 
   private push(node: JsonPathElement): void {
@@ -410,6 +412,14 @@ export default class Listener extends JSONPathListener {
           type: 'notExpression',
           value,
         });
+        break;
+      }
+      case !!ctx.FALSE(): {
+        this.push({ type: 'value', value: false, subtype: 'boolean' });
+        break;
+      }
+      case !!ctx.TRUE(): {
+        this.push({ type: 'value', value: true, subtype: 'boolean' });
         break;
       }
       case !!ctx.AND(): {

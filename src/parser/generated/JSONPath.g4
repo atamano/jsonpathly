@@ -50,10 +50,12 @@ DIV: '/';
 REGEX_OPT: [gimsuy]*;
 REGEX_EXPR: '/'.*?'/';
 KEY: [a-zA-Z_][a-zA-Z0-9_]*;
+SPECIAL_KEY: [\u0080-\uFFFF_]+;
 
 WS
    : [ \t\n\r] + -> skip
    ;
+
 NUMBER
    : '-'? INT ('.' [0-9] +)? EXP?
    ;
@@ -177,6 +179,8 @@ expression
    | filterarg REG regex
    | filterarg EMPT
    | filterpath
+   | TRUE
+   | FALSE
    ;
 
 filterpath
@@ -185,6 +189,7 @@ filterpath
 
 identifier
    : KEY
+   | SPECIAL_KEY
    | TRUE
    | FALSE
    | NULL
