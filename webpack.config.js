@@ -1,8 +1,5 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/* eslint-disable @typescript-eslint/no-var-requires */
+const path = require('path');
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const buildConfig = (platform, extensions) => ({
@@ -36,7 +33,7 @@ const buildConfig = (platform, extensions) => ({
   },
 });
 
-export default [
+module.exports = [
   buildConfig('node', 'cjs'),
   buildConfig('node', 'mjs'),
   buildConfig('web', 'cjs'),

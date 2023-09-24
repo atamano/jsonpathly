@@ -2,7 +2,6 @@
   "name": "jsonpathly",
   "version": "2.0.0",
   "description": "Query json with jsonpath expressions",
-  "type": "module",
   "browser": "dist/index.web.js",
   "main": "dist/index.node.mjs",
   "types": "dist/index.d.ts",
@@ -10,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "test": "mocha --require ts-node/register --timeout 60000 --exit  tests/*.ts",
+    "test": "mocha --require ts-node/register --timeout 60000 --exit --no-cache tests/*.ts",
     "build": "webpack",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint src --ext .ts",

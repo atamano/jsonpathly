@@ -1,18 +1,6 @@
 import { query } from '../src/handler/query';
-// import testuits from './test_suits';
 import { JSONPathSyntaxError } from '../src/parser/errors';
 import { expect } from 'chai';
-
-// describe.skip('test_suits', () => {
-//   testuits.forEach(({ query: q, payload, results }) => {
-//     const res = query(payload, q, { returnArray: true });
-//     if (results !== 'NOT_SUPPORTED') {
-//       expect(res).to.deep.equal(results);
-//     } else {
-//       expect(true).to.deep.equal(true);
-//     }
-//   });
-// });
 
 describe('query', () => {
   describe('with dot notations', () => {
