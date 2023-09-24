@@ -105,8 +105,8 @@ export default class Listener extends JSONPathListener {
 
   public exitBracketContent(ctx: any): void {
     switch (true) {
-      case !!ctx.IDENTIFIER(): {
-        const text = ctx.IDENTIFIER()!.getText();
+      case !!ctx.identifier(): {
+        const text = ctx.identifier()!.getText();
 
         this.push({ type: 'identifier', value: text });
         break;
@@ -180,8 +180,8 @@ export default class Listener extends JSONPathListener {
         this.push({ type: 'wildcard' });
         break;
       }
-      case !!ctx.IDENTIFIER(): {
-        const value = ctx.IDENTIFIER()!.getText();
+      case !!ctx.identifier(): {
+        const value = ctx.identifier()!.getText();
 
         this.push({ type: 'identifier', value });
         break;
@@ -201,8 +201,8 @@ export default class Listener extends JSONPathListener {
         this.push({ type: 'wildcard' });
         break;
       }
-      case !!ctx.IDENTIFIER(): {
-        const text = ctx.IDENTIFIER()!.getText();
+      case !!ctx.identifier(): {
+        const text = ctx.identifier()!.getText();
 
         this.push({ type: 'identifier', value: text });
         break;
@@ -283,8 +283,8 @@ export default class Listener extends JSONPathListener {
   public exitUnions(ctx: any): void {
     const nodes: (StringLiteral | Identifier)[] = [];
 
-    for (let index = 0; index < ctx.IDENTIFIER().length; index += 1) {
-      const value = ctx.IDENTIFIER(index)!.getText();
+    for (let index = 0; index < ctx.identifier().length; index += 1) {
+      const value = ctx.identifier(index)!.getText();
 
       nodes.push({
         type: 'identifier',

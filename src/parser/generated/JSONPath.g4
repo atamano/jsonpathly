@@ -66,14 +66,14 @@ subscript
 
 dotdotContent
    : STAR
-   | IDENTIFIER
+   | identifier
    | bracket
    ;
 
 dotContent
    : STAR
    | NUMBER
-   | IDENTIFIER
+   | identifier
    ;
 
 bracket
@@ -87,7 +87,7 @@ bracketContent
    | STAR
    | NUMBER
    | STRING
-   | IDENTIFIER
+   | identifier
    | filterExpression
    ;
 
@@ -101,7 +101,7 @@ indexes
 
 unions
    : STRING ( COMMA STRING )+
-   | IDENTIFIER ( COMMA IDENTIFIER )+
+   | identifier ( COMMA identifier )+
    ;
 
 slices
@@ -124,8 +124,15 @@ filterpath
    : ( ROOT_VALUE | CURRENT_VALUE ) subscript?
    ;
 
-IDENTIFIER
+KEY
    :  [a-zA-Z_][a-zA-Z0-9_]*
+   ;
+
+identifier
+   : KEY
+   | TRUE
+   | FALSE
+   | NULL
    ;
 
 

@@ -949,13 +949,13 @@ const testSuits = [
     results: ['value'],
     consensus: true,
   },
-  // {
-  //   title: 'dot_notation_with_key_named_null',
-  //   query: '$.null',
-  //   payload: { null: 'value' },
-  //   results: ['value'],
-  //   consensus: true,
-  // },
+  {
+    title: 'dot_notation_with_key_named_null',
+    query: '$.null',
+    payload: { null: 'value' },
+    results: ['value'],
+    consensus: true,
+  },
   {
     title: 'dot_notation_with_key_root_literal',
     query: '$.$',
@@ -970,13 +970,13 @@ const testSuits = [
   //   results: ['value'],
   //   consensus: true,
   // },
-  // {
-  //   title: 'dot_notation_with_key_named_true',
-  //   query: '$.true',
-  //   payload: { true: 'value' },
-  //   results: ['value'],
-  //   consensus: true,
-  // },
+  {
+    title: 'dot_notation_with_key_named_true',
+    query: '$.true',
+    payload: { true: 'value' },
+    results: ['value'],
+    consensus: true,
+  },
   // {
   //   title: 'dot_notation_with_single_quotes',
   //   query: "$.'key'",
