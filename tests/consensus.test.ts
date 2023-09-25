@@ -560,127 +560,77 @@ const testSuits = [
   {
     title: 'bracket_notation_with_quoted_special_characters_combined',
     query: "$[':@.\"$,*\\'\\\\']",
-    payload: {
-      ':@."$,*\'\\': 42,
-    },
+    payload: { ':@."$,*\'\\': 42 },
     results: [],
     consensus: false,
   },
   {
     title: 'bracket_notation_with_quoted_union_literal',
     query: "$[',']",
-    payload: {
-      ',': 'value',
-      another: 'entry',
-    },
+    payload: { ',': 'value', another: 'entry' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_quoted_number_on_object',
     query: "$['0']",
-    payload: {
-      '0': 'value',
-    },
+    payload: { '0': 'value' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_quoted_root_literal',
     query: "$['$']",
-    payload: {
-      $: 'value',
-      another: 'entry',
-    },
+    payload: { $: 'value', another: 'entry' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_quoted_wildcard_literal',
     query: "$['*']",
-    payload: {
-      '*': 'value',
-      another: 'entry',
-    },
+    payload: { '*': 'value', another: 'entry' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_quoted_string_and_unescaped_single_quote',
     query: "$['single'quote']",
-    payload: {
-      "single'quote": 'value',
-    },
+    payload: { "single'quote": 'value' },
     results: 'NOT_SUPPORTED',
     consensus: true,
   },
   {
     title: 'bracket_notation_with_spaces',
     query: "$[ 'a' ]",
-    payload: {
-      ' a': 1,
-      a: 2,
-      ' a ': 3,
-      'a ': 4,
-      " 'a' ": 5,
-      " 'a": 6,
-      "a' ": 7,
-      ' "a" ': 8,
-      '"a"': 9,
-    },
+    payload: { ' a': 1, a: 2, ' a ': 3, 'a ': 4, " 'a' ": 5, " 'a": 6, "a' ": 7, ' "a" ': 8, '"a"': 9 },
     results: [2],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_string_including_dot_wildcard',
     query: "$['ni.*']",
-    payload: {
-      nice: 42,
-      'ni.*': 1,
-      mice: 100,
-    },
+    payload: { nice: 42, 'ni.*': 1, mice: 100 },
     results: [1],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_two_literals_separated_by_dot',
     query: "$['two'.'some']",
-    payload: {
-      one: {
-        key: 'value',
-      },
-      two: {
-        some: 'more',
-        key: 'other value',
-      },
-      'two.some': '42',
-      "two'.'some": '43',
-    },
+    payload: { one: { key: 'value' }, two: { some: 'more', key: 'other value' }, 'two.some': '42', "two'.'some": '43' },
     results: 'NOT_SUPPORTED',
     consensus: true,
   },
   {
     title: 'bracket_notation_with_quoted_wildcard_literal_on_object_without_key',
     query: "$['*']",
-    payload: {
-      another: 'entry',
-    },
+    payload: { another: 'entry' },
     results: [],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_two_literals_separated_by_dot_without_quotes',
     query: '$[two.some]',
-    payload: {
-      one: {
-        key: 'value',
-      },
-      two: {
-        some: 'more',
-        key: 'other value',
-      },
-      'two.some': '42',
-    },
+    payload: { one: { key: 'value' }, two: { some: 'more', key: 'other value' }, 'two.some': '42' },
     results: 'NOT_SUPPORTED',
     consensus: true,
   },
@@ -698,115 +648,44 @@ const testSuits = [
   {
     title: 'bracket_notation_with_wildcard_after_dot_notation_after_bracket_notation_with_wildcard',
     query: '$[*].bar[*]',
-    payload: [
-      {
-        bar: [42],
-      },
-    ],
+    payload: [{ bar: [42] }],
     results: [42],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_wildcard_after_recursive_descent',
     query: '$..[*]',
-    payload: {
-      key: 'value',
-      'another key': {
-        complex: 'string',
-        primitives: [0, 1],
-      },
-    },
-    results: [
-      'value',
-      {
-        complex: 'string',
-        primitives: [0, 1],
-      },
-      'string',
-      [0, 1],
-      0,
-      1,
-    ],
+    payload: { key: 'value', 'another key': { complex: 'string', primitives: [0, 1] } },
+    results: ['value', { complex: 'string', primitives: [0, 1] }, 'string', [0, 1], 0, 1],
     consensus: true,
   },
   {
     title: 'bracket_notation_with_wildcard_on_array',
     query: '$[*]',
-    payload: [
-      'string',
-      42,
-      {
-        key: 'value',
-      },
-      [0, 1],
-    ],
-    results: [
-      'string',
-      42,
-      {
-        key: 'value',
-      },
-      [0, 1],
-    ],
+    payload: ['string', 42, { key: 'value' }, [0, 1]],
+    results: ['string', 42, { key: 'value' }, [0, 1]],
     consensus: true,
   },
-  {
-    title: 'bracket_notation_with_wildcard_on_empty_array',
-    query: '$[*]',
-    payload: [],
-    results: [],
-    consensus: true,
-  },
+  { title: 'bracket_notation_with_wildcard_on_empty_array', query: '$[*]', payload: [], results: [], consensus: true },
   {
     title: 'bracket_notation_with_wildcard_on_object',
     query: '$[*]',
-    payload: {
-      some: 'string',
-      int: 42,
-      object: {
-        key: 'value',
-      },
-      array: [0, 1],
-    },
-    results: [
-      'string',
-      42,
-      {
-        key: 'value',
-      },
-      [0, 1],
-    ],
+    payload: { some: 'string', int: 42, object: { key: 'value' }, array: [0, 1] },
+    results: ['string', 42, { key: 'value' }, [0, 1]],
     consensus: true,
   },
-  {
-    title: 'bracket_notation_with_wildcard_on_empty_object',
-    query: '$[*]',
-    payload: {},
-    results: [],
-    consensus: true,
-  },
+  { title: 'bracket_notation_with_wildcard_on_empty_object', query: '$[*]', payload: {}, results: [], consensus: true },
   {
     title: 'dot_bracket_notation_with_double_quotes',
     query: '$.["key"]',
-    payload: {
-      key: 'value',
-      other: {
-        key: [
-          {
-            key: 42,
-          },
-        ],
-      },
-    },
+    payload: { key: 'value', other: { key: [{ key: 42 }] } },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
   {
     title: 'bracket_notation_without_quotes',
     query: '$[key]',
-    payload: {
-      key: 'value',
-    },
+    payload: { key: 'value' },
     results: ['value'],
     consensus: true,
     isCustom: true,
@@ -821,36 +700,15 @@ const testSuits = [
   {
     title: 'dot_bracket_notation_without_quotes',
     query: '$.[key]',
-    payload: {
-      key: 'value',
-      other: {
-        key: [
-          {
-            key: 42,
-          },
-        ],
-      },
-    },
+    payload: { key: 'value', other: { key: [{ key: 42 }] } },
     results: 'NOT_SUPPORTED',
     consensus: true,
   },
-  {
-    title: 'dot_notation',
-    query: '$.key',
-    payload: {
-      key: 'value',
-    },
-    results: ['value'],
-    consensus: true,
-  },
+  { title: 'dot_notation', query: '$.key', payload: { key: 'value' }, results: ['value'], consensus: true },
   {
     title: 'dot_notation_after_bracket_notation_with_wildcard_on_one_matching',
     query: '$[*].a',
-    payload: [
-      {
-        a: 1,
-      },
-    ],
+    payload: [{ a: 1 }],
     results: [1],
     consensus: true,
   },
@@ -858,80 +716,28 @@ const testSuits = [
     title: 'dot_notation_after_bracket_notation_after_recursive_descent',
     query: '$..[1].key',
     payload: {
-      k: [
-        {
-          key: 'some value',
-        },
-        {
-          key: 42,
-        },
-      ],
+      k: [{ key: 'some value' }, { key: 42 }],
       kk: [
-        [
-          {
-            key: 100,
-          },
-          {
-            key: 200,
-          },
-          {
-            key: 300,
-          },
-        ],
-        [
-          {
-            key: 400,
-          },
-          {
-            key: 500,
-          },
-          {
-            key: 600,
-          },
-        ],
+        [{ key: 100 }, { key: 200 }, { key: 300 }],
+        [{ key: 400 }, { key: 500 }, { key: 600 }],
       ],
       key: [0, 1],
     },
     results: [42, 200, 500],
     consensus: true,
   },
-  {
-    title: 'current_with_dot_notation',
-    query: '@.a',
-    payload: {
-      a: 1,
-    },
-    results: 'NOT_SUPPORTED',
-    consensus: false,
-  },
+  { title: 'current_with_dot_notation', query: '@.a', payload: { a: 1 }, results: 'NOT_SUPPORTED', consensus: false },
   {
     title: 'dot_notation_after_bracket_notation_with_wildcard',
     query: '$[*].a',
-    payload: [
-      {
-        a: 1,
-      },
-      {
-        a: 1,
-      },
-    ],
+    payload: [{ a: 1 }, { a: 1 }],
     results: [1, 1],
     consensus: true,
   },
   {
     title: 'dot_notation_after_array_slice',
     query: '$[0:2].key',
-    payload: [
-      {
-        key: 'ey',
-      },
-      {
-        key: 'bee',
-      },
-      {
-        key: 'see',
-      },
-    ],
+    payload: [{ key: 'ey' }, { key: 'bee' }, { key: 'see' }],
     results: ['ey', 'bee'],
     consensus: true,
   },
@@ -939,14 +745,8 @@ const testSuits = [
     title: 'dot_notation_after_filter_expression',
     query: '$[?(@.id==42)].name',
     payload: [
-      {
-        id: 42,
-        name: 'forty-two',
-      },
-      {
-        id: 1,
-        name: 'one',
-      },
+      { id: 42, name: 'forty-two' },
+      { id: 1, name: 'one' },
     ],
     results: ['forty-two'],
     consensus: true,
@@ -954,83 +754,28 @@ const testSuits = [
   {
     title: 'dot_notation_after_bracket_notation_with_wildcard_on_some_matching',
     query: '$[*].a',
-    payload: [
-      {
-        a: 1,
-      },
-      {
-        b: 1,
-      },
-    ],
+    payload: [{ a: 1 }, { b: 1 }],
     results: [1],
     consensus: true,
   },
   {
     title: 'dot_notation_after_recursive_descent',
     query: '$..key',
-    payload: {
-      object: {
-        key: 'value',
-        array: [
-          {
-            key: 'something',
-          },
-          {
-            key: {
-              key: 'russian dolls',
-            },
-          },
-        ],
-      },
-      key: 'top',
-    },
-    results: [
-      'top',
-      'value',
-      'something',
-      {
-        key: 'russian dolls',
-      },
-      'russian dolls',
-    ],
+    payload: { object: { key: 'value', array: [{ key: 'something' }, { key: { key: 'russian dolls' } }] }, key: 'top' },
+    results: ['top', 'value', 'something', { key: 'russian dolls' }, 'russian dolls'],
     consensus: true,
   },
   {
     title: 'dot_notation_after_recursive_descent_with_extra_dot',
     query: '$...key',
-    payload: {
-      object: {
-        key: 'value',
-        array: [
-          {
-            key: 'something',
-          },
-          {
-            key: {
-              key: 'russian dolls',
-            },
-          },
-        ],
-      },
-      key: 'top',
-    },
+    payload: { object: { key: 'value', array: [{ key: 'something' }, { key: { key: 'russian dolls' } }] }, key: 'top' },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
   {
     title: 'dot_notation_after_union',
     query: '$[0,2].key',
-    payload: [
-      {
-        key: 'ey',
-      },
-      {
-        key: 'bee',
-      },
-      {
-        key: 'see',
-      },
-    ],
+    payload: [{ key: 'ey' }, { key: 'bee' }, { key: 'see' }],
     results: ['ey', 'see'],
     consensus: true,
   },
@@ -1040,25 +785,9 @@ const testSuits = [
     payload: {
       store: {
         book: [
-          {
-            category: 'reference',
-            author: 'Nigel Rees',
-            title: 'Sayings of the Century',
-            price: 8.95,
-          },
-          {
-            category: 'fiction',
-            author: 'Evelyn Waugh',
-            title: 'Sword of Honour',
-            price: 12.99,
-          },
-          {
-            category: 'fiction',
-            author: 'Herman Melville',
-            title: 'Moby Dick',
-            isbn: '0-553-21311-3',
-            price: 8.99,
-          },
+          { category: 'reference', author: 'Nigel Rees', title: 'Sayings of the Century', price: 8.95 },
+          { category: 'fiction', author: 'Evelyn Waugh', title: 'Sword of Honour', price: 12.99 },
+          { category: 'fiction', author: 'Herman Melville', title: 'Moby Dick', isbn: '0-553-21311-3', price: 8.99 },
           {
             category: 'fiction',
             author: 'J. R. R. Tolkien',
@@ -1067,110 +796,54 @@ const testSuits = [
             price: 22.99,
           },
         ],
-        bicycle: {
-          color: 'red',
-          price: 19.95,
-        },
+        bicycle: { color: 'red', price: 19.95 },
       },
     },
     results: [8.95, 12.99, 8.99, 22.99, 19.95],
     consensus: true,
   },
-  {
-    title: 'dot_notation_on_array',
-    query: '$.key',
-    payload: [0, 1],
-    results: [],
-    consensus: true,
-  },
+  { title: 'dot_notation_on_array', query: '$.key', payload: [0, 1], results: [], consensus: true },
   {
     title: 'dot_notation_after_union_with_keys',
     query: "$['one','three'].key",
-    payload: {
-      one: {
-        key: 'value',
-      },
-      two: {
-        k: 'v',
-      },
-      three: {
-        some: 'more',
-        key: 'other value',
-      },
-    },
+    payload: { one: { key: 'value' }, two: { k: 'v' }, three: { some: 'more', key: 'other value' } },
     results: ['value', 'other value'],
     consensus: true,
   },
   {
     title: 'dot_notation_on_array_value',
     query: '$.key',
-    payload: {
-      key: ['first', 'second'],
-    },
+    payload: { key: ['first', 'second'] },
     results: [['first', 'second']],
     consensus: true,
   },
   {
     title: 'dot_notation_on_object_without_key',
     query: '$.missing',
-    payload: {
-      key: 'value',
-    },
+    payload: { key: 'value' },
     results: [],
     consensus: true,
   },
-  {
-    title: 'dot_notation_on_empty_object_value',
-    query: '$.key',
-    payload: {
-      key: {},
-    },
-    results: [{}],
-    consensus: true,
-  },
-  {
-    title: 'dot_notation_on_null_value',
-    query: '$.key',
-    payload: {
-      key: null,
-    },
-    results: [null],
-    consensus: true,
-  },
+  { title: 'dot_notation_on_empty_object_value', query: '$.key', payload: { key: {} }, results: [{}], consensus: true },
+  { title: 'dot_notation_on_null_value', query: '$.key', payload: { key: null }, results: [null], consensus: true },
   {
     title: 'dot_notation_with_double_quotes',
     query: '$."key"',
-    payload: {
-      key: 'value',
-      '"key"': 42,
-    },
+    payload: { key: 'value', '"key"': 42 },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
   {
     title: 'dot_notation_on_array_with_containing_object_matching_key',
     query: '$.id',
-    payload: [
-      {
-        id: 2,
-      },
-    ],
+    payload: [{ id: 2 }],
     results: [],
     consensus: true,
   },
   {
     title: 'dot_notation_with_dash',
     query: '$.key-dash',
-    payload: {
-      key: 42,
-      'key-': 43,
-      '-': 44,
-      dash: 45,
-      '-dash': 46,
-      '': 47,
-      'key-dash': 'value',
-      something: 'else',
-    },
+    payload: { key: 42, 'key-': 43, '-': 44, dash: 45, '-dash': 46, '': 47, 'key-dash': 'value', something: 'else' },
     results: ['value'],
     consensus: true,
   },
@@ -1189,18 +862,8 @@ const testSuits = [
         key: 'value',
         '"key"': 100,
         array: [
-          {
-            key: 'something',
-            '"key"': 0,
-          },
-          {
-            key: {
-              key: 'russian dolls',
-            },
-            '"key"': {
-              '"key"': 99,
-            },
-          },
+          { key: 'something', '"key"': 0 },
+          { key: { key: 'russian dolls' }, '"key"': { '"key"': 99 } },
         ],
       },
       key: 'top',
@@ -1212,75 +875,56 @@ const testSuits = [
   {
     title: 'dot_notation_with_empty_path',
     query: '$.',
-    payload: {
-      key: 42,
-      '': 9001,
-      "''": 'nice',
-    },
+    payload: { key: 42, '': 9001, "''": 'nice' },
     results: 'NOT_SUPPORTED',
     consensus: true,
   },
   {
     title: 'dot_notation_with_key_named_length',
     query: '$.length',
-    payload: {
-      length: 'value',
-    },
+    payload: { length: 'value' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'dot_notation_with_key_named_in',
     query: '$.in',
-    payload: {
-      in: 'value',
-    },
+    payload: { in: 'value' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'dot_notation_with_key_named_null',
     query: '$.null',
-    payload: {
-      null: 'value',
-    },
+    payload: { null: 'value' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'dot_notation_with_key_root_literal',
     query: '$.$',
-    payload: {
-      $: 'value',
-    },
+    payload: { $: 'value' },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
   {
     title: 'dot_notation_with_non_ASCII_key',
     query: '$.屬性',
-    payload: {
-      屬性: 'value',
-    },
+    payload: { 屬性: 'value' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'dot_notation_with_key_named_true',
     query: '$.true',
-    payload: {
-      true: 'value',
-    },
+    payload: { true: 'value' },
     results: ['value'],
     consensus: true,
   },
   {
     title: 'dot_notation_with_single_quotes',
     query: "$.'key'",
-    payload: {
-      key: 'value',
-      "'key'": 42,
-    },
+    payload: { key: 'value', "'key'": 42 },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
@@ -1294,11 +938,7 @@ const testSuits = [
   {
     title: 'dot_notation_with_number_on_object',
     query: '$.2',
-    payload: {
-      '2': 'second',
-      a: 'first',
-      b: 'third',
-    },
+    payload: { '2': 'second', a: 'first', b: 'third' },
     results: ['second'],
     consensus: true,
   },
@@ -1318,18 +958,8 @@ const testSuits = [
           key: 'value',
           "'key'": 100,
           array: [
-            {
-              key: 'something',
-              "'key'": 0,
-            },
-            {
-              key: {
-                key: 'russian dolls',
-              },
-              "'key'": {
-                "'key'": 99,
-              },
-            },
+            { key: 'something', "'key'": 0 },
+            { key: { key: 'russian dolls' }, "'key'": { "'key'": 99 } },
           ],
         },
         key: 'top',
@@ -1344,48 +974,22 @@ const testSuits = [
   {
     title: 'dot_notation_with_wildcard_after_dot_notation_after_dot_notation_with_wildcard',
     query: '$.*.bar.*',
-    payload: [
-      {
-        bar: [42],
-      },
-    ],
+    payload: [{ bar: [42] }],
     results: [42],
     consensus: true,
   },
   {
     title: 'dot_notation_with_single_quotes_and_dot',
     query: "$.'some.key'",
-    payload: {
-      'some.key': 42,
-      some: {
-        key: 'value',
-      },
-      "'some.key'": 43,
-    },
+    payload: { 'some.key': 42, some: { key: 'value' }, "'some.key'": 43 },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
   {
     title: 'dot_notation_with_wildcard_after_recursive_descent',
     query: '$..*',
-    payload: {
-      key: 'value',
-      'another key': {
-        complex: 'string',
-        primitives: [0, 1],
-      },
-    },
-    results: [
-      'value',
-      {
-        complex: 'string',
-        primitives: [0, 1],
-      },
-      'string',
-      [0, 1],
-      0,
-      1,
-    ],
+    payload: { key: 'value', 'another key': { complex: 'string', primitives: [0, 1] } },
+    results: ['value', { complex: 'string', primitives: [0, 1] }, 'string', [0, 1], 0, 1],
     consensus: true,
   },
   {
@@ -1398,12 +1002,7 @@ const testSuits = [
   {
     title: 'dot_notation_with_space_padded_key',
     query: '$. a ',
-    payload: {
-      ' a': 1,
-      a: 2,
-      ' a ': 3,
-      '': 4,
-    },
+    payload: { ' a': 1, a: 2, ' a ': 3, '': 4 },
     results: [2],
     consensus: false,
   },
@@ -1420,31 +1019,11 @@ const testSuits = [
   {
     title: 'dot_notation_with_wildcard_on_array',
     query: '$.*',
-    payload: [
-      'string',
-      42,
-      {
-        key: 'value',
-      },
-      [0, 1],
-    ],
-    results: [
-      'string',
-      42,
-      {
-        key: 'value',
-      },
-      [0, 1],
-    ],
+    payload: ['string', 42, { key: 'value' }, [0, 1]],
+    results: ['string', 42, { key: 'value' }, [0, 1]],
     consensus: true,
   },
-  {
-    title: 'dot_notation_with_wildcard_on_empty_object',
-    query: '$.*',
-    payload: {},
-    results: [],
-    consensus: true,
-  },
+  { title: 'dot_notation_with_wildcard_on_empty_object', query: '$.*', payload: {}, results: [], consensus: true },
   {
     title: 'dot_notation_with_wildcard_after_recursive_descent_on_scalar',
     query: '$..*',
@@ -1455,60 +1034,26 @@ const testSuits = [
   {
     title: 'dot_notation_with_wildcard_on_object',
     query: '$.*',
-    payload: {
-      some: 'string',
-      int: 42,
-      object: {
-        key: 'value',
-      },
-      array: [0, 1],
-    },
-    results: [
-      'string',
-      42,
-      {
-        key: 'value',
-      },
-      [0, 1],
-    ],
+    payload: { some: 'string', int: 42, object: { key: 'value' }, array: [0, 1] },
+    results: ['string', 42, { key: 'value' }, [0, 1]],
     consensus: true,
   },
   {
     title: 'dot_notation_without_dot',
     query: '$a',
-    payload: {
-      a: 1,
-      $a: 2,
-    },
+    payload: { a: 1, $a: 2 },
     results: 'NOT_SUPPORTED',
     consensus: true,
   },
-  {
-    title: 'dot_notation_with_wildcard_on_empty_array',
-    query: '$.*',
-    payload: [],
-    results: [],
-    consensus: true,
-  },
+  { title: 'dot_notation_with_wildcard_on_empty_array', query: '$.*', payload: [], results: [], consensus: true },
   {
     title: 'dot_notation_without_root',
     query: '.key',
-    payload: {
-      key: 'value',
-    },
+    payload: { key: 'value' },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  {
-    title: 'empty',
-    query: '',
-    payload: {
-      a: 42,
-      '': 21,
-    },
-    results: 'NOT_SUPPORTED',
-    consensus: false,
-  },
+  { title: 'empty', query: '', payload: { a: 42, '': 21 }, results: 'NOT_SUPPORTED', consensus: false },
   {
     title: 'filter_expression_after_dot_notation_with_wildcard_after_recursive_descent',
     query: '$..*[?(@.id>2)]',
@@ -1516,198 +1061,77 @@ const testSuits = [
       {
         complext: {
           one: [
-            {
-              name: 'first',
-              id: 1,
-            },
-            {
-              name: 'next',
-              id: 2,
-            },
-            {
-              name: 'another',
-              id: 3,
-            },
-            {
-              name: 'more',
-              id: 4,
-            },
+            { name: 'first', id: 1 },
+            { name: 'next', id: 2 },
+            { name: 'another', id: 3 },
+            { name: 'more', id: 4 },
           ],
-          more: {
-            name: 'next to last',
-            id: 5,
-          },
+          more: { name: 'next to last', id: 5 },
         },
       },
-      {
-        name: 'last',
-        id: 6,
-      },
+      { name: 'last', id: 6 },
     ],
     results: [
-      {
-        id: 6,
-        name: 'last',
-      },
-      {
-        id: 3,
-        name: 'another',
-      },
-      {
-        id: 4,
-        name: 'more',
-      },
-      {
-        id: 5,
-        name: 'next to last',
-      },
-      {
-        id: 3,
-        name: 'another',
-      },
-      {
-        id: 4,
-        name: 'more',
-      },
+      { id: 6, name: 'last' },
+      { id: 3, name: 'another' },
+      { id: 4, name: 'more' },
+      { id: 5, name: 'next to last' },
+      { id: 3, name: 'another' },
+      { id: 4, name: 'more' },
     ],
     consensus: false,
   },
   {
     title: 'dot_notation_without_root_and_dot',
     query: 'key',
-    payload: {
-      key: 'value',
-    },
+    payload: { key: 'value' },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_after_recursive_descent',
-  //   query: '$..[?(@.id==2)]',
-  //   payload: {
-  //     id: 2,
-  //     more: [
-  //       {
-  //         id: 2,
-  //       },
-  //       {
-  //         more: {
-  //           id: 2,
-  //         },
-  //       },
-  //       {
-  //         id: {
-  //           id: 2,
-  //         },
-  //       },
-  //       [
-  //         {
-  //           id: 2,
-  //         },
-  //       ],
-  //     ],
-  //   },
-  //   results: [
-  //     {
-  //       id: 2,
-  //     },
-  //     {
-  //       id: 2,
-  //     },
-  //     {
-  //       id: 2,
-  //     },
-  //     {
-  //       id: 2,
-  //     },
-  //   ],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_after_recursive_descent',
+    query: '$..[?(@.id==2)]',
+    payload: { id: 2, more: [{ id: 2 }, { more: { id: 2 } }, { id: { id: 2 } }, [{ id: 2 }]] },
+    results: [
+      { id: 2, more: [{ id: 2 }, { more: { id: 2 } }, { id: { id: 2 } }, [{ id: 2 }]] },
+      { id: 2 },
+      { id: 2 },
+      { id: 2 },
+      { id: 2 },
+      { id: 2 },
+      { id: 2 },
+    ],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_addition',
     query: '$[?(@.key+50==100)]',
-    payload: [
-      {
-        key: 60,
-      },
-      {
-        key: 50,
-      },
-      {
-        key: 10,
-      },
-      {
-        key: -50,
-      },
-      {
-        'key+50': 100,
-      },
-    ],
-    results: [
-      {
-        key: 50,
-      },
-    ],
+    payload: [{ key: 60 }, { key: 50 }, { key: 10 }, { key: -50 }, { 'key+50': 100 }],
+    results: [{ key: 50 }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_boolean_and_operator',
     query: '$[?(@.key>42 && @.key<44)]',
-    payload: [
-      {
-        key: 42,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 44,
-      },
-    ],
-    results: [
-      {
-        key: 43,
-      },
-    ],
+    payload: [{ key: 42 }, { key: 43 }, { key: 44 }],
+    results: [{ key: 43 }],
     consensus: true,
   },
   {
     title: 'filter_expression_with_boolean_and_operator_and_value_false',
     query: '$[?(@.key>0 && false)]',
     payload: [
-      {
-        key: 1,
-      },
-      {
-        key: 3,
-      },
-      {
-        key: 'nice',
-      },
-      {
-        key: true,
-      },
-      {
-        key: null,
-      },
-      {
-        key: false,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 0,
-      },
-      {
-        key: '',
-      },
+      { key: 1 },
+      { key: 3 },
+      { key: 'nice' },
+      { key: true },
+      { key: null },
+      { key: false },
+      { key: {} },
+      { key: [] },
+      { key: -1 },
+      { key: 0 },
+      { key: '' },
     ],
     results: [],
     consensus: false,
@@ -1715,59 +1139,21 @@ const testSuits = [
   {
     title: 'filter_expression_on_object',
     query: '$[?(@.key)]',
-    payload: {
-      key: 42,
-      another: {
-        key: 1,
-      },
-    },
-    results: [
-      {
-        another: {
-          key: 1,
-        },
-        key: 42,
-      },
-    ],
+    payload: { key: 42, another: { key: 1 } },
+    results: [{ another: { key: 1 }, key: 42 }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_boolean_or_operator',
     query: '$[?(@.key>43 || @.key<43)]',
-    payload: [
-      {
-        key: 42,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 44,
-      },
-    ],
-    results: [
-      {
-        key: 42,
-      },
-      {
-        key: 44,
-      },
-    ],
+    payload: [{ key: 42 }, { key: 43 }, { key: 44 }],
+    results: [{ key: 42 }, { key: 44 }],
     consensus: true,
   },
   {
     title: 'dot_bracket_notation',
     query: "$.['key']",
-    payload: {
-      key: 'value',
-      other: {
-        key: [
-          {
-            key: 42,
-          },
-        ],
-      },
-    },
+    payload: { key: 'value', other: { key: [{ key: 42 }] } },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
@@ -1775,48 +1161,19 @@ const testSuits = [
     title: 'filter_expression_with_boolean_and_operator_and_value_true',
     query: '$[?(@.key>0 && true)]',
     payload: [
-      {
-        key: 1,
-      },
-      {
-        key: 3,
-      },
-      {
-        key: 'nice',
-      },
-      {
-        key: true,
-      },
-      {
-        key: null,
-      },
-      {
-        key: false,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 0,
-      },
-      {
-        key: '',
-      },
+      { key: 1 },
+      { key: 3 },
+      { key: 'nice' },
+      { key: true },
+      { key: null },
+      { key: false },
+      { key: {} },
+      { key: [] },
+      { key: -1 },
+      { key: 0 },
+      { key: '' },
     ],
-    results: [
-      {
-        key: 1,
-      },
-      {
-        key: 3,
-      },
-    ],
+    results: [{ key: 1 }, { key: 3 }],
     consensus: false,
   },
   {
@@ -1829,67 +1186,25 @@ const testSuits = [
   {
     title: 'filter_expression_with_bracket_notation_and_current_object_literal',
     query: "$[?(@['@key']==42)]",
-    payload: [
-      {
-        '@key': 0,
-      },
-      {
-        '@key': 42,
-      },
-      {
-        key: 42,
-      },
-      {
-        '@key': 43,
-      },
-      {
-        some: 'value',
-      },
-    ],
-    results: [
-      {
-        '@key': 42,
-      },
-    ],
+    payload: [{ '@key': 0 }, { '@key': 42 }, { key: 42 }, { '@key': 43 }, { some: 'value' }],
+    results: [{ '@key': 42 }],
     consensus: true,
   },
   {
     title: 'filter_expression_with_bracket_notation',
     query: "$[?(@['key']==42)]",
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { some: 'value' },
     ],
-    results: [
-      {
-        key: 42,
-      },
-    ],
+    results: [{ key: 42 }],
     consensus: true,
   },
   {
@@ -1903,74 +1218,30 @@ const testSuits = [
     title: 'filter_expression_with_boolean_or_operator_and_value_true',
     query: '$[?(@.key>0 || true)]',
     payload: [
-      {
-        key: 1,
-      },
-      {
-        key: 3,
-      },
-      {
-        key: 'nice',
-      },
-      {
-        key: true,
-      },
-      {
-        key: null,
-      },
-      {
-        key: false,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 0,
-      },
-      {
-        key: '',
-      },
+      { key: 1 },
+      { key: 3 },
+      { key: 'nice' },
+      { key: true },
+      { key: null },
+      { key: false },
+      { key: {} },
+      { key: [] },
+      { key: -1 },
+      { key: 0 },
+      { key: '' },
     ],
     results: [
-      {
-        key: 1,
-      },
-      {
-        key: 3,
-      },
-      {
-        key: 'nice',
-      },
-      {
-        key: true,
-      },
-      {
-        key: null,
-      },
-      {
-        key: false,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 0,
-      },
-      {
-        key: '',
-      },
+      { key: 1 },
+      { key: 3 },
+      { key: 'nice' },
+      { key: true },
+      { key: null },
+      { key: false },
+      { key: {} },
+      { key: [] },
+      { key: -1 },
+      { key: 0 },
+      { key: '' },
     ],
     consensus: false,
   },
@@ -1988,60 +1259,28 @@ const testSuits = [
     title: 'filter_expression_with_boolean_or_operator_and_value_false',
     query: '$[?(@.key>0 || false)]',
     payload: [
-      {
-        key: 1,
-      },
-      {
-        key: 3,
-      },
-      {
-        key: 'nice',
-      },
-      {
-        key: true,
-      },
-      {
-        key: null,
-      },
-      {
-        key: false,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 0,
-      },
-      {
-        key: '',
-      },
+      { key: 1 },
+      { key: 3 },
+      { key: 'nice' },
+      { key: true },
+      { key: null },
+      { key: false },
+      { key: {} },
+      { key: [] },
+      { key: -1 },
+      { key: 0 },
+      { key: '' },
     ],
-    results: [
-      {
-        key: 1,
-      },
-      {
-        key: 3,
-      },
-    ],
+    results: [{ key: 1 }, { key: 3 }],
     consensus: false,
   },
-  // {
-  //   title: 'filter_expression_with_bracket_notation_with_number_on_object',
-  //   query: "$[?(@[1]=='b')]",
-  //   payload: {
-  //     '1': ['a', 'b'],
-  //     '2': ['x', 'y'],
-  //   },
-  //   results: [['a', 'b']],
-  //   consensus: false,
-  // },
+  {
+    title: 'filter_expression_with_bracket_notation_with_number_on_object',
+    query: "$[?(@[1]=='b')]",
+    payload: { '1': ['a', 'b'], '2': ['x', 'y'] },
+    results: [],
+    consensus: false,
+  },
   {
     title: 'filter_expression_with_current_object',
     query: '$[?(@)]',
@@ -2053,47 +1292,18 @@ const testSuits = [
     title: 'filter_expression_with_different_grouped_operators',
     query: '$[?(@.a && (@.b || @.c))]',
     payload: [
-      {
-        a: true,
-      },
-      {
-        a: true,
-        b: true,
-      },
-      {
-        a: true,
-        b: true,
-        c: true,
-      },
-      {
-        b: true,
-        c: true,
-      },
-      {
-        a: true,
-        c: true,
-      },
-      {
-        c: true,
-      },
-      {
-        b: true,
-      },
+      { a: true },
+      { a: true, b: true },
+      { a: true, b: true, c: true },
+      { b: true, c: true },
+      { a: true, c: true },
+      { c: true },
+      { b: true },
     ],
     results: [
-      {
-        a: true,
-        b: true,
-      },
-      {
-        a: true,
-        b: true,
-        c: true,
-      },
-      {
-        a: true,
-        c: true,
-      },
+      { a: true, b: true },
+      { a: true, b: true, c: true },
+      { a: true, c: true },
     ],
     consensus: false,
   },
@@ -2101,133 +1311,50 @@ const testSuits = [
     title: 'filter_expression_with_different_ungrouped_operators',
     query: '$[?(@.a && @.b || @.c)]',
     payload: [
-      {
-        a: true,
-        b: true,
-      },
-      {
-        a: true,
-        b: true,
-        c: true,
-      },
-      {
-        b: true,
-        c: true,
-      },
-      {
-        a: true,
-        c: true,
-      },
-      {
-        a: true,
-      },
-      {
-        b: true,
-      },
-      {
-        c: true,
-      },
-      {
-        d: true,
-      },
+      { a: true, b: true },
+      { a: true, b: true, c: true },
+      { b: true, c: true },
+      { a: true, c: true },
+      { a: true },
+      { b: true },
+      { c: true },
+      { d: true },
       {},
     ],
     results: [
-      {
-        a: true,
-        b: true,
-      },
-      {
-        a: true,
-        b: true,
-        c: true,
-      },
-      {
-        b: true,
-        c: true,
-      },
-      {
-        a: true,
-        c: true,
-      },
-      {
-        c: true,
-      },
+      { a: true, b: true },
+      { a: true, b: true, c: true },
+      { b: true, c: true },
+      { a: true, c: true },
+      { c: true },
     ],
     consensus: false,
   },
   {
     title: 'filter_expression_with_division',
     query: '$[?(@.key/10==5)]',
-    payload: [
-      {
-        key: 60,
-      },
-      {
-        key: 50,
-      },
-      {
-        key: 10,
-      },
-      {
-        key: -50,
-      },
-      {
-        'key/10': 5,
-      },
-    ],
-    results: [
-      {
-        key: 50,
-      },
-    ],
+    payload: [{ key: 60 }, { key: 50 }, { key: 10 }, { key: -50 }, { 'key/10': 5 }],
+    results: [{ key: 50 }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_dot_notation_with_number',
     query: "$[?(@.2 == 'second')]",
-    payload: [
-      {
-        '2': 'second',
-        a: 'first',
-        b: 'third',
-      },
-    ],
-    results: [
-      {
-        '2': 'second',
-        a: 'first',
-        b: 'third',
-      },
-    ],
+    payload: [{ '2': 'second', a: 'first', b: 'third' }],
+    results: [{ '2': 'second', a: 'first', b: 'third' }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_dot_notation_with_dash',
     query: "$[?(@.key-dash == 'value')]",
-    payload: [
-      {
-        'key-dash': 'value',
-      },
-    ],
-    results: [
-      {
-        'key-dash': 'value',
-      },
-    ],
+    payload: [{ 'key-dash': 'value' }],
+    results: [{ 'key-dash': 'value' }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_empty_expression',
     query: '$[?()]',
-    payload: [
-      1,
-      {
-        key: 42,
-      },
-      'value',
-      null,
-    ],
+    payload: [1, { key: 42 }, 'value', null],
     results: 'NOT_SUPPORTED',
     consensus: true,
   },
@@ -2249,105 +1376,43 @@ const testSuits = [
     title: 'filter_expression_with_equals_array',
     query: '$[?(@.d==["v1","v2"])]',
     payload: [
-      {
-        d: ['v1', 'v2'],
-      },
-      {
-        d: ['a', 'b'],
-      },
-      {
-        d: 'v1',
-      },
-      {
-        d: 'v2',
-      },
-      {
-        d: {},
-      },
-      {
-        d: [],
-      },
-      {
-        d: null,
-      },
-      {
-        d: -1,
-      },
-      {
-        d: 0,
-      },
-      {
-        d: 1,
-      },
-      {
-        d: "['v1','v2']",
-      },
-      {
-        d: "['v1', 'v2']",
-      },
-      {
-        d: 'v1,v2',
-      },
-      {
-        d: '["v1", "v2"]',
-      },
-      {
-        d: '["v1","v2"]',
-      },
+      { d: ['v1', 'v2'] },
+      { d: ['a', 'b'] },
+      { d: 'v1' },
+      { d: 'v2' },
+      { d: {} },
+      { d: [] },
+      { d: null },
+      { d: -1 },
+      { d: 0 },
+      { d: 1 },
+      { d: "['v1','v2']" },
+      { d: "['v1', 'v2']" },
+      { d: 'v1,v2' },
+      { d: '["v1", "v2"]' },
+      { d: '["v1","v2"]' },
     ],
-    results: [
-      {
-        d: ['v1', 'v2'],
-      },
-    ],
+    results: [{ d: ['v1', 'v2'] }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_equals_false',
     query: '$[?(@.key==false)]',
     payload: [
-      {
-        some: 'some value',
-      },
-      {
-        key: true,
-      },
-      {
-        key: false,
-      },
-      {
-        key: null,
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: '',
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
+      { some: 'some value' },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
     ],
-    results: [
-      {
-        key: false,
-      },
-    ],
+    results: [{ key: false }],
     consensus: false,
   },
   {
@@ -2361,148 +1426,55 @@ const testSuits = [
     title: 'filter_expression_with_equals',
     query: '$[?(@.key==42)]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: 'some',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: null,
-      },
-      {
-        key: 420,
-      },
-      {
-        key: '',
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: [42],
-      },
-      {
-        key: {
-          key: 42,
-        },
-      },
-      {
-        key: {
-          some: 42,
-        },
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: 'some' },
+      { key: '42' },
+      { key: null },
+      { key: 420 },
+      { key: '' },
+      { key: {} },
+      { key: [] },
+      { key: [42] },
+      { key: { key: 42 } },
+      { key: { some: 42 } },
+      { some: 'value' },
     ],
-    results: [
-      {
-        key: 42,
-      },
-    ],
+    results: [{ key: 42 }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_equals_null',
     query: '$[?(@.key==null)]',
     payload: [
-      {
-        some: 'some value',
-      },
-      {
-        key: true,
-      },
-      {
-        key: false,
-      },
-      {
-        key: null,
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: '',
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
+      { some: 'some value' },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
     ],
-    results: [
-      {
-        key: null,
-      },
-    ],
+    results: [{ key: null }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_equals_array_or_equals_true',
     query: '$[?(@.d==["v1","v2"] || (@.d == true))]',
-    payload: [
-      {
-        d: ['v1', 'v2'],
-      },
-      {
-        d: ['a', 'b'],
-      },
-      {
-        d: true,
-      },
-    ],
-    results: [
-      {
-        d: ['v1', 'v2'],
-      },
-      {
-        d: true,
-      },
-    ],
+    payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
+    results: [{ d: ['v1', 'v2'] }, { d: true }],
     consensus: false,
   },
   {
@@ -2515,44 +1487,14 @@ const testSuits = [
   {
     title: 'filter_expression_with_equals_number_with_leading_zeros',
     query: '$[?(@.key==010)]',
-    payload: [
-      {
-        key: '010',
-      },
-      {
-        key: '10',
-      },
-      {
-        key: 10,
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 8,
-      },
-    ],
-    results: [
-      {
-        key: 10,
-      },
-    ],
+    payload: [{ key: '010' }, { key: '10' }, { key: 10 }, { key: 0 }, { key: 8 }],
+    results: [{ key: 10 }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_equals_boolean_expression_value',
     query: '$[?((@.key<44)==false)]',
-    payload: [
-      {
-        key: 42,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 44,
-      },
-    ],
+    payload: [{ key: 42 }, { key: 43 }, { key: 44 }],
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
@@ -2566,31 +1508,8 @@ const testSuits = [
   {
     title: 'filter_expression_with_equals_number_with_fraction',
     query: '$[?(@.key==-0.123e2)]',
-    payload: [
-      {
-        key: -12.3,
-      },
-      {
-        key: -0.123,
-      },
-      {
-        key: -12,
-      },
-      {
-        key: 12.3,
-      },
-      {
-        key: 2,
-      },
-      {
-        key: '-0.123e2',
-      },
-    ],
-    results: [
-      {
-        key: -12.3,
-      },
-    ],
+    payload: [{ key: -12.3 }, { key: -0.123 }, { key: -12 }, { key: 12.3 }, { key: 2 }, { key: '-0.123e2' }],
+    results: [{ key: -12.3 }],
     consensus: false,
   },
   {
@@ -2604,51 +1523,21 @@ const testSuits = [
     title: 'filter_expression_with_equals_array_with_single_quotes',
     query: "$[?(@.d==['v1','v2'])]",
     payload: [
-      {
-        d: ['v1', 'v2'],
-      },
-      {
-        d: ['a', 'b'],
-      },
-      {
-        d: 'v1',
-      },
-      {
-        d: 'v2',
-      },
-      {
-        d: {},
-      },
-      {
-        d: [],
-      },
-      {
-        d: null,
-      },
-      {
-        d: -1,
-      },
-      {
-        d: 0,
-      },
-      {
-        d: 1,
-      },
-      {
-        d: "['v1','v2']",
-      },
-      {
-        d: "['v1', 'v2']",
-      },
-      {
-        d: 'v1,v2',
-      },
-      {
-        d: '["v1", "v2"]',
-      },
-      {
-        d: '["v1","v2"]',
-      },
+      { d: ['v1', 'v2'] },
+      { d: ['a', 'b'] },
+      { d: 'v1' },
+      { d: 'v2' },
+      { d: {} },
+      { d: [] },
+      { d: null },
+      { d: -1 },
+      { d: 0 },
+      { d: 1 },
+      { d: "['v1','v2']" },
+      { d: "['v1', 'v2']" },
+      { d: 'v1,v2' },
+      { d: '["v1", "v2"]' },
+      { d: '["v1","v2"]' },
     ],
     results: [
       {
@@ -2672,33 +1561,15 @@ const testSuits = [
     title: 'filter_expression_with_equals_on_object',
     query: '$[?(@.key==42)]',
     payload: {
-      a: {
-        key: 0,
-      },
-      b: {
-        key: 42,
-      },
-      c: {
-        key: -1,
-      },
-      d: {
-        key: 41,
-      },
-      e: {
-        key: 43,
-      },
-      f: {
-        key: 42.0001,
-      },
-      g: {
-        key: 41.9999,
-      },
-      h: {
-        key: 100,
-      },
-      i: {
-        some: 'value',
-      },
+      a: { key: 0 },
+      b: { key: 42 },
+      c: { key: -1 },
+      d: { key: 41 },
+      e: { key: 43 },
+      f: { key: 42.0001 },
+      g: { key: 41.9999 },
+      h: { key: 100 },
+      i: { some: 'value' },
     },
     results: [],
     consensus: false,
@@ -2707,24 +1578,12 @@ const testSuits = [
     title: 'filter_expression_with_equals_string_in_NFC',
     query: '$[?(@.key=="Motörhead")]',
     payload: [
-      {
-        key: 'something',
-      },
-      {
-        key: 'Motörhead',
-      },
-      {
-        key: 'motörhead',
-      },
-      {
-        key: 'Motorhead',
-      },
-      {
-        key: 'Motoörhead',
-      },
-      {
-        key: 'motoörhead',
-      },
+      { key: 'something' },
+      { key: 'Motörhead' },
+      { key: 'motörhead' },
+      { key: 'Motorhead' },
+      { key: 'Motoörhead' },
+      { key: 'motoörhead' },
     ],
     results: [
       {
@@ -2737,82 +1596,30 @@ const testSuits = [
     title: 'filter_expression_with_equals_string',
     query: '$[?(@.key=="value")]',
     payload: [
-      {
-        key: 'some',
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: null,
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: '',
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: 'valuemore',
-      },
-      {
-        key: 'morevalue',
-      },
-      {
-        key: ['value'],
-      },
-      {
-        key: {
-          some: 'value',
-        },
-      },
-      {
-        key: {
-          key: 'value',
-        },
-      },
-      {
-        some: 'value',
-      },
+      { key: 'some' },
+      { key: 'value' },
+      { key: null },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: '' },
+      { key: {} },
+      { key: [] },
+      { key: 'valuemore' },
+      { key: 'morevalue' },
+      { key: ['value'] },
+      { key: { some: 'value' } },
+      { key: { key: 'value' } },
+      { some: 'value' },
     ],
-    results: [
-      {
-        key: 'value',
-      },
-    ],
+    results: [{ key: 'value' }],
     consensus: true,
   },
   {
     title: 'filter_expression_with_equals_string_with_dot_literal',
     query: '$[?(@.key=="some.value")]',
-    payload: [
-      {
-        key: 'some',
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: 'some.value',
-      },
-    ],
-    results: [
-      {
-        key: 'some.value',
-      },
-    ],
+    payload: [{ key: 'some' }, { key: 'value' }, { key: 'some.value' }],
+    results: [{ key: 'some.value' }],
     consensus: true,
   },
   {
@@ -2839,58 +1646,22 @@ const testSuits = [
     title: 'filter_expression_with_equals_object',
     query: '$[?(@.d=={"k":"v"})]',
     payload: [
-      {
-        d: {
-          k: 'v',
-        },
-      },
-      {
-        d: {
-          a: 'b',
-        },
-      },
-      {
-        d: 'k',
-      },
-      {
-        d: 'v',
-      },
-      {
-        d: {},
-      },
-      {
-        d: [],
-      },
-      {
-        d: null,
-      },
-      {
-        d: -1,
-      },
-      {
-        d: 0,
-      },
-      {
-        d: 1,
-      },
-      {
-        d: '[object Object]',
-      },
-      {
-        d: '{"k": "v"}',
-      },
-      {
-        d: '{"k":"v"}',
-      },
+      { d: { k: 'v' } },
+      { d: { a: 'b' } },
+      { d: 'k' },
+      { d: 'v' },
+      { d: {} },
+      { d: [] },
+      { d: null },
+      { d: -1 },
+      { d: 0 },
+      { d: 1 },
+      { d: '[object Object]' },
+      { d: '{"k": "v"}' },
+      { d: '{"k":"v"}' },
       'v',
     ],
-    results: [
-      {
-        d: {
-          k: 'v',
-        },
-      },
-    ],
+    results: [{ d: { k: 'v' } }],
     consensus: false,
   },
   {
@@ -2917,61 +1688,26 @@ const testSuits = [
   {
     title: 'filter_expression_with_equals_string_with_single_quotes',
     query: "$[?(@.key=='value')]",
-    payload: [
-      {
-        key: 'some',
-      },
-      {
-        key: 'value',
-      },
-    ],
-    results: [
-      {
-        key: 'value',
-      },
-    ],
+    payload: [{ key: 'some' }, { key: 'value' }],
+    results: [{ key: 'value' }],
     consensus: true,
   },
   {
     title: 'filter_expression_with_equals_true',
     query: '$[?(@.key==true)]',
     payload: [
-      {
-        some: 'some value',
-      },
-      {
-        key: true,
-      },
-      {
-        key: false,
-      },
-      {
-        key: null,
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: '',
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
+      { some: 'some value' },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
     ],
     results: [
       {
@@ -2984,81 +1720,26 @@ const testSuits = [
     title: 'filter_expression_with_equals_with_path_and_path',
     query: '$[?(@.key1==@.key2)]',
     payload: [
-      {
-        key1: 10,
-        key2: 10,
-      },
-      {
-        key1: 42,
-        key2: 50,
-      },
-      {
-        key1: 10,
-      },
-      {
-        key2: 10,
-      },
+      { key1: 10, key2: 10 },
+      { key1: 42, key2: 50 },
+      { key1: 10 },
+      { key2: 10 },
       {},
-      {
-        key1: null,
-        key2: null,
-      },
-      {
-        key1: null,
-      },
-      {
-        key2: null,
-      },
-      {
-        key1: 0,
-        key2: 0,
-      },
-      {
-        key1: 0,
-      },
-      {
-        key2: 0,
-      },
-      {
-        key1: -1,
-        key2: -1,
-      },
-      {
-        key1: '',
-        key2: '',
-      },
-      {
-        key1: false,
-        key2: false,
-      },
-      {
-        key1: false,
-      },
-      {
-        key2: false,
-      },
-      {
-        key1: true,
-        key2: true,
-      },
-      {
-        key1: [],
-        key2: [],
-      },
-      {
-        key1: {},
-        key2: {},
-      },
-      {
-        key1: {
-          a: 1,
-          b: 2,
-        },
-        key2: {
-          b: 2,
-          a: 1,
-        },
-      },
+      { key1: null, key2: null },
+      { key1: null },
+      { key2: null },
+      { key1: 0, key2: 0 },
+      { key1: 0 },
+      { key2: 0 },
+      { key1: -1, key2: -1 },
+      { key1: '', key2: '' },
+      { key1: false, key2: false },
+      { key1: false },
+      { key2: false },
+      { key1: true, key2: true },
+      { key1: [], key2: [] },
+      { key1: {}, key2: {} },
+      { key1: { a: 1, b: 2 }, key2: { b: 2, a: 1 } },
     ],
     results: [
       {
@@ -3114,23 +1795,7 @@ const testSuits = [
   {
     title: 'filter_expression_with_in_array_of_values',
     query: '$[?(@.d in [2, 3])]',
-    payload: [
-      {
-        d: 1,
-      },
-      {
-        d: 2,
-      },
-      {
-        d: 1,
-      },
-      {
-        d: 3,
-      },
-      {
-        d: 4,
-      },
-    ],
+    payload: [{ d: 1 }, { d: 2 }, { d: 1 }, { d: 3 }, { d: 4 }],
     results: [
       {
         d: 2,
@@ -3145,24 +1810,12 @@ const testSuits = [
     title: 'filter_expression_with_equals_string_with_unicode_character_escape',
     query: '$[?(@.key=="Mot\\u00f6rhead")]',
     payload: [
-      {
-        key: 'something',
-      },
-      {
-        key: 'Motörhead',
-      },
-      {
-        key: 'motörhead',
-      },
-      {
-        key: 'Motorhead',
-      },
-      {
-        key: 'Motoörhead',
-      },
-      {
-        key: 'motoörhead',
-      },
+      { key: 'something' },
+      { key: 'Motörhead' },
+      { key: 'motörhead' },
+      { key: 'Motorhead' },
+      { key: 'Motoörhead' },
+      { key: 'motoörhead' },
     ],
     results: [],
     consensus: false,
@@ -3171,45 +1824,19 @@ const testSuits = [
     title: 'filter_expression_with_greater_than_or_equal',
     query: '$[?(@.key>=42)]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'value',
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
     ],
     results: [
       {
@@ -3230,91 +1857,31 @@ const testSuits = [
   {
     title: 'filter_expression_with_in_current_object',
     query: '$[?(2 in @.d)]',
-    payload: [
-      {
-        d: [1, 2, 3],
-      },
-      {
-        d: [2],
-      },
-      {
-        d: [1],
-      },
-      {
-        d: [3, 4],
-      },
-      {
-        d: [4, 2],
-      },
-    ],
-    results: [
-      {
-        d: [1, 2, 3],
-      },
-      {
-        d: [2],
-      },
-      {
-        d: [4, 2],
-      },
-    ],
+    payload: [{ d: [1, 2, 3] }, { d: [2] }, { d: [1] }, { d: [3, 4] }, { d: [4, 2] }],
+    results: [{ d: [1, 2, 3] }, { d: [2] }, { d: [4, 2] }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_greater_than_string',
     query: '$[?(@.key>"VALUE")]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'alpha',
-      },
-      {
-        key: 'ALPHA',
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: 'VALUE',
-      },
-      {
-        some: 'value',
-      },
-      {
-        some: 'VALUE',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'alpha' },
+      { key: 'ALPHA' },
+      { key: 'value' },
+      { key: 'VALUE' },
+      { some: 'value' },
+      { some: 'VALUE' },
     ],
     results: [
       {
@@ -3330,117 +1897,42 @@ const testSuits = [
     title: 'filter_expression_with_less_than',
     query: '$[?(@.key<42)]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'value',
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
     ],
-    results: [
-      {
-        key: 0,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 41.9999,
-      },
-    ],
+    results: [{ key: 0 }, { key: -1 }, { key: 41 }, { key: 41.9999 }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_greater_than',
     query: '$[?(@.key>42)]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'value',
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
     ],
-    results: [
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 100,
-      },
-    ],
+    results: [{ key: 43 }, { key: 42.0001 }, { key: 100 }],
     consensus: false,
   },
   {
@@ -3480,63 +1972,21 @@ const testSuits = [
     title: 'filter_expression_with_less_than_or_equal',
     query: '$[?(@.key<=42)]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'value',
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
     ],
-    results: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 41.9999,
-      },
-    ],
+    results: [{ key: 0 }, { key: 42 }, { key: -1 }, { key: 41 }, { key: 41.9999 }],
     consensus: false,
   },
   {
@@ -3563,70 +2013,26 @@ const testSuits = [
   {
     title: 'filter_expression_with_multiplication',
     query: '$[?(@.key*2==100)]',
-    payload: [
-      {
-        key: 60,
-      },
-      {
-        key: 50,
-      },
-      {
-        key: 10,
-      },
-      {
-        key: -50,
-      },
-      {
-        'key*2': 100,
-      },
-    ],
-    results: [
-      {
-        key: 50,
-      },
-    ],
+    payload: [{ key: 60 }, { key: 50 }, { key: 10 }, { key: -50 }, { 'key*2': 100 }],
+    results: [{ key: 50 }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_negation_and_without_value',
     query: '$[?(!@.key)]',
     payload: [
-      {
-        some: 'some value',
-      },
-      {
-        key: true,
-      },
-      {
-        key: false,
-      },
-      {
-        key: null,
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: '',
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
+      { some: 'some value' },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
     ],
     results: 'NOT_SUPPORTED',
     consensus: false,
@@ -3635,74 +2041,30 @@ const testSuits = [
     title: 'filter_expression_with_negation_and_less_than',
     query: '$[?(!(@.key<42))]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'value',
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
     ],
     results: [
-      {
-        key: 42,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'value',
-      },
-      {
-        some: 'value',
-      },
+      { key: 42 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
     ],
     consensus: false,
   },
@@ -3710,83 +2072,33 @@ const testSuits = [
     title: 'filter_expression_with_negation_and_equals',
     query: '$[?(!(@.key==42))]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'value',
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
     ],
     results: [
-      {
-        key: 0,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: '43',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: '41',
-      },
-      {
-        key: 'value',
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: -1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: '43' },
+      { key: '42' },
+      { key: '41' },
+      { key: 'value' },
+      { some: 'value' },
     ],
     consensus: false,
   },
@@ -3794,36 +2106,9 @@ const testSuits = [
     title: 'filter_expression_with_parent_axis_operator',
     query: '$[*].bookmarks[?(@.page == 45)]^^^',
     payload: [
-      {
-        title: 'Sayings of the Century',
-        bookmarks: [
-          {
-            page: 40,
-          },
-        ],
-      },
-      {
-        title: 'Sword of Honour',
-        bookmarks: [
-          {
-            page: 35,
-          },
-          {
-            page: 45,
-          },
-        ],
-      },
-      {
-        title: 'Moby Dick',
-        bookmarks: [
-          {
-            page: 3035,
-          },
-          {
-            page: 45,
-          },
-        ],
-      },
+      { title: 'Sayings of the Century', bookmarks: [{ page: 40 }] },
+      { title: 'Sword of Honour', bookmarks: [{ page: 35 }, { page: 45 }] },
+      { title: 'Moby Dick', bookmarks: [{ page: 3035 }, { page: 45 }] },
     ],
     results: 'NOT_SUPPORTED',
     consensus: true,
@@ -3831,267 +2116,93 @@ const testSuits = [
   {
     title: 'filter_expression_with_not_equals_array_or_equals_true',
     query: '$[?((@.d!=["v1","v2"]) || (@.d == true))]',
-    payload: [
-      {
-        d: ['v1', 'v2'],
-      },
-      {
-        d: ['a', 'b'],
-      },
-      {
-        d: true,
-      },
-    ],
-    results: [
-      {
-        d: ['a', 'b'],
-      },
-      {
-        d: true,
-      },
-    ],
+    payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
+    results: [{ d: ['a', 'b'] }, { d: true }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_non_singular_existence_test',
     query: '$[?(@.a.*)]',
     payload: [
-      {
-        a: 0,
-      },
-      {
-        a: 'x',
-      },
-      {
-        a: false,
-      },
-      {
-        a: true,
-      },
-      {
-        a: null,
-      },
-      {
-        a: [],
-      },
-      {
-        a: [1],
-      },
-      {
-        a: [1, 2],
-      },
-      {
-        a: {},
-      },
-      {
-        a: {
-          x: 'y',
-        },
-      },
-      {
-        a: {
-          x: 'y',
-          w: 'z',
-        },
-      },
+      { a: 0 },
+      { a: 'x' },
+      { a: false },
+      { a: true },
+      { a: null },
+      { a: [] },
+      { a: [1] },
+      { a: [1, 2] },
+      { a: {} },
+      { a: { x: 'y' } },
+      { a: { x: 'y', w: 'z' } },
     ],
     results: [
-      {
-        a: 0,
-      },
-      {
-        a: 'x',
-      },
-      {
-        a: false,
-      },
-      {
-        a: true,
-      },
-      {
-        a: null,
-      },
-      {
-        a: [],
-      },
-      {
-        a: [1],
-      },
-      {
-        a: [1, 2],
-      },
-      {
-        a: {},
-      },
-      {
-        a: {
-          x: 'y',
-        },
-      },
-      {
-        a: {
-          x: 'y',
-          w: 'z',
-        },
-      },
+      { a: 0 },
+      { a: 'x' },
+      { a: false },
+      { a: true },
+      { a: null },
+      { a: [] },
+      { a: [1] },
+      { a: [1, 2] },
+      { a: {} },
+      { a: { x: 'y' } },
+      { a: { x: 'y', w: 'z' } },
     ],
     consensus: false,
   },
   {
     title: 'filter_expression_with_negation_and_equals_array_or_equals_true',
     query: '$[?(!(@.d==["v1","v2"]) || (@.d == true))]',
-    payload: [
-      {
-        d: ['v1', 'v2'],
-      },
-      {
-        d: ['a', 'b'],
-      },
-      {
-        d: true,
-      },
-    ],
-    results: [
-      {
-        d: ['a', 'b'],
-      },
-      {
-        d: true,
-      },
-    ],
+    payload: [{ d: ['v1', 'v2'] }, { d: ['a', 'b'] }, { d: true }],
+    results: [{ d: ['a', 'b'] }, { d: true }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_not_equals',
     query: '$[?(@.key!=42)]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: 'some',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: null,
-      },
-      {
-        key: 420,
-      },
-      {
-        key: '',
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: [42],
-      },
-      {
-        key: {
-          key: 42,
-        },
-      },
-      {
-        key: {
-          some: 42,
-        },
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: 'some' },
+      { key: '42' },
+      { key: null },
+      { key: 420 },
+      { key: '' },
+      { key: {} },
+      { key: [] },
+      { key: [42] },
+      { key: { key: 42 } },
+      { key: { some: 42 } },
+      { some: 'value' },
     ],
     results: [
-      {
-        key: 0,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: 'some',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: null,
-      },
-      {
-        key: 420,
-      },
-      {
-        key: '',
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: [42],
-      },
-      {
-        key: {
-          key: 42,
-        },
-      },
-      {
-        key: {
-          some: 42,
-        },
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: -1 },
+      { key: 1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: 'some' },
+      { key: '42' },
+      { key: null },
+      { key: 420 },
+      { key: '' },
+      { key: {} },
+      { key: [] },
+      { key: [42] },
+      { key: { key: 42 } },
+      { key: { some: 42 } },
+      { some: 'value' },
     ],
     consensus: false,
   },
@@ -4112,49 +2223,20 @@ const testSuits = [
   {
     title: 'filter_expression_with_equals_with_root_reference',
     query: '$.items[?(@.key==$.value)]',
-    payload: {
-      value: 42,
-      items: [
-        {
-          key: 10,
-        },
-        {
-          key: 42,
-        },
-        {
-          key: 50,
-        },
-      ],
-    },
-    results: [
-      {
-        key: 42,
-      },
-    ],
+    payload: { value: 42, items: [{ key: 10 }, { key: 42 }, { key: 50 }] },
+    results: [{ key: 42 }],
     consensus: true,
   },
   {
     title: 'filter_expression_with_regular_expression_from_member',
     query: '$[?(@.name=~/@.pattern/)]',
     payload: [
-      {
-        name: 'hullo world',
-      },
-      {
-        name: 'hello world',
-      },
-      {
-        name: 'yes hello world',
-      },
-      {
-        name: 'HELLO WORLD',
-      },
-      {
-        name: 'good bye',
-      },
-      {
-        pattern: 'hello.*',
-      },
+      { name: 'hullo world' },
+      { name: 'hello world' },
+      { name: 'yes hello world' },
+      { name: 'HELLO WORLD' },
+      { name: 'good bye' },
+      { pattern: 'hello.*' },
     ],
     results: [],
     consensus: false,
@@ -4163,70 +2245,26 @@ const testSuits = [
     title: 'filter_expression_with_single_equal',
     query: '$[?(@.key=42)]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: 'some',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: null,
-      },
-      {
-        key: 420,
-      },
-      {
-        key: '',
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: [42],
-      },
-      {
-        key: {
-          key: 42,
-        },
-      },
-      {
-        key: {
-          some: 42,
-        },
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: 'some' },
+      { key: '42' },
+      { key: null },
+      { key: 420 },
+      { key: '' },
+      { key: {} },
+      { key: [] },
+      { key: [42] },
+      { key: { key: 42 } },
+      { key: { some: 42 } },
+      { some: 'value' },
     ],
     results: 'NOT_SUPPORTED',
     consensus: true,
@@ -4234,135 +2272,31 @@ const testSuits = [
   {
     title: 'filter_expression_with_subpaths',
     query: '$[?(@.a.b==3)]',
-    payload: [
-      {
-        a: {
-          b: 3,
-        },
-      },
-      {
-        a: {
-          b: 2,
-        },
-      },
-    ],
-    results: [
-      {
-        a: {
-          b: 3,
-        },
-      },
-    ],
+    payload: [{ a: { b: 3 } }, { a: { b: 2 } }],
+    results: [{ a: { b: 3 } }],
     consensus: true,
   },
   {
     title: 'filter_expression_with_subpaths_deeply_nested',
     query: '$[?(@.a.b.c==3)]',
-    payload: [
-      {
-        a: {
-          b: {
-            c: 3,
-          },
-        },
-      },
-      {
-        a: 3,
-      },
-      {
-        c: 3,
-      },
-      {
-        a: {
-          b: {
-            c: 2,
-          },
-        },
-      },
-    ],
-    results: [
-      {
-        a: {
-          b: {
-            c: 3,
-          },
-        },
-      },
-    ],
+    payload: [{ a: { b: { c: 3 } } }, { a: 3 }, { c: 3 }, { a: { b: { c: 2 } } }],
+    results: [{ a: { b: { c: 3 } } }],
     consensus: true,
   },
   {
     title: 'filter_expression_with_subfilter',
     query: '$[?(@.a[?(@.price>10)])]',
     payload: [
-      {
-        a: [
-          {
-            price: 1,
-          },
-          {
-            price: 3,
-          },
-        ],
-      },
-      {
-        a: [
-          {
-            price: 11,
-          },
-        ],
-      },
-      {
-        a: [
-          {
-            price: 8,
-          },
-          {
-            price: 12,
-          },
-          {
-            price: 3,
-          },
-        ],
-      },
-      {
-        a: [],
-      },
+      { a: [{ price: 1 }, { price: 3 }] },
+      { a: [{ price: 11 }] },
+      { a: [{ price: 8 }, { price: 12 }, { price: 3 }] },
+      { a: [] },
     ],
     results: [
-      {
-        a: [
-          {
-            price: 1,
-          },
-          {
-            price: 3,
-          },
-        ],
-      },
-      {
-        a: [
-          {
-            price: 11,
-          },
-        ],
-      },
-      {
-        a: [
-          {
-            price: 8,
-          },
-          {
-            price: 12,
-          },
-          {
-            price: 3,
-          },
-        ],
-      },
-      {
-        a: [],
-      },
+      { a: [{ price: 1 }, { price: 3 }] },
+      { a: [{ price: 11 }] },
+      { a: [{ price: 8 }, { price: 12 }, { price: 3 }] },
+      { a: [] },
     ],
     consensus: false,
   },
@@ -4387,128 +2321,47 @@ const testSuits = [
   {
     title: 'filter_expression_with_subtraction',
     query: '$[?(@.key-50==-100)]',
-    payload: [
-      {
-        key: 60,
-      },
-      {
-        key: 50,
-      },
-      {
-        key: 10,
-      },
-      {
-        key: -50,
-      },
-      {
-        'key-50': -100,
-      },
-    ],
-    results: [
-      {
-        key: -50,
-      },
-    ],
+    payload: [{ key: 60 }, { key: 50 }, { key: 10 }, { key: -50 }, { 'key-50': -100 }],
+    results: [{ key: -50 }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_regular_expression',
     query: '$[?(@.name=~/hello.*/)]',
     payload: [
-      {
-        name: 'hullo world',
-      },
-      {
-        name: 'hello world',
-      },
-      {
-        name: 'yes hello world',
-      },
-      {
-        name: 'HELLO WORLD',
-      },
-      {
-        name: 'good bye',
-      },
+      { name: 'hullo world' },
+      { name: 'hello world' },
+      { name: 'yes hello world' },
+      { name: 'HELLO WORLD' },
+      { name: 'good bye' },
     ],
-    results: [
-      {
-        name: 'hello world',
-      },
-      {
-        name: 'yes hello world',
-      },
-    ],
+    results: [{ name: 'hello world' }, { name: 'yes hello world' }],
     consensus: false,
   },
   {
     title: 'filter_expression_with_triple_equal',
     query: '$[?(@.key===42)]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: 'some',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: null,
-      },
-      {
-        key: 420,
-      },
-      {
-        key: '',
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: [42],
-      },
-      {
-        key: {
-          key: 42,
-        },
-      },
-      {
-        key: {
-          some: 42,
-        },
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: 'some' },
+      { key: '42' },
+      { key: null },
+      { key: 420 },
+      { key: '' },
+      { key: {} },
+      { key: [] },
+      { key: [42] },
+      { key: { key: 42 } },
+      { key: { some: 42 } },
+      { some: 'value' },
     ],
     results: 'NOT_SUPPORTED',
     consensus: false,
@@ -4517,143 +2370,53 @@ const testSuits = [
     title: 'filter_expression_with_value',
     query: '$[?(@.key)]',
     payload: [
-      {
-        some: 'some value',
-      },
-      {
-        key: true,
-      },
-      {
-        key: false,
-      },
-      {
-        key: null,
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: '',
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
+      { some: 'some value' },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
     ],
     results: [
-      {
-        key: true,
-      },
-      {
-        key: false,
-      },
-      {
-        key: null,
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: '',
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
     ],
     consensus: false,
   },
   {
     title: 'filter_expression_with_value_after_dot_notation_with_wildcard_on_array_of_objects',
     query: '$.*[?(@.key)]',
-    payload: [
-      {
-        some: 'some value',
-      },
-      {
-        key: 'value',
-      },
-    ],
-    results: [
-      {
-        key: 'value',
-      },
-    ],
+    payload: [{ some: 'some value' }, { key: 'value' }],
+    results: [{ key: 'value' }],
     consensus: true,
     isCustom: true,
   },
   // {
   //   title: 'filter_expression_with_value_after_recursive_descent',
   //   query: '$..[?(@.id)]',
-  //   payload: {
-  //     id: 2,
-  //     more: [
-  //       {
-  //         id: 2,
-  //       },
-  //       {
-  //         more: {
-  //           id: 2,
-  //         },
-  //       },
-  //       {
-  //         id: {
-  //           id: 2,
-  //         },
-  //       },
-  //       [
-  //         {
-  //           id: 2,
-  //         },
-  //       ],
-  //     ],
-  //   },
+  //   payload: { id: 2, more: [{ id: 2 }, { more: { id: 2 } }, { id: { id: 2 } }, [{ id: 2 }]] },
   //   results: [
-  //     {
-  //       id: 2,
-  //     },
-  //     {
-  //       id: 2,
-  //     },
-  //     {
-  //       id: 2,
-  //     },
-  //     {
-  //       id: 2,
-  //     },
-  //     {
-  //       id: {
-  //         id: 2,
-  //       },
-  //     },
+  //     { id: 2, more: [{ id: 2 }, { more: { id: 2 } }, { id: { id: 2 } }, [{ id: 2 }]] },
+  //     { id: 2 },
+  //     { id: 2 },
+  //     { id: 2 },
+  //     { id: 2 },
+  //     { id: { id: 2 } },
   //   ],
   //   consensus: false,
   // },
@@ -4682,63 +2445,17 @@ const testSuits = [
     title: 'filter_expression_with_value_from_recursive_descent',
     query: '$[?(@..child)]',
     payload: [
-      {
-        key: [
-          {
-            child: 1,
-          },
-          {
-            child: 2,
-          },
-        ],
-      },
-      {
-        key: [
-          {
-            child: 2,
-          },
-        ],
-      },
-      {
-        key: [{}],
-      },
-      {
-        key: [
-          {
-            something: 42,
-          },
-        ],
-      },
+      { key: [{ child: 1 }, { child: 2 }] },
+      { key: [{ child: 2 }] },
+      { key: [{}] },
+      { key: [{ something: 42 }] },
       {},
     ],
     results: [
-      {
-        key: [
-          {
-            child: 1,
-          },
-          {
-            child: 2,
-          },
-        ],
-      },
-      {
-        key: [
-          {
-            child: 2,
-          },
-        ],
-      },
-      {
-        key: [{}],
-      },
-      {
-        key: [
-          {
-            something: 42,
-          },
-        ],
-      },
+      { key: [{ child: 1 }, { child: 2 }] },
+      { key: [{ child: 2 }] },
+      { key: [{}] },
+      { key: [{ something: 42 }] },
       {},
     ],
     consensus: false,
@@ -4747,129 +2464,59 @@ const testSuits = [
     title: 'filter_expression_without_value',
     query: '$[?(@.key)]',
     payload: [
-      {
-        some: 'some value',
-      },
-      {
-        key: true,
-      },
-      {
-        key: false,
-      },
-      {
-        key: null,
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: '',
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
+      { some: 'some value' },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
     ],
     results: [
-      {
-        key: true,
-      },
-      {
-        key: false,
-      },
-      {
-        key: null,
-      },
-      {
-        key: 'value',
-      },
-      {
-        key: '',
-      },
-      {
-        key: 0,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
+      { key: true },
+      { key: false },
+      { key: null },
+      { key: 'value' },
+      { key: '' },
+      { key: 0 },
+      { key: 1 },
+      { key: -1 },
+      { key: 42 },
+      { key: {} },
+      { key: [] },
     ],
     consensus: false,
   },
   {
     title: 'function_sum',
     query: '$.data.sum()',
-    payload: {
-      data: [1, 2, 3, 4],
-    },
+    payload: { data: [1, 2, 3, 4] },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
   {
     title: 'parens_notation',
     query: '$(key,more)',
-    payload: {
-      key: 1,
-      some: 2,
-      more: 3,
-    },
+    payload: { key: 1, some: 2, more: 3 },
     results: 'NOT_SUPPORTED',
     consensus: true,
   },
   {
     title: 'root',
     query: '$',
-    payload: {
-      key: 'value',
-      'another key': {
-        complex: ['a', 1],
-      },
-    },
-    results: [
-      {
-        'another key': {
-          complex: ['a', 1],
-        },
-        key: 'value',
-      },
-    ],
+    payload: { key: 'value', 'another key': { complex: ['a', 1] } },
+    results: [{ 'another key': { complex: ['a', 1] }, key: 'value' }],
     consensus: true,
   },
   {
     title: 'recursive_descent_after_dot_notation',
     query: '$.key..',
-    payload: {
-      'some key': 'value',
-      key: {
-        complex: 'string',
-        primitives: [0, 1],
-      },
-    },
+    payload: { 'some key': 'value', key: { complex: 'string', primitives: [0, 1] } },
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
@@ -4877,70 +2524,26 @@ const testSuits = [
     title: 'filter_expression_without_parens',
     query: '$[?@.key==42]',
     payload: [
-      {
-        key: 0,
-      },
-      {
-        key: 42,
-      },
-      {
-        key: -1,
-      },
-      {
-        key: 1,
-      },
-      {
-        key: 41,
-      },
-      {
-        key: 43,
-      },
-      {
-        key: 42.0001,
-      },
-      {
-        key: 41.9999,
-      },
-      {
-        key: 100,
-      },
-      {
-        key: 'some',
-      },
-      {
-        key: '42',
-      },
-      {
-        key: null,
-      },
-      {
-        key: 420,
-      },
-      {
-        key: '',
-      },
-      {
-        key: {},
-      },
-      {
-        key: [],
-      },
-      {
-        key: [42],
-      },
-      {
-        key: {
-          key: 42,
-        },
-      },
-      {
-        key: {
-          some: 42,
-        },
-      },
-      {
-        some: 'value',
-      },
+      { key: 0 },
+      { key: 42 },
+      { key: -1 },
+      { key: 1 },
+      { key: 41 },
+      { key: 43 },
+      { key: 42.0001 },
+      { key: 41.9999 },
+      { key: 100 },
+      { key: 'some' },
+      { key: '42' },
+      { key: null },
+      { key: 420 },
+      { key: '' },
+      { key: {} },
+      { key: [] },
+      { key: [42] },
+      { key: { key: 42 } },
+      { key: { some: 42 } },
+      { some: 'value' },
     ],
     results: 'NOT_SUPPORTED',
     consensus: false,
@@ -4948,14 +2551,7 @@ const testSuits = [
   {
     title: 'recursive_descent',
     query: '$..',
-    payload: [
-      {
-        a: {
-          b: 'c',
-        },
-      },
-      [0, 1],
-    ],
+    payload: [{ a: { b: 'c' } }, [0, 1]],
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
@@ -4966,20 +2562,8 @@ const testSuits = [
     results: [[0], [1], 0, 1],
     consensus: true,
   },
-  {
-    title: 'root_on_scalar',
-    query: '$',
-    payload: 42,
-    results: [42],
-    consensus: true,
-  },
-  {
-    title: 'root_on_scalar_true',
-    query: '$',
-    payload: true,
-    results: [true],
-    consensus: true,
-  },
+  { title: 'root_on_scalar', query: '$', payload: 42, results: [42], consensus: true },
+  { title: 'root_on_scalar_true', query: '$', payload: true, results: [true], consensus: true },
   {
     title: 'union',
     query: '$[0,1]',
@@ -4990,19 +2574,11 @@ const testSuits = [
   {
     title: 'union_with_duplication_from_object',
     query: "$['a','a']",
-    payload: {
-      a: 1,
-    },
+    payload: { a: 1 },
     results: [1, 1],
     consensus: true,
   },
-  {
-    title: 'union_with_duplication_from_array',
-    query: '$[0,0]',
-    payload: ['a'],
-    results: ['a', 'a'],
-    consensus: true,
-  },
+  { title: 'union_with_duplication_from_array', query: '$[0,0]', payload: ['a'], results: ['a', 'a'], consensus: true },
   {
     title: 'script_expression',
     query: '$[(@.length-1)]',
@@ -5013,10 +2589,7 @@ const testSuits = [
   {
     title: 'union_with_keys',
     query: "$['key','another']",
-    payload: {
-      key: 'value',
-      another: 'entry',
-    },
+    payload: { key: 'value', another: 'entry' },
     results: ['value', 'entry'],
     consensus: true,
   },
@@ -5024,16 +2597,8 @@ const testSuits = [
     title: 'union_with_keys_after_array_slice',
     query: "$[:]['c','d']",
     payload: [
-      {
-        c: 'cc1',
-        d: 'dd1',
-        e: 'ee1',
-      },
-      {
-        c: 'cc2',
-        d: 'dd2',
-        e: 'ee2',
-      },
+      { c: 'cc1', d: 'dd1', e: 'ee1' },
+      { c: 'cc2', d: 'dd2', e: 'ee2' },
     ],
     results: ['cc1', 'dd1', 'cc2', 'dd2'],
     consensus: true,
@@ -5042,16 +2607,8 @@ const testSuits = [
     title: 'union_with_keys_after_bracket_notation',
     query: "$[0]['c','d']",
     payload: [
-      {
-        c: 'cc1',
-        d: 'dd1',
-        e: 'ee1',
-      },
-      {
-        c: 'cc2',
-        d: 'dd2',
-        e: 'ee2',
-      },
+      { c: 'cc1', d: 'dd1', e: 'ee1' },
+      { c: 'cc2', d: 'dd2', e: 'ee2' },
     ],
     results: ['cc1', 'dd1'],
     consensus: true,
@@ -5059,46 +2616,20 @@ const testSuits = [
   {
     title: 'union_with_keys_on_object_without_key',
     query: "$['missing','key']",
-    payload: {
-      key: 'value',
-      another: 'entry',
-    },
+    payload: { key: 'value', another: 'entry' },
     results: ['value'],
     consensus: true,
   },
-  {
-    title: 'root_on_scalar_false',
-    query: '$',
-    payload: false,
-    results: [false],
-    consensus: true,
-  },
+  { title: 'root_on_scalar_false', query: '$', payload: false, results: [false], consensus: true },
   {
     title: 'union_with_keys_after_recursive_descent',
     query: "$..['c','d']",
     payload: [
-      {
-        c: 'cc1',
-        d: 'dd1',
-        e: 'ee1',
-      },
-      {
-        c: 'cc2',
-        child: {
-          d: 'dd2',
-        },
-      },
-      {
-        c: 'cc3',
-      },
-      {
-        d: 'dd4',
-      },
-      {
-        child: {
-          c: 'cc5',
-        },
-      },
+      { c: 'cc1', d: 'dd1', e: 'ee1' },
+      { c: 'cc2', child: { d: 'dd2' } },
+      { c: 'cc3' },
+      { d: 'dd4' },
+      { child: { c: 'cc5' } },
     ],
     results: ['cc1', 'dd1', 'cc2', 'dd2', 'cc3', 'dd4', 'cc5'],
     consensus: true,
@@ -5107,16 +2638,8 @@ const testSuits = [
     title: 'union_with_keys_after_dot_notation_with_wildcard',
     query: "$.*['c','d']",
     payload: [
-      {
-        c: 'cc1',
-        d: 'dd1',
-        e: 'ee1',
-      },
-      {
-        c: 'cc2',
-        d: 'dd2',
-        e: 'ee2',
-      },
+      { c: 'cc1', d: 'dd1', e: 'ee1' },
+      { c: 'cc2', d: 'dd2', e: 'ee2' },
     ],
     results: ['cc1', 'dd1', 'cc2', 'dd2'],
     consensus: true,
@@ -5124,32 +2647,7 @@ const testSuits = [
   {
     title: 'union_with_filter',
     query: '$[?(@.key<3),?(@.key>6)]',
-    payload: [
-      {
-        key: 1,
-      },
-      {
-        key: 8,
-      },
-      {
-        key: 3,
-      },
-      {
-        key: 10,
-      },
-      {
-        key: 7,
-      },
-      {
-        key: 2,
-      },
-      {
-        key: 6,
-      },
-      {
-        key: 4,
-      },
-    ],
+    payload: [{ key: 1 }, { key: 8 }, { key: 3 }, { key: 10 }, { key: 7 }, { key: 2 }, { key: 6 }, { key: 4 }],
     results: 'NOT_SUPPORTED',
     consensus: false,
   },
