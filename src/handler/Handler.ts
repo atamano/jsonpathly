@@ -343,8 +343,10 @@ export class Handler<T extends unknown = unknown> {
         break;
       }
       case 'bracketExpression': {
-        const result = this.handleBracketExpressionContent(payload, treeValue.value);
-        results = results.concat(result);
+        if (isPlainObject(value) || (isArray(value) && treeValue.value.type === 'wildcard')) {
+          const result = this.handleBracketExpressionContent(payload, treeValue.value);
+          results = results.concat(result);
+        }
         break;
       }
       case 'wildcard': {
