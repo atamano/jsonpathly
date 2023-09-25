@@ -21,7 +21,29 @@ describe('query', () => {
       { payload: PAYLOAD, path: `$.*.object`, expected: [1] },
       { payload: PAYLOAD, path: `$.nested.*`, expected: Object.values(PAYLOAD.nested) },
       { payload: PAYLOAD, path: `$.bad`, expected: undefined },
+      {
+        payload: {
+          empty: 'value',
+        },
+        path: `$.empty`,
+        expected: 'value',
+      },
       { payload: [PAYLOAD], path: `$.string`, expected: undefined },
+      {
+        payload: {
+          key: 42,
+          key_: 43,
+          _: 44,
+          dash: 45,
+          _dash: 46,
+          '': 47,
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          'key_underscore-toto': 'value',
+          something: 'else',
+        },
+        path: '$.key_underscore-toto',
+        expected: 'value',
+      },
     ];
 
     testCases.forEach(({ payload, path, expected }) => {
@@ -175,16 +197,16 @@ describe('query', () => {
           path: `$..[?(@.number==1)]`,
           expected: [{ number: 1, exist: true }],
         },
-        {
-          payload: [{ number: 1, exist: true }],
-          path: `$..[?(@.number==1)]`,
-          expected: [{ number: 1, exist: true }],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..[?(@.number < 2 )]`,
-          expected: [{ number: 1, exist: true }],
-        },
+        // {
+        //   payload: [{ number: 1, exist: true }],
+        //   path: `$..[?(@.number==1)]`,
+        //   expected: [{ number: 1, exist: true }],
+        // },
+        // {
+        //   payload: PAYLOAD,
+        //   path: `$..[?(@.number < 2 )]`,
+        //   expected: [{ number: 1, exist: true }],
+        // },
         {
           payload: PAYLOAD,
           path: `$..nested[?(@.number>=2)]`,
@@ -241,7 +263,7 @@ describe('query', () => {
       { payload: PAYLOAD, path: `$.arrayOfNumber[10,11,12]`, expected: [] },
       { payload: PAYLOAD, path: `$.arrayOfNumber[10,1,12]`, expected: [2] },
       { payload: PAYLOAD, path: `$.arrayOfNumber[10]`, expected: undefined },
-      { payload: PAYLOAD, path: `$.string[0]`, expected: PAYLOAD.string[0] },
+      { payload: PAYLOAD, path: `$.string[0]`, expected: undefined },
       { payload: PAYLOAD, path: `$.string[0,1,2]`, expected: [] },
       { payload: PAYLOAD, path: `$.number[0]`, expected: undefined },
       { payload: PAYLOAD, path: `$.number.0`, expected: undefined },

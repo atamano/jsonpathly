@@ -49,7 +49,7 @@ DIV: '/';
 
 REGEX_OPT: [gimsuy]*;
 REGEX_EXPR: '/'.*?'/';
-KEY: [a-zA-Z_][a-zA-Z0-9_]*;
+KEY: [a-zA-Z-_]*[a-zA-Z_][a-zA-Z0-9_]*;
 SPECIAL_KEY: [\u0080-\uFFFF_]+;
 
 WS
