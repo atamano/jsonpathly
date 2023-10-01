@@ -326,59 +326,46 @@ export default class Listener extends JSONPathListener {
       values: nodes,
     });
   }
-
   public exitSlices(ctx: any): void {
+    // Extract tokens
+    const numbers = [0, 1, 2].map((index) => ctx.getToken(JSONPathParser.NUMBER, index));
+    const colons = [0, 1].map((index) => ctx.getToken(JSONPathParser.COLON, index));
+
     let start: number | null = null;
     let end: number | null = null;
     let step: number | null = null;
 
-    const number0 = ctx.getToken(JSONPathParser.NUMBER, 0);
-    const number1 = ctx.getToken(JSONPathParser.NUMBER, 1);
-    const number2 = ctx.getToken(JSONPathParser.NUMBER, 2);
-
-    const colon0 = ctx.getToken(JSONPathParser.COLON, 0);
-    const colon1 = ctx.getToken(JSONPathParser.COLON, 1);
-
-    // [0:...]
-    if (colon0 && number0 && number0.getSourceInterval().start < colon0.getSourceInterval().start) {
-      start = Number.parseInt(ctx.NUMBER(0).getText());
+    // Parse start value
+    if (colons[0] && numbers[0] && numbers[0].getSourceInterval().start < colons[0].getSourceInterval().start) {
+      start = Number.parseInt(numbers[0].getText());
     }
 
-    // [0:1:2]
-    if (colon1 && number2) {
-      step = Number.parseInt(ctx.NUMBER(2).getText());
-    } else if (colon1 && number1 && number1.getSourceInterval().start > colon1.getSourceInterval().start) {
-      step = Number.parseInt(ctx.NUMBER(1).getText());
-    } else if (colon1 && number0 && number0.getSourceInterval().start > colon1.getSourceInterval().start) {
-      step = Number.parseInt(ctx.NUMBER(0).getText());
-    }
-
-    // [0:1]
-    if (!colon1 && colon0 && number1 && number1.getSourceInterval().start > colon0.getSourceInterval().start) {
-      end = Number.parseInt(ctx.NUMBER(1).getText());
-      // [0:]
-    } else if (
-      !colon1 &&
-      colon0 &&
-      !number1 &&
-      number0 &&
-      number0.getSourceInterval().start > colon0.getSourceInterval().start
+    // Parse end value
+    if (
+      !colons[1] &&
+      colons[0] &&
+      numbers[1] &&
+      numbers[1].getSourceInterval().start > colons[0].getSourceInterval().start
     ) {
-      end = Number.parseInt(ctx.NUMBER(0).getText());
-      // [0:1:]
-    } else if (colon1 && colon0 && number1 && number1.getSourceInterval().start < colon1.getSourceInterval().start) {
-      end = Number.parseInt(ctx.NUMBER(1).getText());
-      // [:0:...]
-    } else if (
-      colon1 &&
-      colon0 &&
-      number0 &&
-      number0.getSourceInterval().start > colon0.getSourceInterval().start &&
-      number0.getSourceInterval().start < colon1.getSourceInterval().start
-    ) {
-      end = Number.parseInt(ctx.NUMBER(0).getText());
+      end = Number.parseInt(numbers[1].getText());
+    } else if (colons[1] && numbers[1] && numbers[1].getSourceInterval().start < colons[1].getSourceInterval().start) {
+      end = Number.parseInt(numbers[1].getText());
+    } else if (colons[0] && numbers[0] && numbers[0].getSourceInterval().start > colons[0].getSourceInterval().start) {
+      if (!colons[1] || numbers[0].getSourceInterval().start < colons[1].getSourceInterval().start) {
+        end = Number.parseInt(numbers[0].getText());
+      }
     }
 
+    // Parse step value
+    if (colons[1] && numbers[2]) {
+      step = Number.parseInt(numbers[2].getText());
+    } else if (colons[1] && numbers[1] && numbers[1].getSourceInterval().start > colons[1].getSourceInterval().start) {
+      step = Number.parseInt(numbers[1].getText());
+    } else if (colons[1] && numbers[0] && numbers[0].getSourceInterval().start > colons[1].getSourceInterval().start) {
+      step = Number.parseInt(numbers[0].getText());
+    }
+
+    // Push result
     this.push({ type: 'slices', start, end, step });
   }
 
