@@ -61,7 +61,9 @@ const TYPE_CHECK_MAPPER = {
     ].includes(node.type),
   expressionContent: (node: JsonPathElement): node is FilterExpression['value'] =>
     'type' in node &&
-    ['comparator', 'groupExpression', 'logicalExpression', 'notExpression', 'current', 'root'].includes(node.type),
+    ['value', 'comparator', 'groupExpression', 'logicalExpression', 'notExpression', 'current', 'root'].includes(
+      node.type,
+    ),
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,7 +90,7 @@ export default class Listener extends JSONPathListener {
     }
 
     /* istanbul ignore next */
-    throw new Error(`bad type returned for ${key} with token: ${ctx?.getText()}`);
+    throw new Error(`bad type (${JSON.stringify(value)}) returned for ${key} with token: ${ctx?.getText()}`);
   }
 
   private push(node: JsonPathElement): void {
@@ -105,8 +107,8 @@ export default class Listener extends JSONPathListener {
 
   public exitBracketContent(ctx: any): void {
     switch (true) {
-      case !!ctx.IDENTIFIER(): {
-        const text = ctx.IDENTIFIER()!.getText();
+      case !!ctx.identifier(): {
+        const text = ctx.identifier()!.getText();
 
         this.push({ type: 'identifier', value: text });
         break;
@@ -180,8 +182,8 @@ export default class Listener extends JSONPathListener {
         this.push({ type: 'wildcard' });
         break;
       }
-      case !!ctx.IDENTIFIER(): {
-        const value = ctx.IDENTIFIER()!.getText();
+      case !!ctx.identifier(): {
+        const value = ctx.identifier()!.getText();
 
         this.push({ type: 'identifier', value });
         break;
@@ -201,8 +203,8 @@ export default class Listener extends JSONPathListener {
         this.push({ type: 'wildcard' });
         break;
       }
-      case !!ctx.IDENTIFIER(): {
-        const text = ctx.IDENTIFIER()!.getText();
+      case !!ctx.identifier(): {
+        const text = ctx.identifier()!.getText();
 
         this.push({ type: 'identifier', value: text });
         break;
@@ -283,8 +285,8 @@ export default class Listener extends JSONPathListener {
   public exitUnions(ctx: any): void {
     const nodes: (StringLiteral | Identifier)[] = [];
 
-    for (let index = 0; index < ctx.IDENTIFIER().length; index += 1) {
-      const value = ctx.IDENTIFIER(index)!.getText();
+    for (let index = 0; index < ctx.identifier().length; index += 1) {
+      const value = ctx.identifier(index)!.getText();
 
       nodes.push({
         type: 'identifier',
@@ -337,6 +339,12 @@ export default class Listener extends JSONPathListener {
     const colon0 = ctx.getToken(JSONPathParser.COLON, 0);
     const colon1 = ctx.getToken(JSONPathParser.COLON, 1);
 
+    // [0:...]
+    if (colon0 && number0 && number0.getSourceInterval().start < colon0.getSourceInterval().start) {
+      start = Number.parseInt(ctx.NUMBER(0).getText());
+    }
+
+    // [0:1:2]
     if (colon1 && number2) {
       step = Number.parseInt(ctx.NUMBER(2).getText());
     } else if (colon1 && number1 && number1.getSourceInterval().start > colon1.getSourceInterval().start) {
@@ -345,8 +353,10 @@ export default class Listener extends JSONPathListener {
       step = Number.parseInt(ctx.NUMBER(0).getText());
     }
 
+    // [0:1]
     if (!colon1 && colon0 && number1 && number1.getSourceInterval().start > colon0.getSourceInterval().start) {
       end = Number.parseInt(ctx.NUMBER(1).getText());
+      // [0:]
     } else if (
       !colon1 &&
       colon0 &&
@@ -355,8 +365,10 @@ export default class Listener extends JSONPathListener {
       number0.getSourceInterval().start > colon0.getSourceInterval().start
     ) {
       end = Number.parseInt(ctx.NUMBER(0).getText());
+      // [0:1:]
     } else if (colon1 && colon0 && number1 && number1.getSourceInterval().start < colon1.getSourceInterval().start) {
       end = Number.parseInt(ctx.NUMBER(1).getText());
+      // [:0:...]
     } else if (
       colon1 &&
       colon0 &&
@@ -365,10 +377,6 @@ export default class Listener extends JSONPathListener {
       number0.getSourceInterval().start < colon1.getSourceInterval().start
     ) {
       end = Number.parseInt(ctx.NUMBER(0).getText());
-    }
-
-    if (colon0 && number0 && number0.getSourceInterval().start < colon0.getSourceInterval().start) {
-      start = Number.parseInt(ctx.NUMBER(0).getText());
     }
 
     this.push({ type: 'slices', start, end, step });
@@ -404,6 +412,14 @@ export default class Listener extends JSONPathListener {
           type: 'notExpression',
           value,
         });
+        break;
+      }
+      case !!ctx.FALSE(): {
+        this.push({ type: 'value', value: false, subtype: 'boolean' });
+        break;
+      }
+      case !!ctx.TRUE(): {
+        this.push({ type: 'value', value: true, subtype: 'boolean' });
         break;
       }
       case !!ctx.AND(): {

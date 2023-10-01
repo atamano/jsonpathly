@@ -1,5 +1,6 @@
 import { paths, PathsOptions } from '../src/handler/paths';
 import { query } from '../src/handler/query';
+import { expect } from 'chai';
 
 describe('paths', () => {
   const PAYLOAD = {
@@ -72,12 +73,14 @@ describe('paths', () => {
     { payload: PAYLOAD, path: `$..*..nested.*` },
   ];
 
-  test.each(testCases)('paths(%s)', ({ payload, path }) => {
-    const res1 = query(payload, path, { returnArray: true });
-    const res2 = paths(payload, path);
-    const res3 = query(payload, res2 as string[]);
+  testCases.forEach(({ payload, path }) => {
+    it(path, () => {
+      const res1 = query(payload, path, { returnArray: true });
+      const res2 = paths(payload, path);
+      const res3 = query(payload, res2 as string[]);
 
-    expect(res1).toEqual(res3);
+      expect(res1).to.deep.equal(res3);
+    });
   });
 
   describe('exceptions', () => {
@@ -96,16 +99,18 @@ describe('paths', () => {
       { payload: PAYLOAD, path: `$.array["badQUote']`, expected: [], opts: { hideExceptions: true } },
     ];
 
-    test.each(testCases)('paths(%s)', ({ payload, path, expected, opts }) => {
-      const res = paths(payload, path, opts as PathsOptions);
+    testCases.forEach(({ payload, path, expected, opts }) => {
+      it(path, () => {
+        const res = paths(payload, path, opts as PathsOptions);
 
-      expect(res).toEqual(expected);
+        expect(res).to.deep.equal(expected);
+      });
     });
 
-    test('should throw exception', () => {
+    it('should throw exception', () => {
       expect(() => {
         paths({}, 'bad');
-      }).toThrow(Error);
+      }).to.throw(Error);
     });
   });
 });

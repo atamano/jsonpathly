@@ -29,7 +29,7 @@ commands:
       - run:
           name: unit test
           command: |
-            npm run ci:test
+            npm run test
   upload-coverage:
     steps:
       - codecov/upload:

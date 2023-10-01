@@ -1,3 +1,9 @@
+import * as equal from 'fast-deep-equal';
+
+export const isEqual = (objA: unknown, objB: unknown): boolean => {
+  return equal(objA, objB);
+};
+
 export const isArray = (item: unknown): item is unknown[] => {
   return Array.isArray(item);
 };

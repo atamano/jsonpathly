@@ -10,7 +10,7 @@ import { Root } from './types';
 
 const customErrorListener = {
   syntaxError: (
-    _recognizer: antlr4.Recognizer,
+    _recognizer: antlr4.Recognizer<any>,
     _offendingSymbol: any,
     line: number,
     charPositionInLine: number,
@@ -20,7 +20,7 @@ const customErrorListener = {
     throw new JSONPathSyntaxError(line, charPositionInLine, msg);
   },
   reportAmbiguity: function (
-    _recognizer: antlr4.Recognizer,
+    _recognizer: antlr4.Recognizer<any>,
     _dfa: any,
     _startIndex: number,
     _stopIndex: number,
@@ -31,7 +31,7 @@ const customErrorListener = {
     return;
   },
   reportAttemptingFullContext: function (
-    _recognizer: antlr4.Recognizer,
+    _recognizer: antlr4.Recognizer<any>,
     _dfa: any,
     _startIndex: number,
     _stopIndex: number,
@@ -41,7 +41,7 @@ const customErrorListener = {
     return;
   },
   reportContextSensitivity: function (
-    _recognizer: antlr4.Recognizer,
+    _recognizer: antlr4.Recognizer<any>,
     _dfa: any,
     _startIndex: number,
     _stopIndex: number,
