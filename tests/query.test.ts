@@ -197,16 +197,16 @@ describe('query', () => {
           path: `$..[?(@.number==1)]`,
           expected: [{ number: 1, exist: true }],
         },
-        // {
-        //   payload: [{ number: 1, exist: true }],
-        //   path: `$..[?(@.number==1)]`,
-        //   expected: [{ number: 1, exist: true }],
-        // },
-        // {
-        //   payload: PAYLOAD,
-        //   path: `$..[?(@.number < 2 )]`,
-        //   expected: [{ number: 1, exist: true }],
-        // },
+        {
+          payload: [{ number: 1, exist: true }],
+          path: `$..[?(@.number==1)]`,
+          expected: [{ number: 1, exist: true }],
+        },
+        {
+          payload: PAYLOAD,
+          path: `$..[?(@.number < 2 )]`,
+          expected: [{ number: 1, exist: true }],
+        },
         {
           payload: PAYLOAD,
           path: `$..nested[?(@.number>=2)]`,
