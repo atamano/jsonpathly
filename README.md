@@ -167,7 +167,4 @@ The project uses ANTLR [grammar](https://github.com/atamano/jsonpathly/blob/mast
 
 #### Implementation
 
-The implementation is similar to the main [Java JSONPath library](https://github.com/json-path/JsonPath), with minor differences:
-
-- unions like "$.object[key1, key2]" would return [object[key1], object[key2]] instead of a truncated object
-- functions such as ".length()," "max()," and "min()" are not yet supported.
+For an overview of jsonpathly implementations and to compare its differences with other libraries, you can visit https://cburgmer.github.io/json-path-comparison
