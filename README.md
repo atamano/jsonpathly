@@ -159,7 +159,13 @@ Main reason you should use this library is for security and stability.
 
 #### Evaluating Expressions
 
-Script expressions (i.e., (...)) are disallowed to prevent XSS injections. Filter expressions (i.e., ?(...)) also avoid using eval or static-eval for security reasons. Instead, jsonpathly has its own parser and evaluator. For example, "$[(@.number +5 > $.otherNumber * 10 + 2)]" is valid, but "?(alert("hello"))" will produce a syntax error (which would trigger an alert in some JavaScript libraries).
+Script expressions (i.e., (...)) are disallowed to prevent XSS injections.
+
+Filter expressions (i.e., ?(...)) also avoid using eval or static-eval for security reasons.
+
+Instead, jsonpathly has its own parser and evaluator. For example, `$[(@.number +5 > $.otherNumber * 10 + 2)]`
+is valid, but
+`?(alert("hello"))` will produce a syntax error (which would trigger an alert in some JavaScript libraries).
 
 #### Grammar
 
