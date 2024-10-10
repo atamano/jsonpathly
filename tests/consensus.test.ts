@@ -2436,7 +2436,7 @@ const testSuits = [
     title: 'filter_expression_with_value_null',
     query: '$[?(null)]',
     payload: [1, 3, 'nice', true, null, false, {}, [], -1, 0, ''],
-    results: 'NOT_SUPPORTED',
+    results: [],
     consensus: false,
   },
   {

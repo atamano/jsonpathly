@@ -9,6 +9,7 @@
     "dist"
   ],
   "scripts": {
+    "gen": "antlr4 -Dlanguage=JavaScript  ./src/parser/generated/JSONPath.g4",
     "test": "mocha --require ts-node/register --timeout 60000 --exit --no-cache tests/*.ts",
     "build": "webpack",
     "format": "prettier --write \"src/**/*.ts\"",
