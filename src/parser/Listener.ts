@@ -401,6 +401,10 @@ export default class Listener extends JSONPathListener {
         });
         break;
       }
+      case !!ctx.NULL(): {
+        this.push({ type: 'value', value: null, subtype: 'null' });
+        break;
+      }
       case !!ctx.FALSE(): {
         this.push({ type: 'value', value: false, subtype: 'boolean' });
         break;

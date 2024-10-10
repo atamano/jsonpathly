@@ -181,6 +181,7 @@ expression
    | filterpath
    | TRUE
    | FALSE
+   | NULL
    ;
 
 filterpath
