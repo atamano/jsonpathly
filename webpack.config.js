@@ -25,6 +25,7 @@ const buildConfig = (platform, extensions) => ({
   resolve: {
     extensions: ['.ts', '.js'],
   },
+  externals: ["antlr4"],
   target: platform,
   plugins: [],
   devtool: 'source-map',
