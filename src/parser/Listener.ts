@@ -13,6 +13,7 @@ import {
   DotDotContent,
   FilterExpression,
   Identifier,
+  Current,
   Indexes,
   JsonPathElement,
   NumericLiteral,
@@ -38,13 +39,15 @@ const TYPE_CHECK_MAPPER = {
   subscript: (node: JsonPathElement): node is Subscript => 'type' in node && node.type === 'subscript',
   bracket: (node: JsonPathElement): node is BracketMember | BracketExpression =>
     'type' in node && ['bracketMember', 'bracketExpression'].includes(node.type),
+  functionContent: (node: JsonPathElement): node is Value | Current | Root =>
+    'type' in node && ['root', 'value', 'current'].includes(node.type),
   unions: (node: JsonPathElement): node is Unions => 'type' in node && node.type === 'unions',
   indexes: (node: JsonPathElement): node is Indexes => 'type' in node && node.type === 'indexes',
   slices: (node: JsonPathElement): node is Slices => 'type' in node && node.type === 'slices',
   filterExpression: (node: JsonPathElement): node is FilterExpression =>
     'type' in node && node.type === 'filterExpression',
   dotContent: (node: JsonPathElement): node is DotContent =>
-    'type' in node && ['identifier', 'numericLiteral', 'wildcard'].includes(node.type),
+    'type' in node && ['identifier', 'numericLiteral', 'wildcard', 'function'].includes(node.type),
   dotdotContent: (node: JsonPathElement): node is DotDotContent =>
     'type' in node && ['identifier', 'wildcard', 'bracketMember', 'bracketExpression'].includes(node.type),
   bracketContent: (node: JsonPathElement): node is BracketMemberContent | BracketExpressionContent =>
@@ -95,6 +98,18 @@ export default class Listener extends JSONPathListener {
 
   private push(node: JsonPathElement): void {
     this._stack.push(node);
+  }
+
+  public exitFunction(ctx: any): void {
+    switch (true) {
+      case !!ctx.FN_LEN(): {
+        this.push({
+          type: 'function',
+          operator: 'length',
+        });
+        break;
+      }
+    }
   }
 
   public exitJsonpath(ctx: any): void {

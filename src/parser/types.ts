@@ -70,7 +70,7 @@ export type Comparator =
   | { type: 'comparator'; operator: 'reg'; left: OperationContent; right: ValueRegex }
   | { type: 'comparator'; operator: 'empty'; left: OperationContent; right: null };
 
-export type DotContent = Identifier | NumericLiteral | Wildcard;
+export type DotContent = Identifier | NumericLiteral | Wildcard | PathFunction;
 
 export type Dot = {
   type: 'dot';
@@ -148,6 +148,23 @@ export type FilterExpression = {
 
 export type OperationContent = Root | Current | Value | GroupOperation | Operation;
 
+export type PathFunctionContent = Value | Current | Root;
+export type PathFunction =
+  | {
+      type: 'function';
+      operator: 'min' | 'max' | 'avg' | 'stddev' | 'length' | 'sum' | 'keys';
+    }
+  | {
+      type: 'function';
+      operator: 'concat';
+      value: PathFunctionContent;
+    }
+  | {
+      type: 'function';
+      operator: 'append';
+      value: PathFunctionContent;
+    };
+
 export type Operation = {
   type: 'operation';
   operator: 'plus' | 'minus' | 'multi' | 'div' | '';
@@ -156,6 +173,7 @@ export type Operation = {
 };
 
 export type JsonPathElement =
+  | PathFunction
   | ValueObject
   | ValueString
   | ValueBoolean

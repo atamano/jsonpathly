@@ -764,3 +764,26 @@ describe('query', () => {
     });
   });
 });
+
+describe('query with functions', () => {
+  const PAYLOAD = {
+    number: 123,
+    string: 'hello',
+    numbers: [1, 1, 2, 3, 4, 5, 6, 7],
+    strings: ['1', '2', '3'],
+    empty: [],
+    object: { test1: 1, test2: 2, test3: 3 },
+  };
+  const testCases = [
+    { payload: PAYLOAD, path: `$.numbers.length()`, expected: 8 },
+    { payload: PAYLOAD, path: `$.empty.length()`, expected: 0 },
+    { payload: PAYLOAD, path: `$.number.length()`, expected: undefined },
+  ];
+  testCases.forEach(({ payload, path, expected }) => {
+    it(path, () => {
+      const res = query(payload, path);
+
+      expect(res).to.deep.equal(expected);
+    });
+  });
+});

@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "gen": "antlr4 -Dlanguage=JavaScript  ./src/parser/generated/JSONPath.g4",
+    "gen": "antlr -Dlanguage=JavaScript  ./src/parser/generated/JSONPath.g4",
     "test": "mocha --require ts-node/register --timeout 60000 --exit --no-cache tests/*.ts",
     "build": "webpack",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -59,7 +59,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "antlr4": "^4.13.1",
+    "antlr4": "^4.13.2",
     "fast-deep-equal": "^3.1.3"
   },
   "exports": {

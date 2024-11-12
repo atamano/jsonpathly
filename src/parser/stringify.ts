@@ -78,6 +78,15 @@ export function stringify(input: JsonPathElement | null): string {
     case 'notExpression': {
       return '!(' + stringify(input.value) + ')';
     }
+    case 'function': {
+      if (input.operator === 'append') {
+        return `${input.operator}(${stringify(input.value)})`;
+      }
+      if (input.operator === 'concat') {
+        return `${input.operator}(${stringify(input.value)})`;
+      }
+      return `${input.operator}()`;
+    }
     case 'value': {
       if (input.subtype === 'regex') {
         return `${input.value}${input.opts}`;

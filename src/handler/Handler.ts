@@ -10,6 +10,8 @@ import {
   LogicalExpression,
   NumericLiteral,
   OperationContent,
+  PathFunction,
+  PathFunctionContent,
   Root,
   Slices,
   StringLiteral,
@@ -52,6 +54,31 @@ export class Handler<T extends unknown = unknown> {
     }
 
     return Object.keys(value).map((key) => ({ value: value[key], paths: formatStringLiteralPath(paths, key) }));
+  };
+
+  private handleFunctionContent = (payload: ValuePath, tree: PathFunctionContent): ValuePath | undefined => {
+    switch (tree.type) {
+      case 'root': {
+        return this.handleSubscript(this.rootPayload, tree.next);
+      }
+      case 'current': {
+        return this.handleSubscript(payload, tree.next);
+      }
+      case 'value': {
+        return { value: tree.value, paths: payload.paths };
+      }
+    }
+  };
+  
+  private handleFunction = (payload: ValuePath, tree: PathFunction): ValuePath | undefined => {
+    switch (tree.operator) {
+      case 'length': {
+        if (!isArray(payload) && !isString(payload)) {
+          return;
+        }
+        return { value: payload.length, paths: payload.paths };
+      }
+    }
   };
 
   private handleOperationContent = (payload: ValuePath, tree: OperationContent): ValuePath | undefined => {
@@ -498,6 +525,13 @@ export class Handler<T extends unknown = unknown> {
           case 'wildcard': {
             const result = this.handleWildcard(payload);
             return this.concatIndefiniteValuePaths(result, tree.next);
+          }
+          case 'function': {
+            const result = this.handleFunction(payload, treeValue.value);
+            if (isUndefined(result)) {
+              return;
+            }
+            return this.handleSubscript(result, tree.next);
           }
         }
       }

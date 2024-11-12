@@ -37,3 +37,7 @@ export const isUndefined = <T extends unknown>(item: T | undefined): item is und
 export const isDefined = <T extends unknown>(item: T): item is Exclude<typeof item, undefined> => {
   return typeof item !== 'undefined';
 };
+
+export const isArrayOfNumber = (item: unknown): item is number[] => {
+  return isArray(item) && item.every(isNumber);
+};
