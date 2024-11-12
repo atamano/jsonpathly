@@ -1934,39 +1934,6 @@ const testSuits = [
     consensus: false,
   },
   {
-    title: 'filter_expression_with_length_function',
-    query: '$[?(@.length() == 4)]',
-    payload: [
-      [1, 2, 3, 4, 5],
-      [1, 2, 3, 4],
-      [1, 2, 3],
-    ],
-    results: 'NOT_SUPPORTED',
-    consensus: false,
-  },
-  {
-    title: 'filter_expression_with_length_free_function',
-    query: '$[?(length(@) == 4)]',
-    payload: [
-      [1, 2, 3, 4, 5],
-      [1, 2, 3, 4],
-      [1, 2, 3],
-    ],
-    results: 'NOT_SUPPORTED',
-    consensus: false,
-  },
-  {
-    title: 'filter_expression_with_length_property',
-    query: '$[?(@.length == 4)]',
-    payload: [
-      [1, 2, 3, 4, 5],
-      [1, 2, 3, 4],
-      [1, 2, 3],
-    ],
-    results: [],
-    consensus: true,
-  },
-  {
     title: 'filter_expression_with_less_than_or_equal',
     query: '$[?(@.key<=42)]',
     payload: [

@@ -776,8 +776,11 @@ describe('query with functions', () => {
   };
   const testCases = [
     { payload: PAYLOAD, path: `$.numbers.length()`, expected: 8 },
+    { payload: PAYLOAD, path: `$[?($.numbers.length() >= 4)]`, expected: [PAYLOAD] },
+    { payload: PAYLOAD, path: `$.strings.length()`, expected: 3 },
     { payload: PAYLOAD, path: `$.empty.length()`, expected: 0 },
     { payload: PAYLOAD, path: `$.number.length()`, expected: undefined },
+    { payload: PAYLOAD, path: `$.string.length()`, expected: undefined },
   ];
   testCases.forEach(({ payload, path, expected }) => {
     it(path, () => {

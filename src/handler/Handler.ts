@@ -55,28 +55,14 @@ export class Handler<T extends unknown = unknown> {
 
     return Object.keys(value).map((key) => ({ value: value[key], paths: formatStringLiteralPath(paths, key) }));
   };
-
-  private handleFunctionContent = (payload: ValuePath, tree: PathFunctionContent): ValuePath | undefined => {
-    switch (tree.type) {
-      case 'root': {
-        return this.handleSubscript(this.rootPayload, tree.next);
-      }
-      case 'current': {
-        return this.handleSubscript(payload, tree.next);
-      }
-      case 'value': {
-        return { value: tree.value, paths: payload.paths };
-      }
-    }
-  };
   
   private handleFunction = (payload: ValuePath, tree: PathFunction): ValuePath | undefined => {
     switch (tree.operator) {
       case 'length': {
-        if (!isArray(payload) && !isString(payload)) {
+        if (!isArray(payload.value)) {
           return;
         }
-        return { value: payload.length, paths: payload.paths };
+        return { value: payload.value.length, paths: payload.paths };
       }
     }
   };

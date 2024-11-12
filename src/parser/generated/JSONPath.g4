@@ -47,6 +47,8 @@ MINUS_SP: '- ';
 PLUS: '+';
 DIV: '/';
 
+FN_LEN: 'length()';
+
 REGEX_OPT: [gimsuy]*;
 REGEX_EXPR: '/'.*?'/';
 KEY: [a-zA-Z-_]*[a-zA-Z_][a-zA-Z0-9_]*;
@@ -111,6 +113,10 @@ jsonpath
    : ROOT_VALUE subscript? EOF
    ;
 
+function
+   : FN_LEN
+   ;
+
 filterarg
    : PAREN_LEFT filterarg PAREN_RIGHT
    | filterarg ( STAR | DIV ) filterarg
@@ -132,7 +138,8 @@ dotdotContent
    ;
 
 dotContent
-   : STAR
+   : function
+   | STAR
    | NUMBER
    | identifier
    ;
