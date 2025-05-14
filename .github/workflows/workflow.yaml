@@ -18,7 +18,7 @@ jobs:
           node-version: '12'
 
       - name: Restore cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: dependency-cache-${{ hashFiles('package-lock.json') }}
