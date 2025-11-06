@@ -4,7 +4,7 @@
   "description": "Query json with jsonpath expressions",
   "browser": "dist/index.web.mjs",
   "main": "dist/index.node.cjs",
-  "module": "dist/antlr4.node.mjs",
+  "module": "dist/index.node.mjs",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
