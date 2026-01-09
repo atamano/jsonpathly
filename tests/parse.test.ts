@@ -289,4 +289,138 @@ describe('Parser', () => {
       expect(stringify(tree)).to.equal("$[?(@.arr == [1,'two',true,null])]");
     });
   });
+
+  // ============================================
+  // CONTROL CHARACTER ESCAPING (RFC 9535)
+  // ============================================
+
+  describe('control character escaping', () => {
+    it('round-trips newline in string literal', () => {
+      const input = "$['a\\nb']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips tab in string literal', () => {
+      const input = "$['a\\tb']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips carriage return in string literal', () => {
+      const input = "$['a\\rb']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips backspace in string literal', () => {
+      const input = "$['a\\bb']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips form feed in string literal', () => {
+      const input = "$['a\\fb']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips backslash in string literal', () => {
+      const input = "$['a\\\\b']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips single quote in string literal', () => {
+      const input = "$['a\\'b']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips null character as \\u0000', () => {
+      const input = "$['a\\u0000b']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips other control chars as \\uXXXX', () => {
+      const input = "$['a\\u001fb']";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('escapes control chars in filter string values', () => {
+      const input = "$[?(@.name == 'line1\\nline2')]";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+  });
+
+  // ============================================
+  // UNARY OPERATOR AND FUNCTION ROUND-TRIPS
+  // ============================================
+
+  describe('unary operators and functions', () => {
+    it('round-trips empty operator', () => {
+      const input = "$[?(@.arr empty)]";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips length function', () => {
+      const input = "$[?(length(@.name) > 5)]";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips count function', () => {
+      const input = "$[?(count(@.items) == 3)]";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips match function', () => {
+      const input = "$[?(match(@.name, 'foo.*'))]";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips search function', () => {
+      const input = "$[?(search(@.text, 'pattern'))]";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+
+    it('round-trips value function', () => {
+      const input = "$[?(value(@.single) == 42)]";
+      const tree = parse(input);
+      expect(stringify(tree)).to.equal(input);
+    });
+  });
+
+  // ============================================
+  // WHITESPACE HANDLING
+  // ============================================
+
+  describe('whitespace handling', () => {
+    it('accepts leading whitespace', () => {
+      const tree = parse(' $.a');
+      expect(stringify(tree)).to.equal('$.a');
+    });
+
+    it('accepts trailing whitespace', () => {
+      const tree = parse('$.a ');
+      expect(stringify(tree)).to.equal('$.a');
+    });
+
+    it('accepts leading and trailing whitespace', () => {
+      const tree = parse('  $.store.book[0]  ');
+      expect(stringify(tree)).to.equal('$.store.book[0]');
+    });
+
+    it('accepts tabs and newlines', () => {
+      const tree = parse('\t\n$.a\n\t');
+      expect(stringify(tree)).to.equal('$.a');
+    });
+  });
 });

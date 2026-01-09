@@ -59,15 +59,19 @@ const formatNumericLiteralPath = (paths: string | string[], v: number): string |
 const normalizeArrayIndex = (index: number, length: number): number => (index < 0 ? length + index : index);
 
 /**
- * Get array element by index with bounds checking.
- * Returns undefined if index is out of bounds.
+ * Check if array index is valid and get element.
+ * Returns { exists: true, value, index } if valid, { exists: false } otherwise.
+ * This properly handles elements with undefined values.
  */
-const getArrayElement = <T>(arr: T[], index: number): T | undefined => {
+const getArrayElement = <T>(
+  arr: T[],
+  index: number
+): { exists: true; value: T; index: number } | { exists: false } => {
   const normalized = normalizeArrayIndex(index, arr.length);
   if (normalized >= 0 && normalized < arr.length) {
-    return arr[normalized];
+    return { exists: true, value: arr[normalized], index: normalized };
   }
-  return undefined;
+  return { exists: false };
 };
 
 // ============================================
@@ -134,10 +138,9 @@ export class Handler<T extends unknown = unknown> {
     if (!isArray(value)) {
       return;
     }
-    const element = getArrayElement(value, tree.value);
-    if (element !== undefined) {
-      const index = normalizeArrayIndex(tree.value, value.length);
-      return { value: element, paths: formatNumericLiteralPath(paths, index) };
+    const result = getArrayElement(value, tree.value);
+    if (result.exists) {
+      return { value: result.value, paths: formatNumericLiteralPath(paths, result.index) };
     }
     return;
   };
@@ -145,10 +148,9 @@ export class Handler<T extends unknown = unknown> {
   /** Dot notation numeric ($.2) - works as property access on objects, index on arrays */
   private handleDotNumericLiteral = ({ value, paths }: ValuePath, tree: NumericLiteral): ValuePath | undefined => {
     if (isArray(value)) {
-      const element = getArrayElement(value, tree.value);
-      if (element !== undefined) {
-        const index = normalizeArrayIndex(tree.value, value.length);
-        return { value: element, paths: formatNumericLiteralPath(paths, index) };
+      const result = getArrayElement(value, tree.value);
+      if (result.exists) {
+        return { value: result.value, paths: formatNumericLiteralPath(paths, result.index) };
       }
       return;
     }
@@ -192,7 +194,7 @@ export class Handler<T extends unknown = unknown> {
       m = tree.end !== null ? normalizeArrayIndex(tree.end, len) : -len - 1;
     }
 
-    // Compute bounds
+    // Compute bounds per RFC 9535 Section 2.3.4.2
     let lower: number;
     let upper: number;
 
@@ -200,8 +202,9 @@ export class Handler<T extends unknown = unknown> {
       lower = Math.max(n, 0);
       upper = Math.min(m, len);
     } else {
-      lower = Math.min(n, len - 1);
-      upper = Math.max(m, -1);
+      // For negative step: upper = min(start, len-1), lower = max(end, -1)
+      upper = Math.min(n, len - 1);
+      lower = Math.max(m, -1);
     }
 
     // Iterate and collect results
@@ -209,9 +212,7 @@ export class Handler<T extends unknown = unknown> {
     let i = step > 0 ? lower : upper;
 
     while ((step > 0 && i < upper) || (step < 0 && i > lower)) {
-      if (i >= 0 && i < len) {
-        results.push({ value: value[i], paths: formatNumericLiteralPath(paths, i) });
-      }
+      results.push({ value: value[i], paths: formatNumericLiteralPath(paths, i) });
       i += step;
     }
 
@@ -363,7 +364,6 @@ export class Handler<T extends unknown = unknown> {
     if (comparatorFn) {
       return comparatorFn(leftValue, rightValue);
     }
-
     /* c8 ignore next */
     return false;
   };
@@ -559,9 +559,10 @@ export class Handler<T extends unknown = unknown> {
             return this.concatIndefiniteValuePaths(result, tree.next);
           }
         }
-        /* c8 ignore next */
+        /* c8 ignore start */
         return;
       }
+      /* c8 ignore stop */
       case 'dotdot': {
         const result = this.handleDotdot(payload, treeValue);
         return this.concatIndefiniteValuePaths(result, tree.next);

@@ -788,4 +788,86 @@ describe('query()', () => {
         .to.deep.equal([]);
     });
   });
+
+  // ============================================
+  // BUG FIX REGRESSION TESTS
+  // ============================================
+
+  describe('bug fix regressions', () => {
+    describe('negative step slice (RFC 9535 Section 2.3.4.2)', () => {
+      const arr = [0, 1, 2, 3, 4];
+
+      it('$[::-1] reverses the array', () => {
+        expect(query(arr, '$[::-1]')).to.deep.equal([4, 3, 2, 1, 0]);
+      });
+
+      it('$[4:0:-1] returns elements from index 4 down to 1', () => {
+        expect(query(arr, '$[4:0:-1]')).to.deep.equal([4, 3, 2, 1]);
+      });
+
+      it('$[3:0:-2] returns every second element from 3 down to 1', () => {
+        expect(query(arr, '$[3:0:-2]')).to.deep.equal([3, 1]);
+      });
+
+      it('$[2::-1] returns elements from index 2 to start', () => {
+        expect(query(arr, '$[2::-1]')).to.deep.equal([2, 1, 0]);
+      });
+    });
+
+    describe('subtraction without whitespace', () => {
+      it('@.a-@.b works without spaces', () => {
+        expect(query([{ a: 5, b: 2 }], '$[?@.a-@.b>0]')).to.deep.equal([{ a: 5, b: 2 }]);
+      });
+
+      it('@.a-5 works (subtraction with literal)', () => {
+        expect(query([{ a: 10 }], '$[?@.a-5>0]')).to.deep.equal([{ a: 10 }]);
+      });
+
+      it('@.a--5 works (double minus for negative literal)', () => {
+        expect(query([{ a: 10 }], '$[?@.a--5>10]')).to.deep.equal([{ a: 10 }]);
+      });
+
+      it('hyphenated keys still work', () => {
+        expect(query([{ 'my-key': 1 }], '$[*].my-key')).to.deep.equal([1]);
+        expect(query([{ 'my-key-name': 2 }], '$[*].my-key-name')).to.deep.equal([2]);
+      });
+    });
+
+    describe('undefined array elements', () => {
+      it('$[*] includes undefined elements', () => {
+        const arr = [1, undefined, 3];
+        expect(query(arr, '$[*]')).to.deep.equal([1, undefined, 3]);
+      });
+
+      it('$[1] returns undefined value (not "no match")', () => {
+        const arr = [1, undefined, 3];
+        const result = query(arr, '$[1]');
+        // The result is the undefined value itself
+        expect(result).to.equal(undefined);
+      });
+    });
+
+    describe('I-Regexp validation without lookbehind', () => {
+      it('match() works with basic patterns', () => {
+        expect(query([{ v: 'abc' }], '$[?(match(@.v, "abc"))]')).to.deep.equal([{ v: 'abc' }]);
+      });
+
+      it('match() rejects word boundary \\b outside char class', () => {
+        expect(query([{ v: 'test' }], '$[?(match(@.v, "\\\\btest\\\\b"))]')).to.deep.equal([]);
+      });
+
+      it('match() allows \\b inside char class (backspace)', () => {
+        // \b inside [...] means backspace, which is allowed
+        expect(query([{ v: 'a' }], '$[?(match(@.v, "[a\\\\b]"))]')).to.deep.equal([{ v: 'a' }]);
+      });
+
+      it('match() rejects backreferences', () => {
+        expect(query([{ v: 'aa' }], '$[?(match(@.v, "(a)\\\\1"))]')).to.deep.equal([]);
+      });
+
+      it('match() rejects lookahead', () => {
+        expect(query([{ v: 'test' }], '$[?(match(@.v, "t(?=est)"))]')).to.deep.equal([]);
+      });
+    });
+  });
 });

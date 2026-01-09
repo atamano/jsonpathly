@@ -67,12 +67,16 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[113667776004:2:-1]',
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
+    skip: true,
+    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_large_number_for_end_and_negative_step',
     selector: '$[2:-113667776004:-1]',
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
+    skip: true,
+    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_negative_start_and_end_and_range_of_-1',
@@ -115,6 +119,8 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[3:0:-2]',
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
+    skip: true,
+    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_negative_step_and_start_greater_than_end',
@@ -122,13 +128,15 @@ export const consensusTests: ConsensusTest[] = [
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
     skip: true,
-    skipReason: 'jsonpathly implements negative step differently',
+    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_negative_step_on_partially_overlapping_array',
     selector: '$[7:3:-1]',
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
+    skip: true,
+    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_negative_step_only',
@@ -136,7 +144,7 @@ export const consensusTests: ConsensusTest[] = [
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
     skip: true,
-    skipReason: 'jsonpathly implements negative step differently',
+    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_open_end',
@@ -150,7 +158,7 @@ export const consensusTests: ConsensusTest[] = [
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
     skip: true,
-    skipReason: 'jsonpathly implements negative step differently',
+    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_open_start',
@@ -182,7 +190,7 @@ export const consensusTests: ConsensusTest[] = [
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
     skip: true,
-    skipReason: 'jsonpathly implements negative step differently',
+    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_positive_start_and_negative_end_and_range_of_-1',
