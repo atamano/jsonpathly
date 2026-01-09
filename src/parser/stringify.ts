@@ -1,6 +1,16 @@
+/**
+ * JSONPath AST to string serialization.
+ *
+ * Converts parsed JSONPath AST back to string representation.
+ * Uses RFC 9535 normalized format with single quotes.
+ */
 import { Comparator, JsonPathElement, LogicalExpression, Operation } from './types';
 
-const OPERATOR: Record<Comparator['operator'], string> = {
+// ============================================
+// Operator Mappings
+// ============================================
+
+const COMPARATOR_OPERATORS: Record<Comparator['operator'], string> = {
   eq: '==',
   ne: '!=',
   lt: '<',
@@ -18,134 +28,188 @@ const OPERATOR: Record<Comparator['operator'], string> = {
   size: 'size',
 };
 
-const COMP_OPERATOR: Record<Operation['operator'], string> = {
+const ARITHMETIC_OPERATORS: Record<Operation['operator'], string> = {
   plus: '+',
   minus: '-',
   multi: '*',
   div: '/',
-  '': '',
 };
 
-const EXPR_OPERATOR: Record<LogicalExpression['operator'], string> = {
+const LOGICAL_OPERATORS: Record<LogicalExpression['operator'], string> = {
   and: '&&',
   or: '||',
 };
 
+// ============================================
+// String Escaping Utilities
+// ============================================
+
+/**
+ * Escape string for single-quoted output per RFC 9535.
+ * Escapes backslashes and single quotes.
+ */
+const escapeForSingleQuote = (str: string): string => str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+/**
+ * Format string as single-quoted literal.
+ */
+const singleQuoted = (str: string): string => `'${escapeForSingleQuote(str)}'`;
+
+/**
+ * Recursively stringify a JSON value with single quotes for strings.
+ * Used for object and array values in filter expressions.
+ */
+const stringifyJsonValue = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return singleQuoted(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stringifyJsonValue).join(',')}]`;
+  }
+  if (value !== null && typeof value === 'object') {
+    const pairs = Object.entries(value).map(([k, v]) => `${singleQuoted(k)}:${stringifyJsonValue(v)}`);
+    return `{${pairs.join(',')}}`;
+  }
+  return JSON.stringify(value);
+};
+
+// ============================================
+// Main Stringify Function
+// ============================================
+
+/**
+ * Convert JSONPath AST element to string representation.
+ *
+ * @param input - AST element to stringify
+ * @returns String representation of the JSONPath
+ */
 export function stringify(input: JsonPathElement | null): string {
   if (input === null) {
     return '';
   }
 
   switch (input.type) {
-    case 'root': {
+    case 'root':
       return '$' + stringify(input.next);
-    }
-    case 'current': {
+
+    case 'current':
       return '@' + stringify(input.next);
-    }
-    case 'dot': {
+
+    case 'dot':
       return '.' + stringify(input.value);
-    }
-    case 'dotdot': {
-      const res = stringify(input.value);
-      return '..' + res;
-    }
+
+    case 'dotdot':
+      return '..' + stringify(input.value);
+
     case 'bracketExpression':
-    case 'bracketMember': {
+    case 'bracketMember':
       return '[' + stringify(input.value) + ']';
-    }
-    case 'subscript': {
+
+    case 'subscript':
       return stringify(input.value) + stringify(input.next);
-    }
-    case 'identifier': {
+
+    case 'identifier':
       return input.value;
-    }
-    case 'wildcard': {
+
+    case 'wildcard':
       return '*';
-    }
-    case 'indexes': {
+
+    case 'indexes':
       return input.values.map(stringify).join(', ');
-    }
-    case 'unions': {
+
+    case 'unions':
       return input.values.map(stringify).join(', ');
-    }
-    case 'stringLiteral': {
-      // RFC 9535: Use single quotes for normalized path format
-      const escaped = input.value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      return `'${escaped}'`;
-    }
-    case 'numericLiteral': {
-      return `${input.value}`;
-    }
-    case 'notExpression': {
+
+    case 'stringLiteral':
+      return singleQuoted(input.value);
+
+    case 'numericLiteral':
+      return String(input.value);
+
+    case 'notExpression':
       return '!(' + stringify(input.value) + ')';
-    }
-    case 'value': {
-      if (input.subtype === 'regex') {
-        return `${input.value}${input.opts}`;
-      }
-      if (input.subtype === 'string') {
-        // RFC 9535: Use single quotes for string literals
-        const escaped = (input.value as string).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        return `'${escaped}'`;
-      }
-      if (input.subtype === 'object') {
-        // RFC 9535: Use single quotes for object keys and string values
-        const pairs = Object.entries(input.value as Record<string, unknown>).map(([k, v]) => {
-          const escapedKey = k.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-          const stringifiedVal = typeof v === 'string'
-            ? `'${v.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
-            : JSON.stringify(v);
-          return `'${escapedKey}':${stringifiedVal}`;
-        });
-        return `{${pairs.join(',')}}`;
-      }
-      if (input.subtype === 'array') {
-        // RFC 9535: Use single quotes for string elements
-        const elements = (input.value as unknown[]).map((v) => {
-          if (typeof v === 'string') {
-            return `'${v.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
-          }
-          return JSON.stringify(v);
-        });
-        return `[${elements.join(',')}]`;
-      }
-      return JSON.stringify(input.value);
-    }
-    case 'filterExpression': {
+
+    case 'value':
+      return stringifyValue(input);
+
+    case 'filterExpression':
       return '?(' + stringify(input.value) + ')';
-    }
-    case 'groupOperation': {
+
+    case 'groupOperation':
+    case 'groupExpression':
       return '(' + stringify(input.value) + ')';
-    }
-    case 'groupExpression': {
-      return '(' + stringify(input.value) + ')';
-    }
-    case 'operation': {
-      return stringify(input.left) + ' ' + COMP_OPERATOR[input.operator] + ' ' + stringify(input.right);
-    }
-    case 'comparator': {
-      return stringify(input.left) + ` ${OPERATOR[input.operator]} ` + stringify(input.right);
-    }
-    case 'logicalExpression': {
-      return stringify(input.left) + ` ${EXPR_OPERATOR[input.operator]} ` + stringify(input.right);
-    }
-    case 'slices': {
-      return `${input.start !== null ? input.start : ''}:${input.end !== null ? input.end : ''}${
-        input.step !== null ? ':' + input.step : ''
-      }`;
-    }
-    case 'functionCall': {
-      const args = input.args
-        .map((arg) => {
-          if (typeof arg === 'string') {
-            const escaped = arg.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-            return `'${escaped}'`;
-          }
-          return stringify(arg as JsonPathElement);
-        })
-        .join(', ');
-      return `${input.name}(${args})`;
+
+    case 'operation':
+      return stringify(input.left) + ' ' + ARITHMETIC_OPERATORS[input.operator] + ' ' + stringify(input.right);
+
+    case 'comparator':
+      return stringify(input.left) + ` ${COMPARATOR_OPERATORS[input.operator]} ` + stringify(input.right);
+
+    case 'logicalExpression':
+      return stringify(input.left) + ` ${LOGICAL_OPERATORS[input.operator]} ` + stringify(input.right);
+
+    case 'slices':
+      return stringifySlice(input);
+
+    case 'functionCall':
+      return stringifyFunctionCall(input);
+
+    /* c8 ignore next */
+    default: {
+      const _exhaustive: never = input;
+      throw new Error(`Unknown AST node type: ${(_exhaustive as JsonPathElement).type}`);
     }
   }
+}
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Stringify a value node based on its subtype.
+ */
+function stringifyValue(input: Extract<JsonPathElement, { type: 'value' }>): string {
+  switch (input.subtype) {
+    case 'regex':
+      return `${input.value}${input.opts}`;
+
+    case 'string':
+      return singleQuoted(input.value as string);
+
+    case 'object':
+      return stringifyJsonValue(input.value);
+
+    case 'array':
+      return stringifyJsonValue(input.value);
+
+    case 'boolean':
+    case 'number':
+    case 'null':
+      return JSON.stringify(input.value);
+
+    /* c8 ignore next */
+    default: {
+      const _exhaustive: never = input;
+      throw new Error(`Unknown value subtype: ${(_exhaustive as { subtype: string }).subtype}`);
+    }
+  }
+}
+
+/**
+ * Stringify a slice expression.
+ */
+function stringifySlice(input: Extract<JsonPathElement, { type: 'slices' }>): string {
+  const start = input.start !== null ? String(input.start) : '';
+  const end = input.end !== null ? String(input.end) : '';
+  const step = input.step !== null ? ':' + input.step : '';
+  return `${start}:${end}${step}`;
+}
+
+/**
+ * Stringify a function call.
+ */
+function stringifyFunctionCall(input: Extract<JsonPathElement, { type: 'functionCall' }>): string {
+  const args = input.args.map((arg) => stringify(arg as JsonPathElement)).join(', ');
+  return `${input.name}(${args})`;
 }

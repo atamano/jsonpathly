@@ -136,7 +136,7 @@ export type Unions = {
 export type FunctionCall = {
   type: 'functionCall';
   name: 'length' | 'count' | 'match' | 'search' | 'value';
-  args: (OperationContent | string)[];
+  args: OperationContent[];
 };
 
 export type FilterExpressionContent =
@@ -158,7 +158,7 @@ export type OperationContent = Root | Current | Value | GroupOperation | Operati
 
 export type Operation = {
   type: 'operation';
-  operator: 'plus' | 'minus' | 'multi' | 'div' | '';
+  operator: 'plus' | 'minus' | 'multi' | 'div';
   left: OperationContent;
   right: OperationContent;
 };

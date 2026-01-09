@@ -179,6 +179,19 @@ describe('Extension Operators', () => {
       const result = query(data, '$[?(@.arr sizeof 5)]');
       expect(result).to.deep.equal([]);
     });
+
+    it('compares string lengths', () => {
+      // Tests comparators.ts line 83 - sizeof with strings
+      const strData = [{ str: 'hello' }];
+      const result = query(strData, '$[?(@.str sizeof "world")]');
+      expect(result).to.deep.equal(strData);
+    });
+
+    it('rejects strings with different lengths', () => {
+      const strData = [{ str: 'hello' }];
+      const result = query(strData, '$[?(@.str sizeof "hi")]');
+      expect(result).to.deep.equal([]);
+    });
   });
 
   describe('size - check array/string length', () => {
@@ -235,6 +248,14 @@ describe('Extension Operators', () => {
     it('rejects non-empty strings', () => {
       const result = query([{ str: 'hello' }], '$[?(@.str empty)]');
       expect(result).to.deep.equal([]);
+    });
+
+    it('returns false for non-array/non-string values', () => {
+      // Tests comparators.ts line 122 - isEmpty with object/number/null
+      const data = [{ obj: {} }, { num: 0 }, { val: null }];
+      expect(query(data, '$[?(@.obj empty)]')).to.deep.equal([]);
+      expect(query(data, '$[?(@.num empty)]')).to.deep.equal([]);
+      expect(query(data, '$[?(@.val empty)]')).to.deep.equal([]);
     });
   });
 

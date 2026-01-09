@@ -227,4 +227,66 @@ describe('Parser', () => {
       expect(() => parse('bad')).to.throw(Error);
     });
   });
+
+  // ============================================
+  // RFC 9535 FUNCTION CALLS
+  // ============================================
+
+  describe('function call parsing', () => {
+    it('parses length function', () => {
+      const tree = parse('$[?(length(@.name) > 5)]');
+      expect(stringify(tree)).to.equal("$[?(length(@.name) > 5)]");
+    });
+
+    it('parses count function', () => {
+      const tree = parse('$[?(count(@.items) == 3)]');
+      expect(stringify(tree)).to.equal("$[?(count(@.items) == 3)]");
+    });
+
+    it('parses match function with string argument', () => {
+      const tree = parse('$[?(match(@.name, "foo.*"))]');
+      expect(stringify(tree)).to.equal("$[?(match(@.name, 'foo.*'))]");
+    });
+
+    it('parses search function with string argument', () => {
+      const tree = parse('$[?(search(@.text, "pattern"))]');
+      expect(stringify(tree)).to.equal("$[?(search(@.text, 'pattern'))]");
+    });
+
+    it('parses value function', () => {
+      const tree = parse('$[?(value(@.single) == 42)]');
+      expect(stringify(tree)).to.equal('$[?(value(@.single) == 42)]');
+    });
+
+    it('parses function with multiple path arguments', () => {
+      const tree = parse('$[?(match(@.a, @.b))]');
+      expect(stringify(tree)).to.equal('$[?(match(@.a, @.b))]');
+    });
+  });
+
+  // ============================================
+  // VALUE SUBTYPES IN STRINGIFY
+  // ============================================
+
+  describe('value subtypes', () => {
+    it('stringifies object values in filters', () => {
+      const tree = parse('$[?(@.data == {"key": "value"})]');
+      expect(stringify(tree)).to.equal("$[?(@.data == {'key':'value'})]");
+    });
+
+    it('stringifies array values in filters', () => {
+      const tree = parse('$[?(@.arr == [1, 2, "three"])]');
+      expect(stringify(tree)).to.equal("$[?(@.arr == [1,2,'three'])]");
+    });
+
+    it('stringifies nested objects', () => {
+      const tree = parse('$[?(@.data == {"outer": {"inner": 1}})]');
+      expect(stringify(tree)).to.equal("$[?(@.data == {'outer':{'inner':1}})]");
+    });
+
+    it('stringifies mixed arrays', () => {
+      const tree = parse('$[?(@.arr == [1, "two", true, null])]');
+      expect(stringify(tree)).to.equal("$[?(@.arr == [1,'two',true,null])]");
+    });
+  });
 });

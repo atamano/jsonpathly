@@ -1,7 +1,46 @@
-import * as equal from 'fast-deep-equal';
+/**
+ * Deep equality comparison.
+ * Handles primitives, arrays, and plain objects.
+ */
+export const isEqual = (a: unknown, b: unknown): boolean => {
+  // Same reference or identical primitives
+  if (a === b) return true;
 
-export const isEqual = (objA: unknown, objB: unknown): boolean => {
-  return equal(objA, objB);
+  // Handle null/undefined
+  if (a === null || b === null || a === undefined || b === undefined) {
+    return a === b;
+  }
+
+  // Different types
+  if (typeof a !== typeof b) return false;
+
+  // Arrays
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!isEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  // One is array, other is not
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+
+  // Objects
+  if (typeof a === 'object' && typeof b === 'object') {
+    const keysA = Object.keys(a as object);
+    const keysB = Object.keys(b as object);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+      if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+      if (!isEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return false;
 };
 
 export const isArray = (item: unknown): item is unknown[] => {
