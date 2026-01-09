@@ -1,10 +1,28 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs';
+import { execFileSync } from 'child_process';
 
 // Use process.cwd() - tests are always run from project root
 const projectRoot = process.cwd();
 const distPath = path.join(projectRoot, 'dist');
+
+/**
+ * Helper to run ESM code in a child Node process.
+ * ts-node converts dynamic import() to require() which can't load .mjs files,
+ * so we spawn a native Node process to test ESM imports properly.
+ * Uses execFileSync (not exec) for safety - no shell injection possible.
+ */
+function runEsmTest(code: string): string {
+  const fullCode = `
+    import * as esm from './dist/index.mjs';
+    ${code}
+  `;
+  return execFileSync('node', ['--input-type=module', '-e', fullCode], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+  });
+}
 
 describe('Module Resolution (Issue #9)', () => {
   const packageJson = JSON.parse(
@@ -116,22 +134,25 @@ describe('Module Resolution (Issue #9)', () => {
     });
   });
 
-  // Skip ESM tests - ts-node in CJS mode converts dynamic import() to require()
-  // which cannot load .mjs files. CJS tests verify the same functionality.
-  describe.skip('ESM import', () => {
-    it('should export all public APIs from ESM build', async () => {
-      const esm = await import('../dist/index.mjs');
-      expect(typeof esm.query).to.equal('function');
-      expect(typeof esm.paths).to.equal('function');
-      expect(typeof esm.parse).to.equal('function');
-      expect(typeof esm.stringify).to.equal('function');
-      expect(typeof esm.JSONPathSyntaxError).to.equal('function');
+  // ESM tests run in a child Node process since ts-node can't load .mjs files
+  describe('ESM import', () => {
+    it('should export all public APIs from ESM build', () => {
+      const output = runEsmTest(`
+        const types = ['query', 'paths', 'parse', 'stringify', 'JSONPathSyntaxError']
+          .map(name => typeof esm[name]);
+        console.log(JSON.stringify(types));
+      `);
+      expect(JSON.parse(output.trim())).to.deep.equal([
+        'function', 'function', 'function', 'function', 'function'
+      ]);
     });
 
-    it('should work with query from ESM', async () => {
-      const { query } = await import('../dist/index.mjs');
-      const result = query({ a: 1 }, '$.a');
-      expect(result).to.equal(1);
+    it('should work with query from ESM', () => {
+      const output = runEsmTest(`
+        const result = esm.query({ a: 1 }, '$.a');
+        console.log(JSON.stringify(result));
+      `);
+      expect(JSON.parse(output.trim())).to.equal(1);
     });
   });
 
@@ -154,21 +175,26 @@ describe('Module Resolution (Issue #9)', () => {
       expect(query(data, '$.store.book[0].title')).to.equal('Book 1');
     });
 
-    it.skip('should handle complex queries in ESM build', async () => {
-      const { query } = await import('../dist/index.mjs');
-      const data = {
-        store: {
-          book: [
-            { title: 'Book 1', price: 10 },
-            { title: 'Book 2', price: 20 },
-          ],
-        },
-      };
-      // Filter queries return arrays
-      expect(query(data, '$.store.book[?(@.price < 15)].title')).to.deep.equal(['Book 1']);
-      expect(query(data, '$.store.book[*].price')).to.deep.equal([10, 20]);
-      // Direct property access returns single value
-      expect(query(data, '$.store.book[0].title')).to.equal('Book 1');
+    it('should handle complex queries in ESM build', () => {
+      const output = runEsmTest(`
+        const data = {
+          store: {
+            book: [
+              { title: 'Book 1', price: 10 },
+              { title: 'Book 2', price: 20 },
+            ],
+          },
+        };
+        console.log(JSON.stringify([
+          esm.query(data, '$.store.book[?(@.price < 15)].title'),
+          esm.query(data, '$.store.book[*].price'),
+          esm.query(data, '$.store.book[0].title')
+        ]));
+      `);
+      const [filterResult, wildcardResult, indexResult] = JSON.parse(output.trim());
+      expect(filterResult).to.deep.equal(['Book 1']);
+      expect(wildcardResult).to.deep.equal([10, 20]);
+      expect(indexResult).to.equal('Book 1');
     });
 
     it('should handle RFC 9535 functions in CJS build', async () => {
@@ -179,11 +205,17 @@ describe('Module Resolution (Issue #9)', () => {
       expect(query(data, '$[?(length(@.name) == 5)]')).to.deep.equal(data);
     });
 
-    it.skip('should handle RFC 9535 functions in ESM build', async () => {
-      const { query } = await import('../dist/index.mjs');
-      const data = [{ name: 'hello' }, { name: 'world' }];
-      expect(query(data, '$[?(match(@.name, "hel.*"))]')).to.deep.equal([{ name: 'hello' }]);
-      expect(query(data, '$[?(length(@.name) == 5)]')).to.deep.equal(data);
+    it('should handle RFC 9535 functions in ESM build', () => {
+      const output = runEsmTest(`
+        const data = [{ name: 'hello' }, { name: 'world' }];
+        console.log(JSON.stringify([
+          esm.query(data, '$[?(match(@.name, "hel.*"))]'),
+          esm.query(data, '$[?(length(@.name) == 5)]')
+        ]));
+      `);
+      const [matchResult, lengthResult] = JSON.parse(output.trim());
+      expect(matchResult).to.deep.equal([{ name: 'hello' }]);
+      expect(lengthResult).to.deep.equal([{ name: 'hello' }, { name: 'world' }]);
     });
 
     it('should parse and stringify round-trip in CJS build', async () => {
@@ -194,11 +226,13 @@ describe('Module Resolution (Issue #9)', () => {
       expect(stringify(ast)).to.equal(path);
     });
 
-    it.skip('should parse and stringify round-trip in ESM build', async () => {
-      const { parse, stringify } = await import('../dist/index.mjs');
-      const path = "$.store.book[?(@.price < 10)].title";
-      const ast = parse(path);
-      expect(stringify(ast)).to.equal(path);
+    it('should parse and stringify round-trip in ESM build', () => {
+      const output = runEsmTest(`
+        const path = "$.store.book[?(@.price < 10)].title";
+        const ast = esm.parse(path);
+        console.log(esm.stringify(ast));
+      `);
+      expect(output.trim()).to.equal("$.store.book[?(@.price < 10)].title");
     });
 
     it('should throw JSONPathSyntaxError for invalid paths in CJS', async () => {
@@ -207,9 +241,16 @@ describe('Module Resolution (Issue #9)', () => {
       expect(() => parse('$[invalid')).to.throw(JSONPathSyntaxError);
     });
 
-    it.skip('should throw JSONPathSyntaxError for invalid paths in ESM', async () => {
-      const { parse, JSONPathSyntaxError } = await import('../dist/index.mjs');
-      expect(() => parse('$[invalid')).to.throw(JSONPathSyntaxError);
+    it('should throw JSONPathSyntaxError for invalid paths in ESM', () => {
+      const output = runEsmTest(`
+        try {
+          esm.parse('$[invalid');
+          console.log('no-error');
+        } catch (e) {
+          console.log(e instanceof esm.JSONPathSyntaxError ? 'JSONPathSyntaxError' : 'other-error');
+        }
+      `);
+      expect(output.trim()).to.equal('JSONPathSyntaxError');
     });
 
     it('should return paths in CJS build', async () => {
@@ -219,10 +260,12 @@ describe('Module Resolution (Issue #9)', () => {
       expect(paths(data, '$.a.b')).to.deep.equal(["$['a']['b']"]);
     });
 
-    it.skip('should return paths in ESM build', async () => {
-      const { paths } = await import('../dist/index.mjs');
-      const data = { a: { b: 1 } };
-      expect(paths(data, '$.a.b')).to.deep.equal(["$['a']['b']"]);
+    it('should return paths in ESM build', () => {
+      const output = runEsmTest(`
+        const data = { a: { b: 1 } };
+        console.log(JSON.stringify(esm.paths(data, '$.a.b')));
+      `);
+      expect(JSON.parse(output.trim())).to.deep.equal(["$['a']['b']"]);
     });
   });
 });
