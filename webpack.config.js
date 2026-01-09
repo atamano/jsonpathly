@@ -1,17 +1,18 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path');
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const buildConfig = (platform, extensions) => ({
+// Universal build configuration - works in both Node.js and browsers
+const buildConfig = (format) => ({
   mode: 'production',
   entry: './src/index.ts',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: `index.${platform}.${extensions}`,
-    chunkFormat: extensions === 'mjs' ? 'module' : 'commonjs',
+    filename: format === 'esm' ? 'index.mjs' : 'index.cjs',
+    chunkFormat: format === 'esm' ? 'module' : 'commonjs',
     library: {
-      type: extensions === 'mjs' ? 'module' : 'commonjs',
+      type: format === 'esm' ? 'module' : 'commonjs',
     },
+    globalObject: 'this', // Works in both Node.js and browsers
   },
   module: {
     rules: [
@@ -26,17 +27,14 @@ const buildConfig = (platform, extensions) => ({
     extensions: ['.ts', '.js'],
   },
   externals: [],
-  target: platform,
   plugins: [],
   devtool: 'source-map',
   experiments: {
-    outputModule: extensions === 'mjs',
+    outputModule: format === 'esm',
   },
 });
 
 module.exports = [
-  buildConfig('node', 'cjs'),
-  buildConfig('node', 'mjs'),
-  buildConfig('web', 'cjs'),
-  buildConfig('web', 'mjs'),
+  buildConfig('cjs'),  // CommonJS for require()
+  buildConfig('esm'),  // ES Module for import
 ];

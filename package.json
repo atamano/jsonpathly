@@ -1,14 +1,14 @@
 {
   "name": "jsonpathly",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Query json with jsonpath expressions",
-  "browser": "dist/index.web.mjs",
-  "main": "dist/index.node.cjs",
-  "module": "dist/index.node.mjs",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "scripts": {
     "gen": "peggy --format es -o src/parser/generated/parser.js src/parser/jsonpath.peggy",
     "test": "mocha --require ts-node/register --timeout 60000 --exit --no-cache tests/*.ts",
@@ -65,18 +65,9 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "node": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.node.mjs",
-        "require": "./dist/index.node.cjs",
-        "default": "./dist/index.node.mjs"
-      },
-      "browser": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.web.mjs",
-        "require": "./dist/index.web.cjs",
-        "default": "./dist/index.web.mjs"
-      }
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
     }
   }
 }
