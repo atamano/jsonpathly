@@ -426,7 +426,14 @@ SPECIAL_KEY
   = chars:[\u0080-\uFFFF_]+ { return chars.join(''); }
 
 NUMBER "number"
-  = "-"? INT ("." [0-9]+)? EXP? { return parseFloat(text()); }
+  = "-"? INT frac:("." [0-9]+)? exp:EXP? {
+      const num = parseFloat(text());
+      // RFC 9535: Integer literals (no decimal, no exponent) must be within I-JSON range
+      if (!frac && !exp && (num < -9007199254740991 || num > 9007199254740991)) {
+        error('Integer out of I-JSON range [-(2^53)+1, (2^53)-1]');
+      }
+      return num;
+    }
 
 INT
   = [0-9]+

@@ -20,8 +20,40 @@ import {
 import { isArray, isDefined, isEqual, isNumber, isPlainObject, isString, isUndefined } from './helper';
 
 const getNumericLiteralIndex = (index: number, total: number): number => (index < 0 ? total + index : index);
-const formatStringLiteralPath = (paths: string | string[], v: string): string | string[] => paths.concat(`["${v}"]`);
+
+// RFC 9535: Normalize slice index (negative indices count from end)
+const normalizeSliceIndex = (index: number, len: number): number => (index < 0 ? len + index : index);
+
+// RFC 9535 Normalized Path Format: Use single quotes with proper escaping
+const formatStringLiteralPath = (paths: string | string[], v: string): string | string[] => {
+  const escaped = v
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\x08/g, '\\b') // backspace
+    .replace(/\f/g, '\\f')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
+    .replace(/[\x00-\x07\x0b\x0e-\x1f]/g, (c) => '\\u00' + c.charCodeAt(0).toString(16).padStart(2, '0'));
+  return paths.concat(`['${escaped}']`);
+};
+
 const formatNumericLiteralPath = (paths: string | string[], v: number): string | string[] => paths.concat(`[${v}]`);
+
+// RFC 9485 I-Regexp validation - reject non-interoperable regex features
+const isValidIRegexp = (pattern: string): boolean => {
+  // Reject backreferences (\1, \2, etc.)
+  if (/\\[1-9]/.test(pattern)) return false;
+  // Reject lookahead/lookbehind ((?=, (?!, (?<=, (?<!)
+  if (/\(\?[=!]/.test(pattern)) return false;
+  if (/\(\?<[=!]/.test(pattern)) return false;
+  // Reject named capture groups ((?<name>...)
+  if (/\(\?<[a-zA-Z]/.test(pattern)) return false;
+  // Reject word boundaries (\b, \B) - but not \b inside character class which means backspace
+  // Simple check: \b or \B not preceded by [ (approximate check)
+  if (/(?<!\[)\\[bB]/.test(pattern)) return false;
+  return true;
+};
 
 type ValuePath<T extends unknown = unknown> = { value: T; paths: string | string[]; isIndefinite?: boolean };
 
@@ -155,6 +187,8 @@ export class Handler<T extends unknown = unknown> {
         return leftValue.length === rightValue;
       }
       case 'eq': {
+        // RFC 9535: Empty nodelists on both sides compare equal
+        if (leftValue === undefined && rightValue === undefined) return true;
         return isEqual(leftValue, rightValue);
       }
       case 'ne': {
@@ -261,8 +295,9 @@ export class Handler<T extends unknown = unknown> {
         const val = args[0];
         const pattern = args[1];
         if (!isString(val) || !isString(pattern)) return false;
+        if (!isValidIRegexp(pattern)) return false;
         try {
-          const regex = new RegExp(`^(?:${pattern})$`);
+          const regex = new RegExp(`^(?:${pattern})$`, 'u');
           return regex.test(val);
         } catch {
           return false;
@@ -273,8 +308,9 @@ export class Handler<T extends unknown = unknown> {
         const val = args[0];
         const pattern = args[1];
         if (!isString(val) || !isString(pattern)) return false;
+        if (!isValidIRegexp(pattern)) return false;
         try {
-          const regex = new RegExp(pattern);
+          const regex = new RegExp(pattern, 'u');
           return regex.test(val);
         } catch {
           return false;
@@ -310,10 +346,20 @@ export class Handler<T extends unknown = unknown> {
         return !!result;
       }
       case 'root': {
-        return isDefined(this.handleSubscript(this.rootPayload, tree.next));
+        const result = this.handleSubscript(this.rootPayload, tree.next);
+        // For indefinite results (filters, wildcards), check if non-empty
+        if (result?.isIndefinite) {
+          return Array.isArray(result.value) && result.value.length > 0;
+        }
+        return isDefined(result);
       }
       case 'current': {
-        return isDefined(this.handleSubscript(payload, tree.next));
+        const result = this.handleSubscript(payload, tree.next);
+        // For indefinite results (filters, wildcards), check if non-empty
+        if (result?.isIndefinite) {
+          return Array.isArray(result.value) && result.value.length > 0;
+        }
+        return isDefined(result);
       }
       case 'value': {
         return !!tree.value;
@@ -322,12 +368,9 @@ export class Handler<T extends unknown = unknown> {
   };
 
   private handleNumericLiteral = ({ value, paths }: ValuePath, tree: NumericLiteral): ValuePath | undefined => {
-    if (!isArray(value) && !isPlainObject(value)) {
+    // RFC 9535: Numeric index selectors in bracket notation only work on arrays
+    if (!isArray(value)) {
       return;
-    }
-
-    if (isPlainObject(value)) {
-      return this.handleStringLiteral({ value, paths }, { type: 'stringLiteral', value: `${tree.value}` });
     }
 
     const index = getNumericLiteralIndex(tree.value, value.length);
@@ -338,6 +381,29 @@ export class Handler<T extends unknown = unknown> {
     return;
   };
 
+  // Dot notation with number ($.2) - works as property access on objects, index on arrays
+  private handleDotNumericLiteral = ({ value, paths }: ValuePath, tree: NumericLiteral): ValuePath | undefined => {
+    if (isArray(value)) {
+      // For arrays, treat as index
+      const index = getNumericLiteralIndex(tree.value, value.length);
+      if (index < value.length && index >= 0) {
+        return { value: value[index], paths: formatNumericLiteralPath(paths, index) };
+      }
+      return;
+    }
+
+    if (isPlainObject(value)) {
+      // For objects, treat as property name
+      const key = String(tree.value);
+      if (key in value) {
+        return { value: value[key], paths: formatStringLiteralPath(paths, key) };
+      }
+      return;
+    }
+
+    return;
+  };
+
   private handleSlices = ({ value, paths }: ValuePath, tree: Slices): ValuePath[] => {
     const results: ValuePath[] = [];
 
@@ -345,19 +411,49 @@ export class Handler<T extends unknown = unknown> {
       return [];
     }
 
-    const start = tree.start !== null ? getNumericLiteralIndex(tree.start, value.length) : 0;
-    const end = tree.end !== null ? getNumericLiteralIndex(tree.end, value.length) : value.length;
-    const step = tree.step === null || tree.step <= 0 ? 1 : tree.step;
+    const len = value.length;
 
-    let count = 0;
-    value.forEach((item, index) => {
-      if (index >= start && index < end) {
-        if (count % step === 0) {
-          results.push({ value: item, paths: formatNumericLiteralPath(paths, index) });
-        }
-        count += 1;
+    // RFC 9535 Section 2.3.4.2: Slice semantics
+    // Step defaults to 1, step of 0 returns empty
+    const step = tree.step ?? 1;
+    if (step === 0) {
+      return [];
+    }
+
+    // Normalize start (n) and end (m)
+    // n = S if S >= 0, else len + S (with default based on step direction)
+    // m = E if E >= 0, else len + E (with default based on step direction)
+    let n: number;
+    let m: number;
+
+    if (step > 0) {
+      n = tree.start !== null ? (tree.start >= 0 ? tree.start : len + tree.start) : 0;
+      m = tree.end !== null ? (tree.end >= 0 ? tree.end : len + tree.end) : len;
+    } else {
+      n = tree.start !== null ? (tree.start >= 0 ? tree.start : len + tree.start) : len - 1;
+      m = tree.end !== null ? (tree.end >= 0 ? tree.end : len + tree.end) : -len - 1;
+    }
+
+    // Compute lower and upper bounds
+    let lower: number;
+    let upper: number;
+
+    if (step > 0) {
+      lower = Math.max(n, 0);
+      upper = Math.min(m, len);
+    } else {
+      lower = Math.min(n, len - 1);
+      upper = Math.max(m, -1);
+    }
+
+    // Iterate
+    let i = step > 0 ? lower : upper;
+    while ((step > 0 && i < upper) || (step < 0 && i > lower)) {
+      if (i >= 0 && i < len) {
+        results.push({ value: value[i], paths: formatNumericLiteralPath(paths, i) });
       }
-    });
+      i += step;
+    }
 
     return results;
   };
@@ -470,6 +566,7 @@ export class Handler<T extends unknown = unknown> {
       case 'filterExpression': {
         let results: ValuePath[] = [];
 
+        // RFC 9535 Section 2.3.5.1: Filter selects children for which expression is TRUE
         if (isArray(payloadValue)) {
           payloadValue.forEach((value, index) => {
             const item = { value, paths: formatNumericLiteralPath(payload.paths, index) };
@@ -478,9 +575,13 @@ export class Handler<T extends unknown = unknown> {
             }
           });
         } else if (isPlainObject(payloadValue)) {
-          if (this.handleFilterExpressionContent(payload, tree.value)) {
-            results = results.concat(payload);
-          }
+          // For objects, iterate over values (children), not the root object
+          Object.keys(payloadValue).forEach((key) => {
+            const item = { value: payloadValue[key], paths: formatStringLiteralPath(payload.paths, key) };
+            if (this.handleFilterExpressionContent(item, tree.value)) {
+              results = results.concat(item);
+            }
+          });
         }
 
         return results;
@@ -557,7 +658,9 @@ export class Handler<T extends unknown = unknown> {
             return this.handleSubscript(result, tree.next);
           }
           case 'numericLiteral': {
-            const result = this.handleNumericLiteral(payload, treeValue.value);
+            // Dot notation with number ($.2) should access property as string on objects
+            // and work as array index on arrays
+            const result = this.handleDotNumericLiteral(payload, treeValue.value);
             if (isUndefined(result)) {
               return;
             }

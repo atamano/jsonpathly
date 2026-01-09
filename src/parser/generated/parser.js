@@ -518,7 +518,14 @@ function peg$parse(input, options) {
   function peg$f77(first, rest) {    return first + rest.join('');  }
   function peg$f78() {    return "-";  }
   function peg$f79(chars) {    return chars.join('');  }
-  function peg$f80() {    return parseFloat(text());  }
+  function peg$f80(frac, exp) {
+    const num = parseFloat(text());
+    // RFC 9535: Integer literals (no decimal, no exponent) must be within I-JSON range
+    if (!frac && !exp && (num < -9007199254740991 || num > 9007199254740991)) {
+      error('Integer out of I-JSON range [-(2^53)+1, (2^53)-1]');
+    }
+    return num;
+  }
   function peg$f81(chars) {    return chars.join('');  }
   function peg$f82(chars) {    return chars.join('');  }
   function peg$f83(char) {    return char;  }
@@ -3515,7 +3522,7 @@ function peg$parse(input, options) {
         s4 = null;
       }
       peg$savedPos = s0;
-      s0 = peg$f80();
+      s0 = peg$f80(s3, s4);
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;

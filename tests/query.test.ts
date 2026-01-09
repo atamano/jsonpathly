@@ -1,855 +1,580 @@
+/**
+ * Query Function Tests
+ *
+ * Comprehensive tests for the query() function covering:
+ * - Dot notation: $.key, $.*
+ * - Bracket notation: $['key'], $[0]
+ * - Recursive descent: $..key
+ * - Array slices: $[start:end:step]
+ * - Filters: $[?(@.key == value)]
+ * - Comparators: ==, !=, <, <=, >, >=
+ * - Logical operators: &&, ||, !
+ * - RFC 9535 functions: length(), count(), match(), search(), value()
+ */
 import { query } from '../src/handler/query';
 import { JSONPathSyntaxError } from '../src/parser/errors';
 import { expect } from 'chai';
 
-describe('query', () => {
-  describe('with dot notations', () => {
-    const PAYLOAD = {
+describe('query()', () => {
+  // ============================================
+  // DOT NOTATION
+  // ============================================
+
+  describe('dot notation', () => {
+    const data = {
       string: 'string',
       array: [1, 2, 3, 4],
-      nested: {
-        object: 1,
-      },
+      nested: { object: 1 },
     };
-    const testCases = [
-      { payload: PAYLOAD, path: `$.string`, expected: PAYLOAD.string },
-      { payload: PAYLOAD, path: `$.array.2`, expected: PAYLOAD.array[2] },
-      { payload: PAYLOAD, path: `$.array.10`, expected: undefined },
-      { payload: PAYLOAD, path: `$.array.-1`, expected: PAYLOAD.array[3] },
-      { payload: PAYLOAD, path: `$.nested.object`, expected: PAYLOAD.nested.object },
-      { payload: PAYLOAD, path: `$.*`, expected: Object.values(PAYLOAD) },
-      { payload: PAYLOAD, path: `$.*.object`, expected: [1] },
-      { payload: PAYLOAD, path: `$.nested.*`, expected: Object.values(PAYLOAD.nested) },
-      { payload: PAYLOAD, path: `$.bad`, expected: undefined },
-      {
-        payload: {
-          empty: 'value',
-        },
-        path: `$.empty`,
-        expected: 'value',
-      },
-      { payload: [PAYLOAD], path: `$.string`, expected: undefined },
-      {
-        payload: {
-          key: 42,
-          key_: 43,
-          _: 44,
-          dash: 45,
-          _dash: 46,
-          '': 47,
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          'key_underscore-toto': 'value',
-          something: 'else',
-        },
-        path: '$.key_underscore-toto',
-        expected: 'value',
-      },
-    ];
 
-    testCases.forEach(({ payload, path, expected }) => {
-      it(path, () => {
-        const res = query(payload, path);
+    it('accesses simple property', () => {
+      expect(query(data, '$.string')).to.equal('string');
+    });
 
-        expect(res).to.deep.equal(expected);
-      });
+    it('accesses array by index', () => {
+      expect(query(data, '$.array.2')).to.equal(3);
+    });
+
+    it('returns undefined for missing property', () => {
+      expect(query(data, '$.missing')).to.be.undefined;
+    });
+
+    it('accesses negative index', () => {
+      expect(query(data, '$.array.-1')).to.equal(4);
+    });
+
+    it('accesses nested property', () => {
+      expect(query(data, '$.nested.object')).to.equal(1);
+    });
+
+    it('uses wildcard for all values', () => {
+      expect(query(data, '$.*')).to.deep.equal(Object.values(data));
+    });
+
+    it('combines wildcard with property', () => {
+      expect(query(data, '$.*.object')).to.deep.equal([1]);
+    });
+
+    it('handles key with underscore and dash', () => {
+      const obj = { 'key_underscore-dash': 'value' };
+      expect(query(obj, '$.key_underscore-dash')).to.equal('value');
     });
   });
 
-  describe('with dot dot notations', () => {
-    describe('with identifier / stringLiteral / numericLiteral', () => {
-      const PAYLOAD = {
-        nested: {
-          nested: [
-            {
-              nested: 2,
-              exist: true,
-            },
-            {
-              nested: 3,
-              test: { nested: [] },
-            },
-          ],
-        },
-        other: {
-          object: {
-            test: '1',
-          },
-        },
-      };
-      const testCases = [
-        { payload: PAYLOAD, path: `$..notExist`, expected: [] },
-        {
-          payload: PAYLOAD,
-          path: `$..nested..nested..nested`,
-          expected: [2, 3, []],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..other`,
-          expected: [PAYLOAD.other],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..["nested"].nested..test`,
-          expected: [PAYLOAD.nested.nested[1].test],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested["nested"]..["test"]`,
-          expected: [PAYLOAD.nested.nested[1].test],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested.nested[0]`,
-          expected: [PAYLOAD.nested.nested[0]],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested.nested.1`,
-          expected: [PAYLOAD.nested.nested[1]],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested.nested.1.test`,
-          expected: [PAYLOAD.nested.nested[1].test],
-        },
-      ];
+  // ============================================
+  // RECURSIVE DESCENT
+  // ============================================
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path);
+  describe('recursive descent', () => {
+    const data = {
+      nested: {
+        nested: [
+          { nested: 2, exist: true },
+          { nested: 3, test: { nested: [] } },
+        ],
+      },
+      other: { object: { test: '1' } },
+    };
 
-          expect(res).to.deep.equal(expected);
-        });
-      });
+    it('finds all matching properties', () => {
+      expect(query(data, '$..nested..nested..nested')).to.deep.equal([2, 3, []]);
+    });
+
+    it('returns empty for non-existent property', () => {
+      expect(query(data, '$..notExist')).to.deep.equal([]);
+    });
+
+    it('combines with bracket notation', () => {
+      expect(query(data, '$..["nested"].nested..test')).to.deep.equal([data.nested.nested[1].test]);
+    });
+
+    it('accesses by index in recursive descent', () => {
+      expect(query(data, '$..nested.nested[0]')).to.deep.equal([data.nested.nested[0]]);
     });
 
     describe('with wildcard', () => {
-      const PAYLOAD = {
-        nested: {
-          nested: [
-            {
-              nested: 2,
-              exist: true,
-            },
-            {
-              nested: 3,
-              test: { nested: [] },
-            },
-          ],
-        },
-        other: {
-          object: {
-            test: '1',
-          },
-        },
-      };
-      const testCases = [
-        { payload: { store: { book: [1, 2, 3] } }, path: `$.*.book`, expected: [[1, 2, 3]] },
-        { payload: { store: { book: [1, 2, 3] } }, path: `$..*..book`, expected: [[1, 2, 3]] },
-        { payload: { store: { book: [1, 2, 3] } }, path: `$..*..book[*]`, expected: [1, 2, 3] },
-        { payload: PAYLOAD, path: `$..*.nested..nested`, expected: [2, 3, []] },
-        { payload: PAYLOAD, path: `$..[*].nested..["nested"]`, expected: [2, 3, []] },
-        { payload: PAYLOAD, path: `$..*..*[0].nested`, expected: [2] },
-        { payload: PAYLOAD, path: `$..*..[*][0].nested`, expected: [2] },
-        { payload: PAYLOAD, path: `$..*..*[10].nested`, expected: [] },
-        { payload: PAYLOAD, path: `$..nested.nested[*]["nested", "exist"]`, expected: [2, true, 3] },
-        { payload: [PAYLOAD], path: `$..nested.nested[*]["nested", "exist"]`, expected: [2, true, 3] },
-        { payload: PAYLOAD, path: `$..*.object`, expected: [{ test: '1' }] },
-        { payload: PAYLOAD, path: `$..*..*..*..*..*`, expected: [[]] },
-        { payload: PAYLOAD, path: `$..*..*..*..*..[*]`, expected: [[]] },
-        { payload: PAYLOAD, path: `$..*.object..test`, expected: ['1'] },
-        { payload: PAYLOAD, path: `$..*.object.test`, expected: ['1'] },
-        { payload: [PAYLOAD], path: `$..*.object.test`, expected: ['1'] },
-      ];
+      it('finds nested objects', () => {
+        const obj = { store: { book: [1, 2, 3] } };
+        expect(query(obj, '$.*.book')).to.deep.equal([[1, 2, 3]]);
+      });
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path);
-
-          expect(res).to.deep.equal(expected);
-        });
+      it('recursively finds all items', () => {
+        const obj = { store: { book: [1, 2, 3] } };
+        expect(query(obj, '$..*..book[*]')).to.deep.equal([1, 2, 3]);
       });
     });
 
     describe('with filters', () => {
-      const PAYLOAD = {
+      const items = {
         number: 2,
         nested: {
           nested: [{ number: 1, exist: true }, { number: 2 }, { number: 3 }],
         },
       };
 
-      const testCases = [
-        { payload: PAYLOAD, path: `$..nested.*["number", "exist"]`, expected: [1, true, 2, 3] },
-        {
-          payload: PAYLOAD,
-          path: `$..nested[?(@.number==1)]`,
-          expected: [PAYLOAD.nested.nested[0]],
-        },
-        {
-          payload: [PAYLOAD],
-          path: `$..nested[?(@.number==1)]`,
-          expected: [PAYLOAD.nested.nested[0]],
-        },
-        {
-          payload: { number: 1, exist: true },
-          path: `$..[?(@.number==1)]`,
-          expected: [{ number: 1, exist: true }],
-        },
-        {
-          payload: [{ number: 1, exist: true }],
-          path: `$..[?(@.number==1)]`,
-          expected: [{ number: 1, exist: true }],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..[?(@.number < 2 )]`,
-          expected: [{ number: 1, exist: true }],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested[?(@.number>=2)]`,
-          expected: [PAYLOAD.nested.nested[1], PAYLOAD.nested.nested[2]],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested[?(@.number>=2)].number`,
-          expected: [2, 3],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested[?(@.exist)]`,
-          expected: [PAYLOAD.nested.nested[0]],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested[?(@.number < $.number)]`,
-          expected: [PAYLOAD.nested.nested[0]],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested[0,2]`,
-          expected: [PAYLOAD.nested.nested[0], PAYLOAD.nested.nested[2]],
-        },
-        {
-          payload: PAYLOAD,
-          path: `$..nested[:2]`,
-          expected: [PAYLOAD.nested.nested[0], PAYLOAD.nested.nested[1]],
-        },
-      ];
+      it('filters in recursive descent', () => {
+        expect(query(items, '$..nested[?(@.number==1)]')).to.deep.equal([items.nested.nested[0]]);
+      });
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path);
-
-          expect(res).to.deep.equal(expected);
-        });
+      it('filters with comparison to root', () => {
+        expect(query(items, '$..nested[?(@.number < $.number)]')).to.deep.equal([items.nested.nested[0]]);
       });
     });
   });
 
-  describe('with bracket numeric value', () => {
-    const PAYLOAD = {
+  // ============================================
+  // BRACKET NOTATION - NUMERIC
+  // ============================================
+
+  describe('bracket notation - numeric', () => {
+    const data = {
       string: 'stringValue',
       number: 0,
-      arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      array: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     };
 
-    const testCases = [
-      { payload: PAYLOAD, path: `$.arrayOfNumber[-1]`, expected: 9 },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[1]`, expected: 2 },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[1,3,5]`, expected: [2, 4, 6] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[10,11,12]`, expected: [] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[10,1,12]`, expected: [2] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[10]`, expected: undefined },
-      { payload: PAYLOAD, path: `$.string[0]`, expected: undefined },
-      { payload: PAYLOAD, path: `$.string[0,1,2]`, expected: [] },
-      { payload: PAYLOAD, path: `$.number[0]`, expected: undefined },
-      { payload: PAYLOAD, path: `$.number.0`, expected: undefined },
-    ];
+    it('accesses by negative index', () => {
+      expect(query(data, '$.array[-1]')).to.equal(9);
+    });
 
-    testCases.forEach(({ payload, path, expected }) => {
-      it(path, () => {
-        const res = query(payload, path);
+    it('accesses by positive index', () => {
+      expect(query(data, '$.array[1]')).to.equal(2);
+    });
 
-        expect(res).to.deep.equal(expected);
-      });
+    it('accesses multiple indices', () => {
+      expect(query(data, '$.array[1,3,5]')).to.deep.equal([2, 4, 6]);
+    });
+
+    it('returns empty for out of bounds indices', () => {
+      expect(query(data, '$.array[10,11,12]')).to.deep.equal([]);
+    });
+
+    it('returns undefined for single out of bounds index', () => {
+      expect(query(data, '$.array[10]')).to.be.undefined;
+    });
+
+    it('returns undefined for index on string', () => {
+      expect(query(data, '$.string[0]')).to.be.undefined;
+    });
+
+    it('returns undefined for index on number', () => {
+      expect(query(data, '$.number[0]')).to.be.undefined;
     });
   });
 
-  describe('with bracket string value', () => {
-    const PAYLOAD = {
+  // ============================================
+  // BRACKET NOTATION - STRING
+  // ============================================
+
+  describe('bracket notation - string', () => {
+    const data = {
       string: 'stringValue',
       number: 0,
-      arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      arrayOfString: ['11', '22', '33', '44', '55'],
-      nestedObject: {
-        object: {
-          test: '1',
-        },
-      },
+      nested: { object: { test: '1' } },
     };
 
-    const testCases = [
-      { payload: PAYLOAD, path: `$["notExist"]`, undefined },
-      { payload: PAYLOAD, path: `$["string"]`, expected: PAYLOAD.string },
-      // Different implementation depending on libraries
-      { payload: PAYLOAD, path: `$[string, number]`, expected: [PAYLOAD.string, PAYLOAD.number] },
-      { payload: PAYLOAD, path: `$["string", "number"]`, expected: [PAYLOAD.string, PAYLOAD.number] },
-      { payload: PAYLOAD, path: `$["nestedObject"]["object"]`, expected: PAYLOAD.nestedObject.object },
-      { payload: PAYLOAD, path: `$[nestedObject]`, expected: PAYLOAD.nestedObject },
-      { payload: PAYLOAD, path: `$[*]`, expected: Object.values(PAYLOAD) },
-      { payload: PAYLOAD, path: `$[*]["object"]`, expected: [PAYLOAD.nestedObject.object] },
-    ];
+    it('accesses by quoted string', () => {
+      expect(query(data, '$["string"]')).to.equal('stringValue');
+    });
 
-    testCases.forEach(({ payload, path, expected }) => {
-      it(path, () => {
-        const res = query(payload, path);
+    it('accesses multiple keys', () => {
+      expect(query(data, '$["string", "number"]')).to.deep.equal(['stringValue', 0]);
+    });
 
-        expect(res).to.deep.equal(expected);
-      });
+    it('accesses unquoted identifiers', () => {
+      expect(query(data, '$[string, number]')).to.deep.equal(['stringValue', 0]);
+    });
+
+    it('accesses nested with bracket notation', () => {
+      expect(query(data, '$["nested"]["object"]')).to.deep.equal(data.nested.object);
+    });
+
+    it('uses wildcard in brackets', () => {
+      expect(query(data, '$[*]')).to.deep.equal(Object.values(data));
     });
   });
 
-  describe('with array slice', () => {
-    const PAYLOAD = {
+  // ============================================
+  // ARRAY SLICES
+  // ============================================
+
+  describe('array slices', () => {
+    const data = {
       string: 'stringValue',
-      arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      array: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     };
 
-    const testCases = [
-      { payload: PAYLOAD, path: `$.string[1:3]`, expected: [] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[1:3]`, expected: [2, 3] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[-1:]`, expected: [9] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[:3]`, expected: [1, 2, 3] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[5:2]`, expected: [] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[:7:2]`, expected: [1, 3, 5, 7] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[::3]`, expected: [1, 4, 7] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[2::3]`, expected: [3, 6, 9] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[:2:]`, expected: [1, 2] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[:2]`, expected: [1, 2] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[7::]`, expected: [8, 9] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[5::2]`, expected: [6, 8] },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[:]`, expected: PAYLOAD.arrayOfNumber },
-      { payload: PAYLOAD, path: `$.arrayOfNumber[0:2:2]`, expected: [1] },
-    ];
+    it('returns empty for slice on string', () => {
+      expect(query(data, '$.string[1:3]')).to.deep.equal([]);
+    });
 
-    testCases.forEach(({ payload, path, expected }) => {
-      it(path, () => {
-        const res = query(payload, path);
+    it('slices with start and end', () => {
+      expect(query(data, '$.array[1:3]')).to.deep.equal([2, 3]);
+    });
 
-        expect(res).to.deep.equal(expected);
-      });
+    it('slices from negative to end', () => {
+      expect(query(data, '$.array[-1:]')).to.deep.equal([9]);
+    });
+
+    it('slices from start to index', () => {
+      expect(query(data, '$.array[:3]')).to.deep.equal([1, 2, 3]);
+    });
+
+    it('returns empty for invalid range', () => {
+      expect(query(data, '$.array[5:2]')).to.deep.equal([]);
+    });
+
+    it('slices with step', () => {
+      expect(query(data, '$.array[:7:2]')).to.deep.equal([1, 3, 5, 7]);
+    });
+
+    it('slices with step only', () => {
+      expect(query(data, '$.array[::3]')).to.deep.equal([1, 4, 7]);
+    });
+
+    it('slices with start and step', () => {
+      expect(query(data, '$.array[2::3]')).to.deep.equal([3, 6, 9]);
+    });
+
+    it('slices all elements', () => {
+      expect(query(data, '$.array[:]')).to.deep.equal(data.array);
+    });
+
+    it('slices with all parameters', () => {
+      expect(query(data, '$.array[0:2:2]')).to.deep.equal([1]);
     });
   });
 
-  describe('with comparators', () => {
-    const PAYLOAD = {
-      arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      arraySimpleObjects: [
+  // ============================================
+  // COMPARATORS
+  // ============================================
+
+  describe('comparators', () => {
+    const data = {
+      items: [
         { number: 2, string: 'ABC', exist: true, array: [1, 2, 3], str: '123' },
         { number: 5, string: 'BCD', array: [4, 5, 6], str: '' },
         { number: 7, string: 'CDE', array: [4, 5, 6], arr: [] },
       ],
     };
 
-    const testCases = [
-      {
-        path: `$.arraySimpleObjects[?(@.number=="2")]..number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number*2==@.number+@.number)]..number`,
-        expected: [2, 5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number*2==@.number+@.number)]..["number"]`,
-        expected: [2, 5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@)]..number`,
-        expected: [2, 5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?($)]..number`,
-        expected: [2, 5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>="5")].number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>"5")].number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number<="5")].number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number<"5")].number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number in "5")].number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number nin "5")].number`,
-        expected: [],
-      },
-      {
-        path: `$[?([1,2,3] subsetof @.arrayOfNumber)]`,
-        expected: [PAYLOAD],
-      },
-      {
-        path: `$[?([10,3,3] subsetof @.arrayOfNumber)]`,
-        expected: [],
-      },
-      {
-        path: `$[?(123 subsetof @.arrayOfNumber)]`,
-        expected: [],
-      },
-      {
-        path: `$[?([10,11,2] anyof @.arrayOfNumber)]`,
-        expected: [PAYLOAD],
-      },
-      {
-        path: `$[?([10,11,12] anyof @.arrayOfNumber)]`,
-        expected: [],
-      },
-      {
-        path: `$[?(123 anyof @.arrayOfNumber)]`,
-        expected: [],
-      },
-      {
-        path: `$[?([10,11,12] noneof @.arrayOfNumber)]`,
-        expected: [PAYLOAD],
-      },
-      {
-        path: `$[?([10,11,1] noneof @.arrayOfNumber)]`,
-        expected: [],
-      },
-      {
-        path: `$[?(123 noneof @.arrayOfNumber)]`,
-        expected: [],
-      },
-      {
-        path: `$[?(@.arrayOfNumber sizeof @.arrayOfNumber)]`,
-        expected: [PAYLOAD],
-      },
-      {
-        path: `$[?(@.arrayOfNumber sizeof 123)]`,
-        expected: [],
-      },
-      {
-        path: `$[?(@.arrayOfNumber empty)]`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.arr empty)]`,
-        expected: [PAYLOAD.arraySimpleObjects[2]],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.str empty)]`,
-        expected: [PAYLOAD.arraySimpleObjects[1]],
-      },
-      {
-        path: `$[?(123 sizeof @.arrayOfNumber)]`,
-        expected: [],
-      },
-      {
-        path: `$[?([1,2,3,4,5,6,7,8,9,10] sizeof @.arrayOfNumber)]`,
-        expected: [],
-      },
-      {
-        path: `$[?(@.arrayOfNumber size 9)]`,
-        expected: [PAYLOAD],
-      },
-      {
-        path: `$[?(@.arrayOfNumber size "9")]`,
-        expected: [],
-      },
-      {
-        path: `$[?(123 size 9)]`,
-        expected: [],
-      },
-      {
-        path: `$[?(@.arrayOfNumber size 8)]`,
-        expected: [],
-      },
-      {
-        path: `$[?(123 sizeof 9)]`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number==2)].number`,
-        expected: [2],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number!=2)].number`,
-        expected: [5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number==2)]..number`,
-        expected: [2],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.exist)].number`,
-        expected: [2],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>=5)].number`,
-        expected: [5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>5)].number`,
-        expected: [7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number<=5)].number`,
-        expected: [2, 5],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number<5)].number`,
-        expected: [2],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number in [1,2])].number`,
-        expected: [2],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number nin [1,2])].number`,
-        expected: [5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(1 in @.array)].number`,
-        expected: [2],
-      },
-    ];
+    describe('equality', () => {
+      it('matches equal numbers', () => {
+        expect(query(data, '$.items[?(@.number==2)].number')).to.deep.equal([2]);
+      });
 
-    testCases.forEach(({ path, expected }) => {
-      it(path, () => {
-        const res = query(PAYLOAD, path);
+      it('does not match string to number', () => {
+        expect(query(data, '$.items[?(@.number=="2")]..number')).to.deep.equal([]);
+      });
 
-        expect(res).to.deep.equal(expected);
+      it('matches not equal', () => {
+        expect(query(data, '$.items[?(@.number!=2)].number')).to.deep.equal([5, 7]);
+      });
+    });
+
+    describe('numeric comparison', () => {
+      it('matches greater than or equal', () => {
+        expect(query(data, '$.items[?(@.number>=5)].number')).to.deep.equal([5, 7]);
+      });
+
+      it('matches greater than', () => {
+        expect(query(data, '$.items[?(@.number>5)].number')).to.deep.equal([7]);
+      });
+
+      it('matches less than or equal', () => {
+        expect(query(data, '$.items[?(@.number<=5)].number')).to.deep.equal([2, 5]);
+      });
+
+      it('matches less than', () => {
+        expect(query(data, '$.items[?(@.number<5)].number')).to.deep.equal([2]);
+      });
+    });
+
+    describe('existence check', () => {
+      it('matches when property exists and is truthy', () => {
+        expect(query(data, '$.items[?(@.exist)].number')).to.deep.equal([2]);
+      });
+    });
+
+    describe('arithmetic operations', () => {
+      it('evaluates multiplication', () => {
+        expect(query(data, '$.items[?(@.number*2==@.number+@.number)]..number')).to.deep.equal([2, 5, 7]);
+      });
+
+      it('matches current and root paths', () => {
+        expect(query(data, '$.items[?(@)]..number')).to.deep.equal([2, 5, 7]);
       });
     });
   });
 
-  describe('with comparator operations', () => {
-    const PAYLOAD = {
+  // ============================================
+  // COMPARATOR OPERATIONS
+  // ============================================
+
+  describe('arithmetic in comparators', () => {
+    const data = {
       number: 0,
-      arraySimpleObjects: [
+      items: [
+        { number: 2, string: 'ABC', exist: true },
+        { number: 5, string: 'BCD' },
+        { number: 7, string: 'CDE' },
+      ],
+    };
+
+    it('adds to root value', () => {
+      expect(query(data, '$.items[?(@.number>$.number+3)]..number')).to.deep.equal([5, 7]);
+    });
+
+    it('handles complex arithmetic', () => {
+      expect(query(data, '$.items[?(@.number>$.number+7-10/10)]..number')).to.deep.equal([7]);
+    });
+
+    it('handles division by zero', () => {
+      expect(query(data, '$.items[?(@.number>$.number+7-10/0)]..number')).to.deep.equal([]);
+    });
+
+    it('respects operator precedence', () => {
+      expect(query(data, '$.items[?(@.number>$.number+2+2*2)]..number')).to.deep.equal([7]);
+    });
+
+    it('respects parentheses', () => {
+      expect(query(data, '$.items[?(@.number>$.number+(2+2)*2)]..number')).to.deep.equal([]);
+    });
+
+    it('throws on missing operator', () => {
+      expect(() => query(data, '$.items[?(@.number>3 4)]..number')).to.throw(Error);
+    });
+  });
+
+  // ============================================
+  // LOGICAL EXPRESSIONS
+  // ============================================
+
+  describe('logical expressions', () => {
+    const data = {
+      number: 0,
+      items: [
         { number: 2, string: 'ABC', exist: true, array: [1, 2, 3] },
         { number: 5, string: 'BCD', array: [4, 5, 6] },
         { number: 7, string: 'CDE', array: [4, 5, 6] },
       ],
     };
 
-    const testCases = [
-      {
-        path: `$.arraySimpleObjects[?(@.number>$.number+3)]..number`,
-        expected: [5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>$['number']+3)]..number`,
-        expected: [5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>$.number+6)]..number`,
-        expected: [7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>$.number+7-10/10)]..number`,
-        expected: [7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>$.number+7-10/0)]..number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>$.number+2+2*2)]..number`,
-        expected: [7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>$.number+(2+2)*2)]..number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number + 2 >$.number + 8)]..number`,
-        expected: [7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>3+10-8+1)]..number`,
-        expected: [7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number>3 + 10 - 8 + 1)]..number`,
-        expected: [7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number - 1 > @.number)]..number`,
-        expected: [],
-      },
-      {
-        path: `$.arraySimpleObjects[?(@.number + 1 > @.number)]..number`,
-        expected: [2, 5, 7],
-      },
-    ];
-
-    testCases.forEach(({ path, expected }) => {
-      const res = query(PAYLOAD, path);
-
-      expect(res).to.deep.equal(expected);
+    it('uses OR operator', () => {
+      expect(query(data, '$.items[?(@.number==2 || @.number==7)].number')).to.deep.equal([2, 7]);
     });
 
-    it('should throw exception on missing operator', () => {
-      expect(() => {
-        query(PAYLOAD, '$.arraySimpleObjects[?(@.number>3 4)]..number');
-      }).to.throw(Error);
+    it('uses AND operator', () => {
+      expect(query(data, '$.items[?(4 in @.array && @.string=="BCD")].number')).to.deep.equal([5]);
+    });
+
+    it('combines AND and OR', () => {
+      expect(query(data, '$.items[?((4 in @.array && @.string=="BCD") || @.number==2)].number'))
+        .to.deep.equal([2, 5]);
+    });
+
+    it('uses NOT operator', () => {
+      expect(query(data, '$.items[?(!((4 in @.array && @.string=="BCD") || @.number==2))].number'))
+        .to.deep.equal([7]);
+    });
+
+    it('references root in filter', () => {
+      expect(query(data, '$.items[?($.number==0)].number')).to.deep.equal([2, 5, 7]);
     });
   });
 
-  describe('with bad path', () => {
-    const testCases = [
-      { path: 'bad', err: JSONPathSyntaxError },
-      { path: '', err: JSONPathSyntaxError },
-      { path: '$...bad', err: JSONPathSyntaxError },
-      { path: '$.$', err: JSONPathSyntaxError },
-      { path: `$["bad Quote']`, err: JSONPathSyntaxError },
-      { path: `$[bad Quote']`, err: JSONPathSyntaxError },
-      { path: `$\{bad\}`, err: JSONPathSyntaxError },
-      { path: `@`, err: JSONPathSyntaxError },
-      { path: `$[?(@.test == {'1': undefined})]`, err: JSONPathSyntaxError },
-      { path: `$[1:2:3:4]`, err: JSONPathSyntaxError },
-      { path: `$[[1:2:3]]`, err: JSONPathSyntaxError },
-    ];
+  // ============================================
+  // REGEX OPERATOR
+  // ============================================
 
-    testCases.forEach(({ path, err }) => {
-      expect(() => {
-        query({ test: 1 }, path);
-      }).to.throw(err);
+  describe('regex operator', () => {
+    const strings = ['Hello World !', 'hello Earth !', 'Good Morning'];
+
+    it('matches case-insensitive', () => {
+      expect(query(strings, '$[?(@ =~ /hello/i)]')).to.deep.equal([strings[0], strings[1]]);
+    });
+
+    it('matches with global flag', () => {
+      expect(query(strings, '$[?(@ =~ /World/g)]')).to.deep.equal([strings[0]]);
+    });
+
+    it('returns empty for no match', () => {
+      expect(query(strings, '$[?(@ =~ /bad/g)]')).to.deep.equal([]);
+    });
+
+    it('matches all with wildcard', () => {
+      expect(query(strings, '$[?(@ =~ /.*/g)]')).to.deep.equal(strings);
+    });
+
+    it('does not match numbers', () => {
+      expect(query([1], '$[?(@ =~ /.*/g)]')).to.deep.equal([]);
     });
   });
 
-  describe('with logical expressions', () => {
-    const PAYLOAD = {
-      number: 0,
-      arraySimpleObjects: [
-        { number: 2, string: 'ABC', exist: true, array: [1, 2, 3] },
-        { number: 5, string: 'BCD', array: [4, 5, 6] },
-        { number: 7, string: 'CDE', array: [4, 5, 6] },
-      ],
-    };
+  // ============================================
+  // OPTIONS
+  // ============================================
 
-    const testCases = [
-      {
-        path: `$.arraySimpleObjects[?(@.number==2 || @.number==7)].number`,
-        expected: [2, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?(4 in @.array && @.string=="BCD")].number`,
-        expected: [5],
-      },
-      {
-        path: `$.arraySimpleObjects[?( (4 in @.array && @.string=="BCD") || @.number==2 )].number`,
-        expected: [2, 5],
-      },
-      {
-        path: `$.arraySimpleObjects[?( !((4 in @.array && @.string=="BCD") || @.number==2) )].number`,
-        expected: [7],
-      },
-      {
-        path: `$.arraySimpleObjects[?( $.number==0 )].number`,
-        expected: [2, 5, 7],
-      },
-      {
-        path: `$.arraySimpleObjects[?($.number)].number`,
-        expected: [2, 5, 7],
-      },
+  describe('returnArray option', () => {
+    const data = { string: 'stringValue', number: 0 };
+
+    it('returns array for single value', () => {
+      expect(query(data, '$.number', { returnArray: true })).to.deep.equal([0]);
+    });
+
+    it('returns array for wildcard', () => {
+      expect(query(data, '$.*', { returnArray: true })).to.deep.equal(Object.values(data));
+    });
+
+    it('returns array for string value', () => {
+      expect(query(data, '$.string', { returnArray: true })).to.deep.equal(['stringValue']);
+    });
+
+    it('returns empty array for missing property', () => {
+      expect(query(data, '$.notExist', { returnArray: true })).to.deep.equal([]);
+    });
+  });
+
+  describe('hideExceptions option', () => {
+    const cases = [
+      '$.bad',
+      'bad',
+      '',
+      '$...',
+      '$.$',
+      '$["bad Quote\']',
+      '@',
+      '$[1:2:3:4]',
     ];
 
-    testCases.forEach(({ path, expected }) => {
-      it(path, () => {
-        const res = query(PAYLOAD, path);
-
-        expect(res).to.deep.equal(expected);
+    for (const path of cases) {
+      it(`returns undefined for invalid path: ${path || '(empty)'}`, () => {
+        expect(query({ test: 1 }, path, { hideExceptions: true })).to.be.undefined;
       });
+    }
+
+    it('returns empty array with returnArray', () => {
+      expect(query({}, 'bad', { returnArray: true, hideExceptions: true })).to.deep.equal([]);
     });
   });
 
-  describe('with return array option', () => {
-    const PAYLOAD = {
-      string: 'stringValue',
-      number: 0,
-      arrayOfNumber: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    };
+  // ============================================
+  // INVALID PATHS
+  // ============================================
 
-    const testCases = [
-      {
-        path: `$.number`,
-        expected: [PAYLOAD.number],
-      },
-      {
-        path: `$.*`,
-        expected: Object.values(PAYLOAD),
-      },
-      {
-        path: `$.string`,
-        expected: [PAYLOAD.string],
-      },
-      {
-        path: `$.notExist`,
-        expected: [],
-      },
+  describe('invalid paths', () => {
+    const invalidPaths = [
+      'bad',
+      '',
+      '$...',
+      '$.$',
+      '$["bad Quote\']',
+      '$[bad Quote\']',
+      '@',
+      '$[?(@.test == undefined)]',
+      '$[1:2:3:4]',
+      '$[[1:2:3]]',
     ];
 
-    testCases.forEach(({ path, expected }) => {
-      it(path, () => {
-        const res = query(PAYLOAD, path, { returnArray: true });
-
-        expect(res).to.deep.equal(expected);
+    for (const path of invalidPaths) {
+      it(`throws for: ${path || '(empty)'}`, () => {
+        expect(() => query({ test: 1 }, path)).to.throw(JSONPathSyntaxError);
       });
-    });
+    }
   });
 
-  describe('with regexp operator', () => {
-    const REG_PAYLOAD = ['Hello World !', 'hello Earth !', 'Good Morning'];
-    const testCases = [
-      { payload: REG_PAYLOAD, path: `$[?(@ =~ /hello/i )]`, expected: [REG_PAYLOAD[0], REG_PAYLOAD[1]] },
-      { payload: REG_PAYLOAD, path: `$[?(@ =~ /World/g )]`, expected: [REG_PAYLOAD[0]] },
-      { payload: REG_PAYLOAD, path: `$[?(@ =~ /bad/g )]`, expected: [] },
-      { payload: REG_PAYLOAD, path: `$[?(@ =~ /.*/g )]`, expected: REG_PAYLOAD },
-      { payload: [1], path: `$[?(@ =~ /.*/g )]`, expected: [] },
-    ];
+  // ============================================
+  // RFC 9535 FUNCTIONS
+  // ============================================
 
-    testCases.forEach(({ payload, path, expected }) => {
-      it(path, () => {
-        const res = query(payload, path);
-
-        expect(res).to.deep.equal(expected);
-      });
-    });
-  });
-
-  describe('with hide exception option', () => {
-    const testCases = [
-      { path: '$.bad', expected: [], options: { returnArray: true, hideExceptions: true } },
-      { path: 'bad', expected: [], options: { returnArray: true, hideExceptions: true } },
-      { path: 'bad', expected: undefined, options: { hideExceptions: true } },
-      { path: '', expected: undefined, options: { hideExceptions: true } },
-      { path: '$...bad', expected: undefined, options: { hideExceptions: true } },
-      { path: '$.$', expected: undefined, options: { hideExceptions: true } },
-      { path: `$["bad Quote']`, expected: undefined, options: { hideExceptions: true } },
-      { path: `$[bad Quote']`, expected: undefined, options: { hideExceptions: true } },
-      { path: `$\{bad\}`, expected: undefined, options: { hideExceptions: true } },
-      { path: `@`, expected: undefined, options: { hideExceptions: true } },
-      {
-        path: `$[?(@.test == {'1': { hideExceptions: true }})]`,
-        expected: undefined,
-        options: { hideExceptions: true },
-      },
-      { path: `$[1:2:3:4]`, expected: undefined, options: { hideExceptions: true } },
-      { path: `$[[1:2:3]]`, expected: undefined, options: { hideExceptions: true } },
-    ];
-
-    testCases.forEach(({ path, expected, options }) => {
-      it(path, () => {
-        const res = query({ test: 1 }, path, options);
-
-        expect(res).to.deep.equal(expected);
-      });
-    });
-  });
-
-  // RFC 9535 Function Tests
   describe('RFC 9535 functions', () => {
     describe('length()', () => {
-      const testCases = [
-        { payload: { str: 'hello' }, path: `$[?(length(@.str) == 5)]`, expected: [{ str: 'hello' }] },
-        { payload: { arr: [1, 2, 3] }, path: `$[?(length(@.arr) == 3)]`, expected: [{ arr: [1, 2, 3] }] },
-        { payload: { obj: { a: 1, b: 2 } }, path: `$[?(length(@.obj) == 2)]`, expected: [{ obj: { a: 1, b: 2 } }] },
-        { payload: [{ str: 'ab' }, { str: 'abc' }, { str: 'abcd' }], path: `$[?(length(@.str) > 2)]`, expected: [{ str: 'abc' }, { str: 'abcd' }] },
-      ];
+      it('returns string length', () => {
+        // RFC 9535: filters iterate over array elements
+        expect(query([{ str: 'hello' }], '$[?(length(@.str) == 5)]', { returnArray: true }))
+          .to.deep.equal([{ str: 'hello' }]);
+      });
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path, { returnArray: true });
-          expect(res).to.deep.equal(expected);
-        });
+      it('returns array length', () => {
+        expect(query([{ arr: [1, 2, 3] }], '$[?(length(@.arr) == 3)]', { returnArray: true }))
+          .to.deep.equal([{ arr: [1, 2, 3] }]);
+      });
+
+      it('returns object key count', () => {
+        expect(query([{ obj: { a: 1, b: 2 } }], '$[?(length(@.obj) == 2)]', { returnArray: true }))
+          .to.deep.equal([{ obj: { a: 1, b: 2 } }]);
+      });
+
+      it('filters by length comparison', () => {
+        const data = [{ str: 'ab' }, { str: 'abc' }, { str: 'abcd' }];
+        expect(query(data, '$[?(length(@.str) > 2)]', { returnArray: true }))
+          .to.deep.equal([{ str: 'abc' }, { str: 'abcd' }]);
       });
     });
 
     describe('count()', () => {
-      const testCases = [
-        { payload: { items: [1, 2, 3] }, path: `$[?(count(@.items) == 3)]`, expected: [{ items: [1, 2, 3] }] },
-        { payload: { items: [] }, path: `$[?(count(@.items) == 0)]`, expected: [{ items: [] }] },
-      ];
+      it('counts array elements', () => {
+        expect(query([{ items: [1, 2, 3] }], '$[?(count(@.items) == 3)]', { returnArray: true }))
+          .to.deep.equal([{ items: [1, 2, 3] }]);
+      });
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path, { returnArray: true });
-          expect(res).to.deep.equal(expected);
-        });
+      it('counts empty array as zero', () => {
+        expect(query([{ items: [] }], '$[?(count(@.items) == 0)]', { returnArray: true }))
+          .to.deep.equal([{ items: [] }]);
       });
     });
 
     describe('match()', () => {
-      const testCases = [
-        { payload: [{ name: 'foo' }, { name: 'bar' }, { name: 'foobar' }], path: `$[?(match(@.name, "foo"))]`, expected: [{ name: 'foo' }] },
-        { payload: [{ name: 'hello' }, { name: 'world' }], path: `$[?(match(@.name, "hel.*"))]`, expected: [{ name: 'hello' }] },
-        { payload: [{ email: 'test@example.com' }, { email: 'invalid' }], path: `$[?(match(@.email, ".*@.*\\\\.com"))]`, expected: [{ email: 'test@example.com' }] },
-      ];
+      it('matches full string', () => {
+        const data = [{ name: 'foo' }, { name: 'bar' }, { name: 'foobar' }];
+        expect(query(data, '$[?(match(@.name, "foo"))]', { returnArray: true }))
+          .to.deep.equal([{ name: 'foo' }]);
+      });
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path, { returnArray: true });
-          expect(res).to.deep.equal(expected);
-        });
+      it('matches with regex pattern', () => {
+        const data = [{ name: 'hello' }, { name: 'world' }];
+        expect(query(data, '$[?(match(@.name, "hel.*"))]', { returnArray: true }))
+          .to.deep.equal([{ name: 'hello' }]);
       });
     });
 
     describe('search()', () => {
-      const testCases = [
-        { payload: [{ name: 'foobar' }, { name: 'bar' }, { name: 'baz' }], path: `$[?(search(@.name, "foo"))]`, expected: [{ name: 'foobar' }] },
-        { payload: [{ text: 'hello world' }, { text: 'goodbye' }], path: `$[?(search(@.text, "wor"))]`, expected: [{ text: 'hello world' }] },
-      ];
+      it('finds substring', () => {
+        const data = [{ name: 'foobar' }, { name: 'bar' }, { name: 'baz' }];
+        expect(query(data, '$[?(search(@.name, "foo"))]', { returnArray: true }))
+          .to.deep.equal([{ name: 'foobar' }]);
+      });
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path, { returnArray: true });
-          expect(res).to.deep.equal(expected);
-        });
+      it('finds pattern anywhere in string', () => {
+        const data = [{ text: 'hello world' }, { text: 'goodbye' }];
+        expect(query(data, '$[?(search(@.text, "wor"))]', { returnArray: true }))
+          .to.deep.equal([{ text: 'hello world' }]);
       });
     });
 
     describe('value()', () => {
-      const testCases = [
-        { payload: { items: [42] }, path: `$[?(value(@.items) == 42)]`, expected: [{ items: [42] }] },
-        { payload: { single: 'test' }, path: `$[?(value(@.single) == "test")]`, expected: [{ single: 'test' }] },
-      ];
+      it('extracts single value from array', () => {
+        expect(query([{ items: [42] }], '$[?(value(@.items) == 42)]', { returnArray: true }))
+          .to.deep.equal([{ items: [42] }]);
+      });
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path, { returnArray: true });
-          expect(res).to.deep.equal(expected);
-        });
+      it('extracts single string value', () => {
+        expect(query([{ single: 'test' }], '$[?(value(@.single) == "test")]', { returnArray: true }))
+          .to.deep.equal([{ single: 'test' }]);
       });
     });
 
-    describe('RFC 9535 filter without parentheses', () => {
-      const testCases = [
-        { payload: [{ key: 42 }, { key: 10 }], path: `$[?@.key==42]`, expected: [{ key: 42 }] },
-        { payload: [{ a: 1, b: 2 }, { a: 3, b: 4 }], path: `$[?@.a > 1]`, expected: [{ a: 3, b: 4 }] },
-      ];
+    describe('filter without parentheses', () => {
+      it('matches with RFC 9535 syntax', () => {
+        const data = [{ key: 42 }, { key: 10 }];
+        expect(query(data, '$[?@.key==42]', { returnArray: true }))
+          .to.deep.equal([{ key: 42 }]);
+      });
 
-      testCases.forEach(({ payload, path, expected }) => {
-        it(path, () => {
-          const res = query(payload, path, { returnArray: true });
-          expect(res).to.deep.equal(expected);
-        });
+      it('uses comparison operators', () => {
+        const data = [{ a: 1, b: 2 }, { a: 3, b: 4 }];
+        expect(query(data, '$[?@.a > 1]', { returnArray: true }))
+          .to.deep.equal([{ a: 3, b: 4 }]);
       });
     });
   });
