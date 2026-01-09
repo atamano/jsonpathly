@@ -28,7 +28,7 @@
 // ===================
 
 jsonpath
-  = ROOT_VALUE segments:segment* EOF {
+  = _ ROOT_VALUE segments:segment* _ EOF {
       return {
         type: 'root',
         next: buildSubscriptChain(segments)
@@ -200,7 +200,7 @@ functionArg
 // ===================
 
 filterarg
-  = head:filterargMulti tail:(_ (PLUS / MINUS_SP) _ filterargMulti)* {
+  = head:filterargMulti tail:(_ (PLUS / MINUS) _ filterargMulti)* {
       if (tail.length === 0) return head;
       return buildBinaryExpr(head, tail, (left, item) => ({
         type: 'operation',
@@ -406,7 +406,7 @@ PAREN_RIGHT = ")"
 QUESTION = "?"
 
 PLUS = "+"
-MINUS_SP = "- " / "-" &NUMBER  // minus with space or negative number
+MINUS = "-"
 DIV = "/"
 
 REGEX_EXPR "regex"
@@ -420,7 +420,7 @@ KEY
 
 keyChar
   = [a-zA-Z0-9_]
-  / "-" !([0-9]) { return "-"; }
+  / "-" !([0-9@$\-]) { return "-"; }
 
 SPECIAL_KEY
   = chars:[\u0080-\uFFFF_]+ { return chars.join(''); }

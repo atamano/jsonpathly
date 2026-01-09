@@ -28,9 +28,10 @@ export function parseInternal(input: string): Root {
         peggyError.message,
       );
     }
-    /* c8 ignore next */
+    /* c8 ignore start */
     throw e;
   }
+  /* c8 ignore stop */
 }
 
 /**

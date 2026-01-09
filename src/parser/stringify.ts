@@ -45,10 +45,47 @@ const LOGICAL_OPERATORS: Record<LogicalExpression['operator'], string> = {
 // ============================================
 
 /**
- * Escape string for single-quoted output per RFC 9535.
- * Escapes backslashes and single quotes.
+ * Escape string for single-quoted output per RFC 9535 normalized path format.
+ * Escapes: backslash, single quote, and control characters (U+0000-U+001F).
  */
-const escapeForSingleQuote = (str: string): string => str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+const escapeForSingleQuote = (str: string): string => {
+  let result = '';
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    const code = char.charCodeAt(0);
+
+    if (char === '\\') {
+      result += '\\\\';
+    } else if (char === "'") {
+      result += "\\'";
+    } else if (code < 0x20) {
+      // Control characters U+0000-U+001F
+      switch (char) {
+        case '\b':
+          result += '\\b';
+          break;
+        case '\f':
+          result += '\\f';
+          break;
+        case '\n':
+          result += '\\n';
+          break;
+        case '\r':
+          result += '\\r';
+          break;
+        case '\t':
+          result += '\\t';
+          break;
+        default:
+          // Other control chars as \uXXXX
+          result += '\\u' + code.toString(16).padStart(4, '0');
+      }
+    } else {
+      result += char;
+    }
+  }
+  return result;
+};
 
 /**
  * Format string as single-quoted literal.
@@ -143,6 +180,10 @@ export function stringify(input: JsonPathElement | null): string {
       return stringify(input.left) + ' ' + ARITHMETIC_OPERATORS[input.operator] + ' ' + stringify(input.right);
 
     case 'comparator':
+      // Handle unary operators (empty has no right operand)
+      if (input.operator === 'empty') {
+        return stringify(input.left) + ' empty';
+      }
       return stringify(input.left) + ` ${COMPARATOR_OPERATORS[input.operator]} ` + stringify(input.right);
 
     case 'logicalExpression':
@@ -154,11 +195,12 @@ export function stringify(input: JsonPathElement | null): string {
     case 'functionCall':
       return stringifyFunctionCall(input);
 
-    /* c8 ignore next */
+    /* c8 ignore start */
     default: {
       const _exhaustive: never = input;
       throw new Error(`Unknown AST node type: ${(_exhaustive as JsonPathElement).type}`);
     }
+    /* c8 ignore stop */
   }
 }
 
@@ -188,11 +230,12 @@ function stringifyValue(input: Extract<JsonPathElement, { type: 'value' }>): str
     case 'null':
       return JSON.stringify(input.value);
 
-    /* c8 ignore next */
+    /* c8 ignore start */
     default: {
       const _exhaustive: never = input;
       throw new Error(`Unknown value subtype: ${(_exhaustive as { subtype: string }).subtype}`);
     }
+    /* c8 ignore stop */
   }
 }
 

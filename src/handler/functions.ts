@@ -13,6 +13,32 @@ import { isArray, isDefined, isPlainObject, isString } from './helper';
 type FunctionImpl = (args: unknown[]) => unknown;
 
 /**
+ * Check if \b or \B (word boundary) appears outside character classes.
+ * Inside [...], \b means backspace and is allowed by I-Regexp.
+ * Outside [...], \b means word boundary and is NOT allowed.
+ */
+const hasWordBoundaryOutsideCharClass = (pattern: string): boolean => {
+  let inCharClass = false;
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i];
+    if (char === '\\' && i + 1 < pattern.length) {
+      const next = pattern[i + 1];
+      // Check for \b or \B outside character class
+      if ((next === 'b' || next === 'B') && !inCharClass) {
+        return true;
+      }
+      // Skip escaped character
+      i++;
+    } else if (char === '[' && !inCharClass) {
+      inCharClass = true;
+    } else if (char === ']' && inCharClass) {
+      inCharClass = false;
+    }
+  }
+  return false;
+};
+
+/**
  * RFC 9485 I-Regexp validation.
  * Rejects non-interoperable regex features for cross-platform compatibility.
  */
@@ -24,9 +50,8 @@ export const isValidIRegexp = (pattern: string): boolean => {
   if (/\(\?<[=!]/.test(pattern)) return false;
   // Reject named capture groups ((?<name>...)
   if (/\(\?<[a-zA-Z]/.test(pattern)) return false;
-  // Reject word boundaries (\b, \B) - but not \b inside character class which means backspace
-  // Simple check: \b or \B not preceded by [ (approximate check)
-  if (/(?<!\[)\\[bB]/.test(pattern)) return false;
+  // Reject word boundaries (\b, \B) outside character classes
+  if (hasWordBoundaryOutsideCharClass(pattern)) return false;
   return true;
 };
 
@@ -65,9 +90,9 @@ const match: FunctionImpl = (args) => {
   try {
     const regex = new RegExp(`^(?:${pattern})$`, 'u');
     return regex.test(val);
-  } catch /* c8 ignore next */ {
+  } /* c8 ignore start */ catch {
     return false;
-  }
+  } /* c8 ignore stop */
 };
 
 /**
@@ -82,9 +107,9 @@ const search: FunctionImpl = (args) => {
   try {
     const regex = new RegExp(pattern, 'u');
     return regex.test(val);
-  } catch /* c8 ignore next */ {
+  } /* c8 ignore start */ catch {
     return false;
-  }
+  } /* c8 ignore stop */
 };
 
 /**
