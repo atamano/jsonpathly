@@ -197,9 +197,6 @@ export function stringify(input: JsonPathElement | null): string {
     case 'wildcard':
       return '*';
 
-    case 'indexes':
-      return input.values.map(stringify).join(', ');
-
     case 'unions':
       return input.values.map(stringify).join(', ');
 
