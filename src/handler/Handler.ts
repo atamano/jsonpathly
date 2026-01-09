@@ -4,7 +4,6 @@
  * Core engine that traverses JSON documents using parsed JSONPath AST.
  * Implements RFC 9535 semantics with jsonpathly extensions.
  */
-import { JSONPathSyntaxError } from '../parser/errors';
 import {
   BracketExpressionContent,
   BracketMemberContent,
@@ -25,7 +24,7 @@ import {
 } from '../parser/types';
 import { comparators, isEmpty, matchRegex } from './comparators';
 import { rfc9535Functions } from './functions';
-import { isArray, isDefined, isNumber, isPlainObject, isString, isUndefined } from './helper';
+import { isArray, isDefined, isNumber, isPlainObject, isUndefined } from './helper';
 
 // ============================================
 // Path Formatting Utilities
@@ -451,7 +450,7 @@ export class Handler<T extends unknown = unknown> {
 
     switch (tree.type) {
       case 'filterExpression': {
-        let results: ValuePath[] = [];
+        const results: ValuePath[] = [];
 
         // RFC 9535 Section 2.3.5.1: Filter selects children for which expression is TRUE
         if (isArray(payloadValue)) {
