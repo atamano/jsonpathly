@@ -2,6 +2,9 @@
   "name": "jsonpathly",
   "version": "3.0.0",
   "description": "Query json with jsonpath expressions",
+  "engines": {
+    "node": ">=18"
+  },
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "browser": "dist/index.mjs",
