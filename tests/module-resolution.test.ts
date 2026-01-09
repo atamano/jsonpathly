@@ -1,17 +1,18 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs';
-import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const require = createRequire(import.meta.url);
+// Use process.cwd() - tests are always run from project root
+const projectRoot = process.cwd();
+
+// Create require function that works in both ESM and CJS
+const requireCjs = createRequire(import.meta.url);
 
 describe('Module Resolution (Issue #9)', () => {
-  const distPath = path.join(__dirname, '..', 'dist');
+  const distPath = path.join(projectRoot, 'dist');
   const packageJson = JSON.parse(
-    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')
+    fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8')
   );
 
   describe('dist files exist', () => {
@@ -96,7 +97,7 @@ describe('Module Resolution (Issue #9)', () => {
 
   describe('CJS import', () => {
     it('should export all public APIs from CJS build', () => {
-      const cjs = require('../dist/index.cjs');
+      const cjs = requireCjs('../dist/index.cjs');
       expect(typeof cjs.query).to.equal('function');
       expect(typeof cjs.paths).to.equal('function');
       expect(typeof cjs.parse).to.equal('function');
@@ -105,7 +106,7 @@ describe('Module Resolution (Issue #9)', () => {
     });
 
     it('should work with query from CJS', () => {
-      const { query } = require('../dist/index.cjs');
+      const { query } = requireCjs('../dist/index.cjs');
       const result = query({ a: 1 }, '$.a');
       expect(result).to.equal(1);
     });
@@ -130,7 +131,7 @@ describe('Module Resolution (Issue #9)', () => {
 
   describe('build functionality', () => {
     it('should handle complex queries in CJS build', () => {
-      const { query } = require('../dist/index.cjs');
+      const { query } = requireCjs('../dist/index.cjs');
       const data = {
         store: {
           book: [
@@ -164,7 +165,7 @@ describe('Module Resolution (Issue #9)', () => {
     });
 
     it('should handle RFC 9535 functions in CJS build', () => {
-      const { query } = require('../dist/index.cjs');
+      const { query } = requireCjs('../dist/index.cjs');
       const data = [{ name: 'hello' }, { name: 'world' }];
       expect(query(data, '$[?(match(@.name, "hel.*"))]')).to.deep.equal([{ name: 'hello' }]);
       expect(query(data, '$[?(length(@.name) == 5)]')).to.deep.equal(data);
@@ -178,7 +179,7 @@ describe('Module Resolution (Issue #9)', () => {
     });
 
     it('should parse and stringify round-trip in CJS build', () => {
-      const { parse, stringify } = require('../dist/index.cjs');
+      const { parse, stringify } = requireCjs('../dist/index.cjs');
       const path = "$.store.book[?(@.price < 10)].title";
       const ast = parse(path);
       expect(stringify(ast)).to.equal(path);
@@ -192,7 +193,7 @@ describe('Module Resolution (Issue #9)', () => {
     });
 
     it('should throw JSONPathSyntaxError for invalid paths in CJS', () => {
-      const { parse, JSONPathSyntaxError } = require('../dist/index.cjs');
+      const { parse, JSONPathSyntaxError } = requireCjs('../dist/index.cjs');
       expect(() => parse('$[invalid')).to.throw(JSONPathSyntaxError);
     });
 
@@ -202,7 +203,7 @@ describe('Module Resolution (Issue #9)', () => {
     });
 
     it('should return paths in CJS build', () => {
-      const { paths } = require('../dist/index.cjs');
+      const { paths } = requireCjs('../dist/index.cjs');
       const data = { a: { b: 1 } };
       expect(paths(data, '$.a.b')).to.deep.equal(["$['a']['b']"]);
     });
