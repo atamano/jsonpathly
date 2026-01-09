@@ -62,9 +62,9 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "browser": "./dist/index.mjs",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
+      "browser": "./dist/index.mjs",
       "default": "./dist/index.mjs"
     }
   }

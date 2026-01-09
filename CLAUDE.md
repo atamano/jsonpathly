@@ -71,3 +71,27 @@ tsup builds to `dist/`:
 - `index.d.ts` / `index.d.mts` - Type declarations
 
 Zero runtime dependencies - Peggy generates a standalone parser at build time.
+
+## Testing
+
+Test files in `tests/`:
+- `query.test.ts` - Core query functionality
+- `paths.test.ts` - Path output formatting
+- `parse.test.ts` - Parser and stringify round-trips
+- `rfc9535-compliance.test.ts` - RFC 9535 specific tests
+- `consensus.test.ts` - Cross-implementation compatibility (uses `data/consensus-tests.ts`)
+- `extensions.test.ts` - jsonpathly-specific extensions (in, nin, subsetof, etc.)
+- `api.test.ts` - Public API contracts
+- `module-resolution.test.ts` - ESM/CJS build verification
+
+**Note:** ~70 consensus tests are intentionally skipped (pending). These represent:
+- RFC 9535 semantic differences (jsonpathly follows the RFC strictly)
+- Ambiguous syntax with no standard behavior across implementations
+
+## RFC 9535 Compliance
+
+jsonpathly is fully RFC 9535 compliant:
+- Normalized path format uses single quotes: `$['key']` not `$["key"]`
+- I-Regexp validation (RFC 9485) for `match()` and `search()`
+- I-JSON integer range validation
+- All 5 function extensions: `length`, `count`, `match`, `search`, `value`
