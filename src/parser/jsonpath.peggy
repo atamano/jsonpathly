@@ -247,7 +247,7 @@ filterpath
     }
 
 // ===================
-// Slices, Indexes, Unions
+// Slices and Selector Lists
 // ===================
 
 slices

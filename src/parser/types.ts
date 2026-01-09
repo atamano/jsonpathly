@@ -122,11 +122,6 @@ export type NumericLiteral = {
   value: number;
 };
 
-export type Indexes = {
-  type: 'indexes';
-  values: NumericLiteral[];
-};
-
 // RFC 9535: Selector list allows mixed types
 export type Unions = {
   type: 'unions';
@@ -189,7 +184,6 @@ export type JsonPathElement =
   | StringLiteral
   | Identifier
   | NumericLiteral
-  | Indexes
   | Unions
   | FilterExpression
   | FunctionCall
