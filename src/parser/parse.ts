@@ -5,7 +5,7 @@
  * Uses Peggy-generated parser with RFC 9535 compliant grammar.
  */
 import { JSONPathSyntaxError } from './errors';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/ban-ts-ignore
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - Peggy generates plain JS without types
 import * as parser from './generated/parser.js';
 import { Root } from './types';

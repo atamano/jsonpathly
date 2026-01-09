@@ -195,6 +195,43 @@ describe('query()', () => {
   });
 
   // ============================================
+  // RFC 9535: MIXED SELECTOR LISTS
+  // ============================================
+
+  describe('mixed selector lists (RFC 9535)', () => {
+    it('allows mixed string and numeric selectors', () => {
+      const obj = { a: 1, b: 2, '0': 'zero' };
+      expect(query(obj, '$["a","b"]')).to.deep.equal([1, 2]);
+    });
+
+    it('allows numeric selectors in arrays', () => {
+      const arr = ['x', 'y', 'z'];
+      expect(query(arr, '$[0,2]')).to.deep.equal(['x', 'z']);
+    });
+
+    it('allows wildcard in selector list', () => {
+      const arr = ['a', 'b'];
+      expect(query(arr, '$[0,*]')).to.deep.equal(['a', 'a', 'b']);
+    });
+
+    it('handles selector list with nested access', () => {
+      const data = [{ a: 1 }, { a: 2 }, { a: 3 }];
+      expect(query(data, '$[0,2].a')).to.deep.equal([1, 3]);
+    });
+
+    it('ignores non-matching selector types', () => {
+      // Numeric selector on object returns nothing for that selector
+      const obj = { a: 1 };
+      expect(query(obj, '$["a"]')).to.equal(1);
+    });
+
+    it('returns empty for numeric selectors on non-arrays', () => {
+      const obj = { a: 1 };
+      expect(query(obj, '$[0,1]')).to.deep.equal([]);
+    });
+  });
+
+  // ============================================
   // ARRAY SLICES
   // ============================================
 
@@ -408,6 +445,23 @@ describe('query()', () => {
 
     it('does not match numbers', () => {
       expect(query([1], '$[?(@ =~ /.*/g)]')).to.deep.equal([]);
+    });
+
+    // RFC 9485: I-Regexp compliance (same validation as match/search)
+    it('rejects backreferences in =~ operator', () => {
+      expect(query([{ v: 'aa' }], '$[?(@.v =~ /(.)\\1/)]')).to.deep.equal([]);
+    });
+
+    it('rejects lookahead in =~ operator', () => {
+      expect(query([{ v: 'test' }], '$[?(@.v =~ /t(?=est)/)]')).to.deep.equal([]);
+    });
+
+    it('rejects word boundaries in =~ operator', () => {
+      expect(query([{ v: 'test' }], '$[?(@.v =~ /\\btest\\b/)]')).to.deep.equal([]);
+    });
+
+    it('allows valid I-Regexp patterns in =~ operator', () => {
+      expect(query([{ v: 'hello' }], '$[?(@.v =~ /hel.*/)]')).to.deep.equal([{ v: 'hello' }]);
     });
   });
 

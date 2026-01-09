@@ -12,7 +12,6 @@ import {
   FilterExpressionContent,
   FunctionCall,
   Identifier,
-  Indexes,
   LogicalExpression,
   NumericLiteral,
   OperationContent,
@@ -77,7 +76,7 @@ const getArrayElement = <T>(
 // ValuePath Type
 // ============================================
 
-type ValuePath<T extends unknown = unknown> = {
+type ValuePath<T = unknown> = {
   value: T;
   paths: string | string[];
   isIndefinite?: boolean;
@@ -87,7 +86,7 @@ type ValuePath<T extends unknown = unknown> = {
 // Handler Class
 // ============================================
 
-export class Handler<T extends unknown = unknown> {
+export class Handler<T = unknown> {
   rootPayload: ValuePath<T>;
 
   constructor(rootPayload: T) {
@@ -222,27 +221,37 @@ export class Handler<T extends unknown = unknown> {
   // Union and Index Handlers
   // ============================================
 
+  // RFC 9535: Union selector list supports mixed types (strings, numbers, wildcards)
   private handleUnions = (payload: ValuePath, tree: Unions): ValuePath[] => {
-    if (!isPlainObject(payload.value)) {
-      return [];
-    }
-    return tree.values
-      .map((value) => {
-        switch (value.type) {
-          case 'identifier':
-            return this.handleIdentifier(payload, value);
-          case 'stringLiteral':
-            return this.handleStringLiteral(payload, value);
-        }
-      })
-      .filter(isDefined);
-  };
+    const results: ValuePath[] = [];
 
-  private handleIndexes = ({ value, paths }: ValuePath, tree: Indexes): ValuePath[] => {
-    if (!isArray(value)) {
-      return [];
+    for (const selector of tree.values) {
+      switch (selector.type) {
+        case 'identifier':
+          if (isPlainObject(payload.value)) {
+            const result = this.handleIdentifier(payload, selector);
+            if (isDefined(result)) results.push(result);
+          }
+          break;
+        case 'stringLiteral':
+          if (isPlainObject(payload.value)) {
+            const result = this.handleStringLiteral(payload, selector);
+            if (isDefined(result)) results.push(result);
+          }
+          break;
+        case 'numericLiteral':
+          if (isArray(payload.value)) {
+            const result = this.handleNumericLiteral(payload, selector);
+            if (isDefined(result)) results.push(result);
+          }
+          break;
+        case 'wildcard':
+          results.push(...this.handleWildcard(payload));
+          break;
+      }
     }
-    return tree.values.map((item) => this.handleNumericLiteral({ value, paths }, item)).filter(isDefined);
+
+    return results;
   };
 
   // ============================================
@@ -472,8 +481,6 @@ export class Handler<T extends unknown = unknown> {
 
         return results;
       }
-      case 'indexes':
-        return this.handleIndexes(payload, tree);
       case 'unions':
         return this.handleUnions(payload, tree);
       case 'wildcard':
