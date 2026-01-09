@@ -5,6 +5,7 @@ import {
   Comparator,
   DotDot,
   FilterExpressionContent,
+  FunctionCall,
   Identifier,
   Indexes,
   LogicalExpression,
@@ -67,6 +68,10 @@ export class Handler<T extends unknown = unknown> {
       }
       case 'groupOperation': {
         return this.handleOperationContent(payload, tree.value);
+      }
+      case 'functionCall': {
+        const result = this.handleFunctionCall(payload, tree);
+        return { value: result, paths: payload.paths };
       }
       case 'operation': {
         const left = this.handleOperationContent(payload, tree.left)?.value;
@@ -227,6 +232,64 @@ export class Handler<T extends unknown = unknown> {
     }
   };
 
+  // RFC 9535 Function implementations
+  private handleFunctionCall = (payload: ValuePath, tree: FunctionCall): unknown => {
+    const args = tree.args.map((arg) => {
+      if (typeof arg === 'string') {
+        return arg;
+      }
+      return this.handleOperationContent(payload, arg)?.value;
+    });
+
+    switch (tree.name) {
+      case 'length': {
+        // Returns length of string, array, or object (number of keys)
+        const val = args[0];
+        if (isString(val)) return val.length;
+        if (isArray(val)) return val.length;
+        if (isPlainObject(val)) return Object.keys(val).length;
+        return undefined;
+      }
+      case 'count': {
+        // Returns count of nodes in nodelist
+        const val = args[0];
+        if (isArray(val)) return val.length;
+        return isDefined(val) ? 1 : 0;
+      }
+      case 'match': {
+        // Full string match against regex (RFC 9485 I-Regexp)
+        const val = args[0];
+        const pattern = args[1];
+        if (!isString(val) || !isString(pattern)) return false;
+        try {
+          const regex = new RegExp(`^(?:${pattern})$`);
+          return regex.test(val);
+        } catch {
+          return false;
+        }
+      }
+      case 'search': {
+        // Substring match against regex (RFC 9485 I-Regexp)
+        const val = args[0];
+        const pattern = args[1];
+        if (!isString(val) || !isString(pattern)) return false;
+        try {
+          const regex = new RegExp(pattern);
+          return regex.test(val);
+        } catch {
+          return false;
+        }
+      }
+      case 'value': {
+        // Extract single value from nodelist, or Nothing if not exactly one
+        const val = args[0];
+        if (isArray(val) && val.length === 1) return val[0];
+        if (!isArray(val) && isDefined(val)) return val;
+        return undefined;
+      }
+    }
+  };
+
   private handleFilterExpressionContent = (payload: ValuePath, tree: FilterExpressionContent): boolean => {
     switch (tree.type) {
       case 'logicalExpression': {
@@ -240,6 +303,11 @@ export class Handler<T extends unknown = unknown> {
       }
       case 'notExpression': {
         return !this.handleFilterExpressionContent(payload, tree.value);
+      }
+      case 'functionCall': {
+        // Function calls in filter context return truthy/falsy
+        const result = this.handleFunctionCall(payload, tree);
+        return !!result;
       }
       case 'root': {
         return isDefined(this.handleSubscript(this.rootPayload, tree.next));

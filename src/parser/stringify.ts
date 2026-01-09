@@ -107,5 +107,11 @@ export function stringify(input: JsonPathElement | null): string {
         input.step !== null ? ':' + input.step : ''
       }`;
     }
+    case 'functionCall': {
+      const args = input.args
+        .map((arg) => (typeof arg === 'string' ? `"${arg}"` : stringify(arg as JsonPathElement)))
+        .join(', ');
+      return `${input.name}(${args})`;
+    }
   }
 }

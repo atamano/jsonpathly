@@ -132,11 +132,19 @@ export type Unions = {
   values: (StringLiteral | Identifier)[];
 };
 
+// RFC 9535 Function Call
+export type FunctionCall = {
+  type: 'functionCall';
+  name: 'length' | 'count' | 'match' | 'search' | 'value';
+  args: (OperationContent | string)[];
+};
+
 export type FilterExpressionContent =
   | Comparator
   | GroupExpression
   | LogicalExpression
   | NotExpression
+  | FunctionCall
   | Current
   | Root
   | Value;
@@ -146,7 +154,7 @@ export type FilterExpression = {
   value: FilterExpressionContent;
 };
 
-export type OperationContent = Root | Current | Value | GroupOperation | Operation;
+export type OperationContent = Root | Current | Value | GroupOperation | Operation | FunctionCall;
 
 export type Operation = {
   type: 'operation';
@@ -183,4 +191,5 @@ export type JsonPathElement =
   | Indexes
   | Unions
   | FilterExpression
+  | FunctionCall
   | Operation;

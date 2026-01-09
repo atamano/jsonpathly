@@ -763,4 +763,94 @@ describe('query', () => {
       });
     });
   });
+
+  // RFC 9535 Function Tests
+  describe('RFC 9535 functions', () => {
+    describe('length()', () => {
+      const testCases = [
+        { payload: { str: 'hello' }, path: `$[?(length(@.str) == 5)]`, expected: [{ str: 'hello' }] },
+        { payload: { arr: [1, 2, 3] }, path: `$[?(length(@.arr) == 3)]`, expected: [{ arr: [1, 2, 3] }] },
+        { payload: { obj: { a: 1, b: 2 } }, path: `$[?(length(@.obj) == 2)]`, expected: [{ obj: { a: 1, b: 2 } }] },
+        { payload: [{ str: 'ab' }, { str: 'abc' }, { str: 'abcd' }], path: `$[?(length(@.str) > 2)]`, expected: [{ str: 'abc' }, { str: 'abcd' }] },
+      ];
+
+      testCases.forEach(({ payload, path, expected }) => {
+        it(path, () => {
+          const res = query(payload, path, { returnArray: true });
+          expect(res).to.deep.equal(expected);
+        });
+      });
+    });
+
+    describe('count()', () => {
+      const testCases = [
+        { payload: { items: [1, 2, 3] }, path: `$[?(count(@.items) == 3)]`, expected: [{ items: [1, 2, 3] }] },
+        { payload: { items: [] }, path: `$[?(count(@.items) == 0)]`, expected: [{ items: [] }] },
+      ];
+
+      testCases.forEach(({ payload, path, expected }) => {
+        it(path, () => {
+          const res = query(payload, path, { returnArray: true });
+          expect(res).to.deep.equal(expected);
+        });
+      });
+    });
+
+    describe('match()', () => {
+      const testCases = [
+        { payload: [{ name: 'foo' }, { name: 'bar' }, { name: 'foobar' }], path: `$[?(match(@.name, "foo"))]`, expected: [{ name: 'foo' }] },
+        { payload: [{ name: 'hello' }, { name: 'world' }], path: `$[?(match(@.name, "hel.*"))]`, expected: [{ name: 'hello' }] },
+        { payload: [{ email: 'test@example.com' }, { email: 'invalid' }], path: `$[?(match(@.email, ".*@.*\\\\.com"))]`, expected: [{ email: 'test@example.com' }] },
+      ];
+
+      testCases.forEach(({ payload, path, expected }) => {
+        it(path, () => {
+          const res = query(payload, path, { returnArray: true });
+          expect(res).to.deep.equal(expected);
+        });
+      });
+    });
+
+    describe('search()', () => {
+      const testCases = [
+        { payload: [{ name: 'foobar' }, { name: 'bar' }, { name: 'baz' }], path: `$[?(search(@.name, "foo"))]`, expected: [{ name: 'foobar' }] },
+        { payload: [{ text: 'hello world' }, { text: 'goodbye' }], path: `$[?(search(@.text, "wor"))]`, expected: [{ text: 'hello world' }] },
+      ];
+
+      testCases.forEach(({ payload, path, expected }) => {
+        it(path, () => {
+          const res = query(payload, path, { returnArray: true });
+          expect(res).to.deep.equal(expected);
+        });
+      });
+    });
+
+    describe('value()', () => {
+      const testCases = [
+        { payload: { items: [42] }, path: `$[?(value(@.items) == 42)]`, expected: [{ items: [42] }] },
+        { payload: { single: 'test' }, path: `$[?(value(@.single) == "test")]`, expected: [{ single: 'test' }] },
+      ];
+
+      testCases.forEach(({ payload, path, expected }) => {
+        it(path, () => {
+          const res = query(payload, path, { returnArray: true });
+          expect(res).to.deep.equal(expected);
+        });
+      });
+    });
+
+    describe('RFC 9535 filter without parentheses', () => {
+      const testCases = [
+        { payload: [{ key: 42 }, { key: 10 }], path: `$[?@.key==42]`, expected: [{ key: 42 }] },
+        { payload: [{ a: 1, b: 2 }, { a: 3, b: 4 }], path: `$[?@.a > 1]`, expected: [{ a: 3, b: 4 }] },
+      ];
+
+      testCases.forEach(({ payload, path, expected }) => {
+        it(path, () => {
+          const res = query(payload, path, { returnArray: true });
+          expect(res).to.deep.equal(expected);
+        });
+      });
+    });
+  });
 });
