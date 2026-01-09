@@ -85,7 +85,7 @@ export type DotDot = {
 };
 
 export type BracketMemberContent = Identifier | NumericLiteral | StringLiteral;
-export type BracketExpressionContent = Wildcard | FilterExpression | Slices | Unions | Indexes;
+export type BracketExpressionContent = Wildcard | FilterExpression | Slices | Unions;
 
 export type BracketExpression = {
   type: 'bracketExpression';
@@ -127,9 +127,10 @@ export type Indexes = {
   values: NumericLiteral[];
 };
 
+// RFC 9535: Selector list allows mixed types
 export type Unions = {
   type: 'unions';
-  values: (StringLiteral | Identifier)[];
+  values: (StringLiteral | Identifier | NumericLiteral | Wildcard)[];
 };
 
 // RFC 9535 Function Call

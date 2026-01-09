@@ -74,8 +74,7 @@ bracket
 bracketContent
   = filterExpression
   / slices
-  / indexes
-  / unions
+  / selectorList
   / STAR { return { type: 'bracketExpression', value: { type: 'wildcard' } }; }
   / n:NUMBER { return { type: 'bracketMember', value: { type: 'numericLiteral', value: n } }; }
   / s:STRING { return { type: 'bracketMember', value: { type: 'stringLiteral', value: s } }; }
@@ -264,33 +263,18 @@ slices
       };
     }
 
-indexes
-  = head:NUMBER tail:((_ COMMA _ NUMBER)+) {
-      const values = [
-        { type: 'numericLiteral', value: head },
-        ...tail.map(t => ({ type: 'numericLiteral', value: t[3] }))
-      ];
-      return { type: 'bracketExpression', value: { type: 'indexes', values: values } };
-    }
-
-unions
-  = head:STRING tail:((_ COMMA _ STRING)+) {
-      const values = [
-        { type: 'stringLiteral', value: head },
-        ...tail.map(t => ({ type: 'stringLiteral', value: t[3] }))
-      ];
-      return { type: 'bracketExpression', value: { type: 'unions', values: values } };
-    }
-  / head:identifierForUnion tail:((_ COMMA _ identifierForUnion)+) {
-      const values = [
-        { type: 'identifier', value: head },
-        ...tail.map(t => ({ type: 'identifier', value: t[3] }))
-      ];
+// RFC 9535: Selector list allows mixed types (strings, numbers, wildcards)
+selectorList
+  = head:selector tail:(_ COMMA _ selector)+ {
+      const values = [head, ...tail.map(t => t[3])];
       return { type: 'bracketExpression', value: { type: 'unions', values: values } };
     }
 
-identifierForUnion
-  = id:identifier { return id; }
+selector
+  = STAR { return { type: 'wildcard' }; }
+  / n:NUMBER { return { type: 'numericLiteral', value: n }; }
+  / s:STRING { return { type: 'stringLiteral', value: s }; }
+  / id:identifier { return { type: 'identifier', value: id }; }
 
 // ===================
 // Regex

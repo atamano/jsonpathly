@@ -3,6 +3,7 @@
  *
  * RFC 9535 comparison operators plus jsonpathly extensions.
  */
+import { isValidIRegexp } from './functions';
 import { isArray, isEqual, isNumber, isString } from './helper';
 
 type ComparatorFn = (left: unknown, right: unknown) => boolean;
@@ -124,11 +125,19 @@ export const isEmpty = (value: unknown): boolean => {
 };
 
 /**
- * Evaluate regex match.
+ * Evaluate regex match (=~ operator).
+ * Validates I-Regexp compliance per RFC 9485 for consistency with match()/search().
  * Separate function due to different signature (needs opts).
  */
 export const matchRegex = (left: unknown, pattern: string, opts: string): boolean => {
   if (!isString(left) || !isString(pattern)) return false;
   const value = pattern.slice(1, -1);
-  return !!left.match(new RegExp(value, opts));
+  // RFC 9485: Validate I-Regexp compliance (same as match/search functions)
+  if (!isValidIRegexp(value)) return false;
+  try {
+    return !!left.match(new RegExp(value, opts));
+  } catch {
+    // Invalid regex pattern
+    return false;
+  }
 };

@@ -1,6 +1,12 @@
 /**
- * Deep equality comparison.
- * Handles primitives, arrays, and plain objects.
+ * Deep equality comparison for JSON values.
+ *
+ * Handles JSON-compatible types: primitives (string, number, boolean, null),
+ * arrays, and plain objects. Per RFC 9535, JSONPath operates on JSON data.
+ *
+ * Note: Non-JSON objects (Date, RegExp, Map, Set, etc.) with no enumerable
+ * properties will compare as equal to empty objects. This is by design since
+ * JSONPath is specifically for JSON data, not arbitrary JavaScript objects.
  */
 export const isEqual = (a: unknown, b: unknown): boolean => {
   // Same reference or identical primitives
@@ -69,10 +75,10 @@ export const isString = (item: unknown): item is string => {
   return typeof item === 'string';
 };
 
-export const isUndefined = <T extends unknown>(item: T | undefined): item is undefined => {
+export const isUndefined = <T>(item: T | undefined): item is undefined => {
   return typeof item === 'undefined';
 };
 
-export const isDefined = <T extends unknown>(item: T): item is Exclude<typeof item, undefined> => {
+export const isDefined = <T>(item: T): item is Exclude<typeof item, undefined> => {
   return typeof item !== 'undefined';
 };
