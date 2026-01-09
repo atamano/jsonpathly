@@ -111,6 +111,52 @@ const stringifyJsonValue = (value: unknown): string => {
 };
 
 // ============================================
+// Helper Functions (defined before stringify)
+// ============================================
+
+/**
+ * Stringify a value node based on its subtype.
+ */
+function stringifyValue(input: Extract<JsonPathElement, { type: 'value' }>): string {
+  switch (input.subtype) {
+    case 'regex':
+      return `${input.value}${input.opts}`;
+
+    case 'string':
+      return singleQuoted(input.value as string);
+
+    case 'object':
+      return stringifyJsonValue(input.value);
+
+    case 'array':
+      return stringifyJsonValue(input.value);
+
+    case 'boolean':
+    case 'number':
+    case 'null':
+      return JSON.stringify(input.value);
+
+    /* c8 ignore start */
+    default: {
+      const _exhaustive: never = input;
+      throw new Error(`Unknown value subtype: ${(_exhaustive as { subtype: string }).subtype}`);
+    }
+    /* c8 ignore stop */
+  }
+}
+
+/**
+ * Stringify a slice expression.
+ */
+function stringifySlice(input: Extract<JsonPathElement, { type: 'slices' }>): string {
+  const start = input.start !== null ? String(input.start) : '';
+  const end = input.end !== null ? String(input.end) : '';
+  const step = input.step !== null ? ':' + input.step : '';
+  return `${start}:${end}${step}`;
+}
+
+
+// ============================================
 // Main Stringify Function
 // ============================================
 
@@ -192,8 +238,10 @@ export function stringify(input: JsonPathElement | null): string {
     case 'slices':
       return stringifySlice(input);
 
-    case 'functionCall':
-      return stringifyFunctionCall(input);
+    case 'functionCall': {
+      const args = input.args.map((arg) => stringify(arg as JsonPathElement)).join(', ');
+      return `${input.name}(${args})`;
+    }
 
     /* c8 ignore start */
     default: {
@@ -202,57 +250,4 @@ export function stringify(input: JsonPathElement | null): string {
     }
     /* c8 ignore stop */
   }
-}
-
-// ============================================
-// Helper Functions
-// ============================================
-
-/**
- * Stringify a value node based on its subtype.
- */
-function stringifyValue(input: Extract<JsonPathElement, { type: 'value' }>): string {
-  switch (input.subtype) {
-    case 'regex':
-      return `${input.value}${input.opts}`;
-
-    case 'string':
-      return singleQuoted(input.value as string);
-
-    case 'object':
-      return stringifyJsonValue(input.value);
-
-    case 'array':
-      return stringifyJsonValue(input.value);
-
-    case 'boolean':
-    case 'number':
-    case 'null':
-      return JSON.stringify(input.value);
-
-    /* c8 ignore start */
-    default: {
-      const _exhaustive: never = input;
-      throw new Error(`Unknown value subtype: ${(_exhaustive as { subtype: string }).subtype}`);
-    }
-    /* c8 ignore stop */
-  }
-}
-
-/**
- * Stringify a slice expression.
- */
-function stringifySlice(input: Extract<JsonPathElement, { type: 'slices' }>): string {
-  const start = input.start !== null ? String(input.start) : '';
-  const end = input.end !== null ? String(input.end) : '';
-  const step = input.step !== null ? ':' + input.step : '';
-  return `${start}:${end}${step}`;
-}
-
-/**
- * Stringify a function call.
- */
-function stringifyFunctionCall(input: Extract<JsonPathElement, { type: 'functionCall' }>): string {
-  const args = input.args.map((arg) => stringify(arg as JsonPathElement)).join(', ');
-  return `${input.name}(${args})`;
 }
