@@ -528,7 +528,7 @@ const testSuits = [
     payload: {
       '\\': 'value',
     },
-    results: [],
+    results: ['value'], // RFC 9535: escaped backslash accesses key '\'
     consensus: false,
   },
   {
@@ -537,7 +537,7 @@ const testSuits = [
     payload: {
       "'": 'value',
     },
-    results: [],
+    results: ['value'], // RFC 9535: escaped single quote accesses key "'"
     consensus: false,
   },
   {
@@ -561,7 +561,7 @@ const testSuits = [
     title: 'bracket_notation_with_quoted_special_characters_combined',
     query: "$[':@.\"$,*\\'\\\\']",
     payload: { ':@."$,*\'\\': 42 },
-    results: [],
+    results: [42], // RFC 9535: correctly handles special characters
     consensus: false,
   },
   {
@@ -1003,7 +1003,7 @@ const testSuits = [
     title: 'dot_notation_with_space_padded_key',
     query: '$. a ',
     payload: { ' a': 1, a: 2, ' a ': 3, '': 4 },
-    results: [2],
+    results: 'NOT_SUPPORTED', // RFC 9535: dot notation doesn't support spaces
     consensus: false,
   },
   {
@@ -1815,7 +1815,7 @@ const testSuits = [
       { key: 'Motoörhead' },
       { key: 'motoörhead' },
     ],
-    results: [],
+    results: [{ key: 'Motörhead' }],
     consensus: false,
   },
   {
@@ -1952,7 +1952,7 @@ const testSuits = [
       [1, 2, 3, 4],
       [1, 2, 3],
     ],
-    results: 'NOT_SUPPORTED',
+    results: [[1, 2, 3, 4]], // RFC 9535 requires length() function
     consensus: false,
   },
   {
@@ -2032,7 +2032,7 @@ const testSuits = [
       { key: {} },
       { key: [] },
     ],
-    results: 'NOT_SUPPORTED',
+    results: [{ some: 'some value' }], // RFC 9535: negation of existence test
     consensus: false,
   },
   {
@@ -2215,7 +2215,7 @@ const testSuits = [
       ],
       y: [3, 4, 5],
     },
-    results: 'NOT_SUPPORTED',
+    results: [], // Comparing wildcards yields empty (no single value comparison possible)
     consensus: false,
   },
   {
@@ -2543,7 +2543,7 @@ const testSuits = [
       { key: { some: 42 } },
       { some: 'value' },
     ],
-    results: 'NOT_SUPPORTED',
+    results: [{ key: 42 }], // RFC 9535 allows filter without parens
     consensus: false,
   },
   {
