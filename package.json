@@ -4,6 +4,7 @@
   "description": "Query json with jsonpath expressions",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
+  "browser": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
@@ -61,6 +62,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "browser": "./dist/index.mjs",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"

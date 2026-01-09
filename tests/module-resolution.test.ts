@@ -72,10 +72,10 @@ describe('Module Resolution (Issue #9)', () => {
     it('should have flat exports structure (not nested node/browser)', () => {
       const exports = packageJson.exports['.'];
       expect(exports).to.have.property('types', './dist/index.d.ts');
+      expect(exports).to.have.property('browser', './dist/index.mjs');
       expect(exports).to.have.property('import', './dist/index.mjs');
       expect(exports).to.have.property('require', './dist/index.cjs');
       expect(exports).to.not.have.property('node');
-      expect(exports).to.not.have.property('browser');
     });
 
     it('should have correct main field', () => {
@@ -84,6 +84,10 @@ describe('Module Resolution (Issue #9)', () => {
 
     it('should have correct module field', () => {
       expect(packageJson.module).to.equal('dist/index.mjs');
+    });
+
+    it('should have correct browser field', () => {
+      expect(packageJson.browser).to.equal('dist/index.mjs');
     });
 
     it('should have correct types field', () => {
