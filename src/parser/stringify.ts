@@ -70,7 +70,9 @@ export function stringify(input: JsonPathElement | null): string {
       return input.values.map(stringify).join(', ');
     }
     case 'stringLiteral': {
-      return `"${input.value}"`;
+      // RFC 9535: Use single quotes for normalized path format
+      const escaped = input.value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return `'${escaped}'`;
     }
     case 'numericLiteral': {
       return `${input.value}`;
@@ -81,6 +83,32 @@ export function stringify(input: JsonPathElement | null): string {
     case 'value': {
       if (input.subtype === 'regex') {
         return `${input.value}${input.opts}`;
+      }
+      if (input.subtype === 'string') {
+        // RFC 9535: Use single quotes for string literals
+        const escaped = (input.value as string).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `'${escaped}'`;
+      }
+      if (input.subtype === 'object') {
+        // RFC 9535: Use single quotes for object keys and string values
+        const pairs = Object.entries(input.value as Record<string, unknown>).map(([k, v]) => {
+          const escapedKey = k.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const stringifiedVal = typeof v === 'string'
+            ? `'${v.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+            : JSON.stringify(v);
+          return `'${escapedKey}':${stringifiedVal}`;
+        });
+        return `{${pairs.join(',')}}`;
+      }
+      if (input.subtype === 'array') {
+        // RFC 9535: Use single quotes for string elements
+        const elements = (input.value as unknown[]).map((v) => {
+          if (typeof v === 'string') {
+            return `'${v.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+          }
+          return JSON.stringify(v);
+        });
+        return `[${elements.join(',')}]`;
       }
       return JSON.stringify(input.value);
     }
@@ -109,7 +137,13 @@ export function stringify(input: JsonPathElement | null): string {
     }
     case 'functionCall': {
       const args = input.args
-        .map((arg) => (typeof arg === 'string' ? `"${arg}"` : stringify(arg as JsonPathElement)))
+        .map((arg) => {
+          if (typeof arg === 'string') {
+            const escaped = arg.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return `'${escaped}'`;
+          }
+          return stringify(arg as JsonPathElement);
+        })
         .join(', ');
       return `${input.name}(${args})`;
     }
