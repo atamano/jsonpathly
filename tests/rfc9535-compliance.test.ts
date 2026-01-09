@@ -208,6 +208,30 @@ describe('RFC 9535 Full Compliance', () => {
       expect(result).to.have.length(1);
     });
 
+    it('should not match objects with different keys', () => {
+      // Tests helper.ts line 35 - object comparison when key exists in one but not other
+      const result = query([{ obj: { a: 1, b: 2 } }], '$[?(@.obj == {"a": 1, "c": 2})]');
+      expect(result).to.deep.equal([]);
+    });
+
+    it('should not match objects with different values', () => {
+      // Tests helper.ts lines 36-37 - object values don't match
+      const result = query([{ obj: { a: 1, b: 2 } }], '$[?(@.obj == {"a": 1, "b": 3})]');
+      expect(result).to.deep.equal([]);
+    });
+
+    it('should not match objects with different key count', () => {
+      // Tests helper.ts line 33 - objects have different number of keys
+      const result = query([{ obj: { a: 1, b: 2, c: 3 } }], '$[?(@.obj == {"a": 1, "b": 2})]');
+      expect(result).to.deep.equal([]);
+    });
+
+    it('should not match array with object', () => {
+      // Tests helper.ts line 27 - one is array, other is object
+      const result = query([{ val: [1, 2, 3] }], '$[?(@.val == {"0": 1, "1": 2, "2": 3})]');
+      expect(result).to.deep.equal([]);
+    });
+
     it('should treat null as a value (not undefined)', () => {
       const result = query([{ a: null }], '$[?(@.a == null)]');
       expect(result).to.have.length(1);

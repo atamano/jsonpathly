@@ -577,5 +577,215 @@ describe('query()', () => {
           .to.deep.equal([{ a: 3, b: 4 }]);
       });
     });
+
+    describe('filter on objects', () => {
+      it('filters object values with wildcard', () => {
+        // Tests Handler.ts lines 474-480 - filter on plain object values
+        const data = {
+          items: {
+            first: { active: true, value: 10 },
+            second: { active: false, value: 20 },
+            third: { active: true, value: 30 },
+          },
+        };
+        expect(query(data, '$.items[?(@.active == true)]', { returnArray: true }))
+          .to.deep.equal([
+            { active: true, value: 10 },
+            { active: true, value: 30 },
+          ]);
+      });
+
+      it('filters object children by nested property', () => {
+        const data = {
+          users: {
+            alice: { age: 25, active: true },
+            bob: { age: 35, active: false },
+            carol: { age: 30, active: true },
+          },
+        };
+        expect(query(data, '$.users[?(@.age > 28)]', { returnArray: true }))
+          .to.deep.equal([
+            { age: 35, active: false },
+            { age: 30, active: true },
+          ]);
+      });
+    });
+  });
+
+  // ============================================
+  // NESTED FILTER EXISTENCE CHECKS
+  // ============================================
+
+  describe('nested filter existence', () => {
+    it('returns false when recursive descent finds nothing', () => {
+      // Tests Handler.ts lines 434-436 - isIndefinite check with empty results
+      const data = [
+        { a: { b: 1 } },
+        { a: { c: 2 } },
+      ];
+      // Filter using recursive descent that returns empty for some items
+      expect(query(data, '$[?(@..b)]', { returnArray: true }))
+        .to.deep.equal([{ a: { b: 1 } }]);
+    });
+
+    it('returns true when recursive descent finds values', () => {
+      const data = [
+        { nested: { deep: { target: 1 } } },
+        { nested: { other: 2 } },
+      ];
+      expect(query(data, '$[?(@..target)]', { returnArray: true }))
+        .to.deep.equal([{ nested: { deep: { target: 1 } } }]);
+    });
+
+    it('handles wildcard in existence check', () => {
+      const data = [
+        { items: [1, 2, 3] },
+        { items: [] },
+      ];
+      expect(query(data, '$[?(@.items[*])]', { returnArray: true }))
+        .to.deep.equal([{ items: [1, 2, 3] }]);
+    });
+
+    it('checks existence using root reference in filter', () => {
+      // Tests Handler.ts lines 424-430 - root reference in filter existence
+      const data = {
+        threshold: 15,
+        items: [
+          { value: 10 },
+          { value: 20 },
+        ],
+      };
+      expect(query(data, '$.items[?($.threshold)]', { returnArray: true }))
+        .to.deep.equal([{ value: 10 }, { value: 20 }]);
+    });
+
+    it('returns empty when root reference does not exist', () => {
+      // Tests Handler.ts lines 424-430 - root reference to missing property
+      const data = {
+        items: [{ value: 10 }],
+      };
+      expect(query(data, '$.items[?($.threshold)]', { returnArray: true }))
+        .to.deep.equal([]);
+    });
+
+    it('handles root reference with indefinite results', () => {
+      // Tests Handler.ts lines 426-428 - root with wildcard/filter
+      const data = {
+        tags: ['a', 'b', 'c'],
+        items: [{ id: 1 }],
+      };
+      expect(query(data, '$.items[?($.tags[*])]', { returnArray: true }))
+        .to.deep.equal([{ id: 1 }]);
+    });
+
+    it('returns empty when root indefinite result is empty', () => {
+      // Tests Handler.ts lines 426-428 - root with empty indefinite result
+      const data = {
+        tags: [],
+        items: [{ id: 1 }],
+      };
+      expect(query(data, '$.items[?($.tags[*])]', { returnArray: true }))
+        .to.deep.equal([]);
+    });
+  });
+
+  // ============================================
+  // NEGATIVE NUMBERS IN FILTERS
+  // ============================================
+
+  describe('negative numbers in filters', () => {
+    it('compares with negative literal', () => {
+      const data = [{ value: -5 }, { value: 5 }, { value: -10 }];
+      expect(query(data, '$[?(@.value == -5)]', { returnArray: true }))
+        .to.deep.equal([{ value: -5 }]);
+    });
+
+    it('compares with negative in arithmetic', () => {
+      const data = [{ value: 3 }];
+      expect(query(data, '$[?(@.value == 5 + -2)]', { returnArray: true }))
+        .to.deep.equal([{ value: 3 }]);
+    });
+
+    it('handles negative result from subtraction', () => {
+      const data = [{ value: -2 }];
+      expect(query(data, '$[?(@.value == 3 - 5)]', { returnArray: true }))
+        .to.deep.equal([{ value: -2 }]);
+    });
+  });
+
+  // ============================================
+  // SLICE EDGE CASES
+  // ============================================
+
+  describe('slice edge cases', () => {
+    it('returns empty for step=0 (RFC 9535)', () => {
+      const data = ['a', 'b', 'c', 'd', 'e'];
+      expect(query(data, '$[0:3:0]', { returnArray: true }))
+        .to.deep.equal([]);
+    });
+  });
+
+  // ============================================
+  // DOT NUMERIC LITERAL EDGE CASES
+  // ============================================
+
+  describe('dot numeric literal edge cases', () => {
+    it('returns undefined when object has no matching property', () => {
+      const data = { a: 1, b: 2 };
+      expect(query(data, '$.5')).to.be.undefined;
+    });
+
+    it('returns undefined when accessing numeric property on primitive', () => {
+      const data = { value: 'string' };
+      expect(query(data, '$.value.0')).to.be.undefined;
+    });
+
+    it('accesses numeric property on object', () => {
+      const data = { '0': 'zero', '1': 'one' };
+      expect(query(data, '$.0')).to.equal('zero');
+    });
+  });
+
+  // ============================================
+  // STRING COMPARISONS (RFC 9535)
+  // ============================================
+
+  describe('string comparisons', () => {
+    const data = [
+      { name: 'apple' },
+      { name: 'banana' },
+      { name: 'cherry' },
+    ];
+
+    it('compares strings with less than', () => {
+      expect(query(data, '$[?(@.name < "banana")]', { returnArray: true }))
+        .to.deep.equal([{ name: 'apple' }]);
+    });
+
+    it('compares strings with less than or equal', () => {
+      expect(query(data, '$[?(@.name <= "banana")]', { returnArray: true }))
+        .to.deep.equal([{ name: 'apple' }, { name: 'banana' }]);
+    });
+
+    it('compares strings with greater than', () => {
+      expect(query(data, '$[?(@.name > "banana")]', { returnArray: true }))
+        .to.deep.equal([{ name: 'cherry' }]);
+    });
+
+    it('compares strings with greater than or equal', () => {
+      expect(query(data, '$[?(@.name >= "banana")]', { returnArray: true }))
+        .to.deep.equal([{ name: 'banana' }, { name: 'cherry' }]);
+    });
+
+    it('returns empty when comparing string with number', () => {
+      expect(query(data, '$[?(@.name < 100)]', { returnArray: true }))
+        .to.deep.equal([]);
+    });
+
+    it('returns empty when comparing number with string', () => {
+      const numData = [{ value: 10 }, { value: 20 }];
+      expect(query(numData, '$[?(@.value < "30")]', { returnArray: true }))
+        .to.deep.equal([]);
+    });
   });
 });
