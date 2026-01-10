@@ -1,176 +1,240 @@
-# JsonPATHLY
+# jsonpathly
 
 <img src="https://user-images.githubusercontent.com/9162276/166061295-a41b7d28-a1e9-4d17-9103-132a1ca20de8.png" width="350">
 
 [![npm version](https://badge.fury.io/js/jsonpathly.svg)](https://badge.fury.io/js/jsonpathly)
 [![codecov](https://codecov.io/gh/atamano/jsonpathly/branch/master/graph/badge.svg?token=QSSZGZMULF)](https://codecov.io/gh/atamano/jsonpathly)
+[![Node.js](https://img.shields.io/node/v/jsonpathly.svg)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**A secured and eval free typescript DSL for reading JSON documents.**
+**A secure, expression-evaluation-free JSONPath implementation for TypeScript/JavaScript with RFC 9535 compliance.**
 
-[Link to the Demo](https://atamano.github.io/jsonpathly-demo/)
+[Live Demo](https://atamano.github.io/jsonpathly-demo/) | [RFC 9535 Specification](https://datatracker.ietf.org/doc/html/rfc9535)
+
+## Features
+
+- **RFC 9535 compliant** - Follows the official JSONPath specification
+- **Secure** - No dynamic code execution, no injection vulnerabilities
+- **TypeScript native** - Full type definitions included
+- **Dual module** - Works with ESM and CommonJS
+- **Browser ready** - Works in Node.js and browsers
 
 ## Install
 
-Install from npm:
-
 ```bash
-$ npm install jsonpathly
+npm install jsonpathly
 ```
 
-Install from yarn:
+## Quick Start
 
-```bash
-$ yarn add jsonpathly
+```typescript
+import { query, paths } from "jsonpathly";
+
+const championship = {
+  name: "World Chess Championship 2023",
+  players: [
+    { name: "Ding Liren", rating: 2788, country: "China" },
+    { name: "Ian Nepomniachtchi", rating: 2795, country: "Russia" },
+  ],
+};
+
+// Query values
+query(championship, "$.players[*].name");
+// => ["Ding Liren", "Ian Nepomniachtchi"]
+
+// Get paths
+paths(championship, "$.players[0]");
+// => ["$['players'][0]"]
+
+// Filter expressions
+query(championship, "$.players[?@.rating > 2790].name");
+// => ["Ian Nepomniachtchi"]
 ```
 
-## Getting Started
+## JSONPath Syntax
 
-```javascript
-import jp from "jsonpathly";
+JSONPath expressions start with `$` (root) and can use dot or bracket notation:
 
-const cities = [
-  { name: "London", population: 8615246 },
-  { name: "Berlin", population: 3517424 },
-  { name: "Madrid", population: 3165235 },
-  { name: "Rome", population: 2870528 },
-];
-
-const names = jp.query(cities, "$..name");
-
-// [ "London", "Berlin", "Madrid", "Rome" ]
+```
+$.players[0].name
+$['players'][0]['name']
 ```
 
-JsonPath expressions are used to access elements in a JSON structure, similar to how XPath expressions are used with XML documents. The starting point in JsonPath is referred to as "$" and can be either an object or array.
+### Operators
 
-JsonPath expressions can use either dot notation, such as
+| Operator                  | Description                                                     |
+| :------------------------ | :-------------------------------------------------------------- |
+| `$`                       | Root element                                                    |
+| `@`                       | Current element in filter expressions                           |
+| `*`                       | Wildcard - matches all elements                                 |
+| `..`                      | Recursive descent                                               |
+| `.<name>`                 | Dot-notated child                                               |
+| `['<name>']`              | Bracket-notated child                                           |
+| `[<index>]`               | Array index                                                     |
+| `[start:end:step]`        | Array slice                                                     |
+| `[?<expression>]`         | Filter expression                                               |
+| `[<expr>, <expr>]`        | Union - multiple selectors                                      |
 
-`$.store.book[0].title`
+### Filter Operators
 
-or bracket notation, like
+| Operator   | Description                                              | Example                                        |
+| :--------- | :------------------------------------------------------- | :--------------------------------------------- |
+| `==`       | Equal                                                    | `$[?@.title == 'Grandmaster']`                 |
+| `!=`       | Not equal                                                | `$[?@.country != 'Russia']`                    |
+| `<`        | Less than                                                | `$[?@.rating < 2700]`                          |
+| `<=`       | Less than or equal                                       | `$[?@.rating <= 2700]`                         |
+| `>`        | Greater than                                             | `$[?@.rating > 2800]`                          |
+| `>=`       | Greater than or equal                                    | `$[?@.rating >= 2800]`                         |
+| `&&`       | Logical AND                                              | `$[?@.rating > 2700 && @.active]`              |
+| `\|\|`     | Logical OR                                               | `$[?@.champion \|\| @.challenger]`             |
+| `!`        | Logical NOT                                              | `$[?!@.retired]`                               |
+| `=~`       | Regex match                                              | `$[?@.name =~ /^Magnus/i]`                     |
 
-`$['store']['book'][0]['title']`
+### RFC 9535 Functions
 
-## Operators
+| Function     | Description                          | Example                                        |
+| :----------- | :----------------------------------- | :--------------------------------------------- |
+| `length()`   | Length of string, array, or object   | `$[?length(@.name) > 10]`                      |
+| `count()`    | Count of elements in a nodelist      | `$[?count(@.titles[*]) > 5]`                   |
+| `match()`    | Full string regex match              | `$[?match(@.title, '^GM.*')]`                  |
+| `search()`   | Regex search within string           | `$[?search(@.name, 'Kasparov')]`               |
+| `value()`    | Extract value from nodelist          | `$[?value(@.achievements[0]) == 'World Champion']` |
 
-The following table lists the available operators for JsonPath expressions:
+### Extension Operators
 
-| Operator                  | Description                                                                       |
-| :------------------------ | :-------------------------------------------------------------------------------- |
-| `$`                       | Refers to the root element of the JSON structure. It starts all path expressions. |
-| `@`                       | Refers to the current node being processed by a filter predicate.                 |
-| `*`                       | Acts as a wildcard, and can be used anywhere.                                     |
-| `..<name>`                | Enables deep scanning, and can be used anywhere. A name is required.              |
-| `.<name>`                 | Refers to a dot-notated child element.                                            |
-| `['<name>' (, '<name>')]` | Refers to bracket-notated child elements.                                         |
-| `[<number> (, <number>)]` | Refers to array index or indexes.                                                 |
-| `[start:end:step]`        | A python-style array slicing operator.                                            |
-| `[?(<expression>)]`       | A filter expression that must evaluate to a boolean value.                        |
+| Operator   | Description                                  | Example                                             |
+| :--------- | :------------------------------------------- | :-------------------------------------------------- |
+| `in`       | Value exists in array                        | `$[?@.federation in ['FIDE', 'USCF']]`              |
+| `nin`      | Value not in array                           | `$[?@.result nin ['loss']]`                         |
+| `subsetof` | Left is subset of right                      | `$[?@.titles subsetof ['GM', 'IM', 'FM']]`          |
+| `anyof`    | Any element in common                        | `$[?@.styles anyof ['positional', 'tactical']]`     |
+| `noneof`   | No elements in common                        | `$[?@.weaknesses noneof ['time trouble']]`          |
+| `size`     | Array/string length equals                   | `$[?@.championships size 5]`                        |
+| `empty`    | Array/string is empty                        | `$[?@.losses empty]`                                |
 
-## Filter Operators
+## API
 
-Filters are used to select specific elements from arrays based on logical expressions. The expression [?(@.age > 18)] filters items where the "age" property is greater than 18, with @ referring to the current item being processed. Complex filters can be created using the logical operators && and ||. When working with string literals, they must be surrounded by single or double quotes, such as [?(@.color == 'blue')] or [?(@.color == "blue")].
+### query(data, path, options?)
 
-The following table lists different operators and their descriptions:
+Query JSON data and return matching values.
 
-| Operator | Description                                                                        |
-| :------- | :--------------------------------------------------------------------------------- |
-| ==       | left is equal to the right (note that 1 is not equal to '1')                       |
-| !=       | left is not equal to the right                                                     |
-| <        | left is less than the right                                                        |
-| <=       | left is less than or equal to the right                                            |
-| >        | left is greater than the right                                                     |
-| >=       | left is greater than or equal to the right                                         |
-| in       | left exists in the right (e.g. `[?(@.size in ['S', 'M'])]`)                        |
-| nin      | left does not exist in the right                                                   |
-| subsetof | left is a subset of the right (e.g. [?(@.sizes subsetof ['S', 'M', 'L'])])         |
-| anyof    | left has items in common with the right (e.g. [?(@.sizes anyof ['M', 'L'])])       |
-| noneof   | left has no items in common with the right (e.g. [?(@.sizes noneof ['M', 'L'])])   |
-| sizeof   | size of the left must match the size of the right (both must be arrays or strings) |
-| size     | size of the left must match the right (right must be a number)                     |
-| empty    | left (array or string) must be empty                                               |
+```typescript
+import { query } from "jsonpathly";
 
-## Methods
+const legends = {
+  champions: [
+    { name: "Garry Kasparov", era: "1985-2000", rating: 2851 },
+    { name: "Magnus Carlsen", era: "2013-2023", rating: 2882 },
+  ],
+};
 
-#### jp.query(obj, pathExpression[, options])
+query(legends, "$.champions[*].name");
+// => ["Garry Kasparov", "Magnus Carlsen"]
 
-Used to find elements in the obj data that match the given pathExpression. The function returns an array of elements that match the expression or an empty array if none are found.
-
-```javascript
-import jp from "jsonpathly";
-
-const players = jp.query(data, "$..players");
-// [ 'Nigel Short', 'Garry Kasparov', 'Vladimir Kramnik', 'Magnus Carlsen' ]
+query(legends, "$.champions[0].era");
+// => "1985-2000"
 ```
 
-| Option         | Description                                                             |
-| :------------- | :---------------------------------------------------------------------- |
-| hideExceptions | Suppresses any exceptions that may be raised during the path evaluation |
-| returnArray    | Forces array return                                                     |
+**Options:**
 
-#### jp.paths(obj, pathExpression[, options])
+| Option           | Type      | Description                                                      |
+| :--------------- | :-------- | :--------------------------------------------------------------- |
+| `hideExceptions` | `boolean` | Return `undefined` instead of throwing (or `[]` if `returnArray` is true) |
+| `returnArray`    | `boolean` | Always return results as an array                                |
 
-Get the paths to elements in obj that match pathExpression. The result is a list of paths to elements that fulfill the specified JSONPath expression.
+### paths(data, path, options?)
 
-```javascript
-const paths = jp.paths(data, "$..author");
-// [
-//   '$["store"]["book"][0]["author"]',
-//   '$["store"]["book"][1]["author"]',
-//   '$["store"]["book"][2]["author"]',
-//   '$["store"]["book"][3]["author"]'
-// ]
+Get normalized paths to matching elements.
+
+```typescript
+import { paths } from "jsonpathly";
+
+const tournament = {
+  candidates: [
+    { player: "Bobby Fischer", year: 1971 },
+    { player: "Anatoly Karpov", year: 1974 },
+  ],
+};
+
+paths(tournament, "$..player");
+// => ["$['candidates'][0]['player']", "$['candidates'][1]['player']"]
 ```
 
-| Option         | Description                                                               |
-| :------------- | :------------------------------------------------------------------------ |
-| hideExceptions | This option ensures that no exceptions are thrown during path evaluation. |
+**Options:**
 
-#### jp.parse(pathExpression[, options])
+| Option           | Type      | Description                              |
+| :--------------- | :-------- | :--------------------------------------- |
+| `hideExceptions` | `boolean` | Return empty array instead of throwing   |
 
-Generates a structured tree representation of a JSONPath expression, with each node being of a specific type.
+### parse(path)
 
-```javascript
-const tree = jp.parse("$..author");
-// { type: 'root', next: { type: 'subscript', value: { type: 'dotdot', value: { type: "identifier", value: "author" } } } }
+Parse a JSONPath expression into an AST.
+
+```typescript
+import { parse } from "jsonpathly";
+
+parse("$.players[0].rating");
+// => { type: 'root', next: { type: 'subscript', ... } }
 ```
 
-| Option         | Description                                                               |
-| :------------- | :------------------------------------------------------------------------ |
-| hideExceptions | This option ensures that no exceptions are thrown during path evaluation. |
+### stringify(ast)
 
-#### jp.stringify(tree)
+Convert an AST back to a JSONPath string.
 
-Returns a jsonpath string from a tree representing jsonpath expression (jp.parse response)
+```typescript
+import { parse, stringify } from "jsonpathly";
 
-```javascript
-const jsonpath = jp.stringify({
-  type: "root",
-  next: {
-    type: "subscript",
-    value: { type: "dotdot", value: { type: "identifier", value: "author" } },
-  },
-});
-// "$..author"
+stringify(parse("$.champions[*].name"));
+// => "$.champions[*].name"
 ```
 
-## Differences from other javascript implementations
+### JSONPathSyntaxError
 
-Main reason you should use this library is for security and stability.
+Custom error class for syntax errors.
 
-#### Evaluating Expressions
+```typescript
+import { query, JSONPathSyntaxError } from "jsonpathly";
 
-Script expressions (i.e., (...)) are disallowed to prevent XSS injections.
+try {
+  query({}, "$[invalid");
+} catch (e) {
+  if (e instanceof JSONPathSyntaxError) {
+    console.log("Invalid JSONPath:", e.message);
+  }
+}
+```
 
-Filter expressions (i.e., ?(...)) also avoid using eval or static-eval for security reasons.
+## Security
 
-Instead, jsonpathly has its own parser and evaluator. For example, `$[(@.number +5 > $.otherNumber * 10 + 2)]`
-is valid, but
-`?(alert("hello"))` will produce a syntax error (which would trigger an alert in some JavaScript libraries).
+jsonpathly is designed with security in mind:
 
-#### Grammar
+- **No dynamic code execution** - Expressions are parsed into an AST and evaluated safely
+- **No code injection** - Script expressions `$(...)` are not supported
+- **I-Regexp compliance** - Regex patterns in `match()` and `search()` are validated against RFC 9485
 
-The project uses ANTLR [grammar](https://github.com/atamano/jsonpathly/blob/master/src/parser/generated/JSONPath.g4) to parse JSONPath expressions and construct a typed abstract syntax tree (AST).
+## Comparison with Other Libraries
 
-#### Implementation
+For a comparison with other JSONPath implementations, see [json-path-comparison](https://cburgmer.github.io/json-path-comparison).
 
-For an overview of jsonpathly implementations and to compare its differences with other libraries, you can visit https://cburgmer.github.io/json-path-comparison
+**Key differences:**
+
+- Uses a Peggy parser instead of dynamic execution
+- Follows RFC 9535 semantics for edge cases
+- Normalized paths use single quotes per RFC 9535
+
+## Breaking Changes in v3.0.0
+
+- **Path format changed**: `paths()` now returns RFC 9535 normalized format with single quotes:
+  ```
+  Before: $["players"][0]["name"]
+  After:  $['players'][0]['name']
+  ```
+- **Node.js 18+ required**
+
+## Requirements
+
+- Node.js >= 18
+
+## License
+
+MIT
