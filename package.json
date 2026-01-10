@@ -1,7 +1,7 @@
 {
   "name": "jsonpathly",
   "version": "3.0.0",
-  "description": "Query json with jsonpath expressions",
+  "description": "RFC 9535 compliant JSONPath query library for TypeScript/JavaScript - secure, fast, and dependency-free",
   "engines": {
     "node": ">=18"
   },
@@ -33,9 +33,17 @@
   },
   "keywords": [
     "jsonpath",
-    "typescript",
+    "json-path",
     "json",
-    "path"
+    "path",
+    "query",
+    "typescript",
+    "rfc9535",
+    "selector",
+    "filter",
+    "expression",
+    "parser",
+    "xpath"
   ],
   "author": "Antoine Tamano",
   "license": "MIT",
