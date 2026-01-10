@@ -32,10 +32,8 @@ jobs:
       - name: Run tests
         run: npm test
 
-      # No NPM_TOKEN needed - uses OIDC trusted publishing
-      # Provenance is automatic with trusted publishing
       - name: Publish to npm
-        run: npm publish --access public
+        run: npm publish --access public --provenance
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
