@@ -82,6 +82,17 @@ type ValuePath<T = unknown> = {
   isIndefinite?: boolean;
 };
 
+/** Append `items` to `target` in place, flattening one level as `concat` does. */
+const appendAll = <T>(target: T[], items: T | T[]): void => {
+  if (isArray(items)) {
+    for (const item of items as T[]) {
+      target.push(item);
+    }
+  } else {
+    target.push(items as T);
+  }
+};
+
 // ============================================
 // Handler Class
 // ============================================
@@ -246,7 +257,7 @@ export class Handler<T = unknown> {
           }
           break;
         case 'wildcard':
-          results.push(...this.handleWildcard(payload));
+          appendAll(results, this.handleWildcard(payload));
           break;
       }
     }
@@ -259,34 +270,41 @@ export class Handler<T = unknown> {
   // ============================================
 
   private handleDotdot = (payload: ValuePath, tree: DotDot): ValuePath[] => {
+    const results: ValuePath[] = [];
+    this.collectDotdot(payload, tree, results);
+    return results;
+  };
+
+  // One accumulator for the whole descent. Returning a fresh array per level
+  // and concatenating it into the parent's copied every result once per
+  // ancestor, which made wide documents quadratic.
+  private collectDotdot = (payload: ValuePath, tree: DotDot, results: ValuePath[]): void => {
     const treeValue = tree.value;
     const value = payload.value;
-    let results: ValuePath[] = [];
 
     // Match at current level
     switch (treeValue.type) {
       case 'bracketMember': {
         const result = this.handleBracketMemberContent(payload, treeValue.value);
         if (isDefined(result)) {
-          results = results.concat(result);
+          appendAll(results, result);
         }
         break;
       }
       case 'bracketExpression': {
         if (isPlainObject(value) || (isArray(value) && treeValue.value.type === 'wildcard')) {
-          const result = this.handleBracketExpressionContent(payload, treeValue.value);
-          results = results.concat(result);
+          appendAll(results, this.handleBracketExpressionContent(payload, treeValue.value));
         }
         break;
       }
       case 'wildcard': {
-        results = results.concat(this.handleWildcard(payload));
+        appendAll(results, this.handleWildcard(payload));
         break;
       }
       case 'identifier': {
         const result = this.handleIdentifier(payload, treeValue);
         if (isDefined(result)) {
-          results = results.concat(result);
+          appendAll(results, result);
         }
         break;
       }
@@ -296,16 +314,14 @@ export class Handler<T = unknown> {
     if (isPlainObject(value)) {
       for (const key of Object.keys(value)) {
         const childPayload = { value: value[key], paths: formatStringLiteralPath(payload.paths, key) };
-        results = results.concat(this.handleDotdot(childPayload, tree));
+        this.collectDotdot(childPayload, tree, results);
       }
     } else if (isArray(value)) {
       value.forEach((item, index) => {
         const childPayload = { value: item, paths: formatNumericLiteralPath(payload.paths, index) };
-        results = results.concat(this.handleDotdot(childPayload, tree));
+        this.collectDotdot(childPayload, tree, results);
       });
     }
-
-    return results;
   };
 
   // ============================================
@@ -495,27 +511,31 @@ export class Handler<T = unknown> {
   // ============================================
 
   private concatIndefiniteValuePaths = (payload: ValuePath[], tree: Subscript | null): ValuePath => {
-    if (!tree) {
-      return payload.reduce<ValuePath<unknown[]>>(
-        (acc, current) => ({
-          isIndefinite: true,
-          value: [...acc.value, current.value],
-          paths: [...acc.paths, current.paths] as string[],
-        }),
-        { value: [], paths: [], isIndefinite: true },
-      );
-    }
+    // Results are appended in place. Rebuilding the accumulator for every item
+    // (spread or concat) copies everything gathered so far, which made large
+    // result sets quadratic.
+    const values: unknown[] = [];
+    const paths: string[] = [];
 
-    let values: unknown[] = [];
-    let paths: string[] = [];
+    if (!tree) {
+      for (const current of payload) {
+        values.push(current.value);
+        paths.push(current.paths as string);
+      }
+      return { value: values, paths, isIndefinite: true };
+    }
 
     for (const item of payload) {
       const result = this.handleSubscript(item, tree);
       if (isUndefined(result)) {
         continue;
       }
-      values = result.isIndefinite ? values.concat(result.value) : [...values, result.value];
-      paths = paths.concat(result.paths);
+      if (result.isIndefinite) {
+        appendAll(values, result.value);
+      } else {
+        values.push(result.value);
+      }
+      appendAll(paths, result.paths);
     }
 
     return { value: values, paths, isIndefinite: true };
