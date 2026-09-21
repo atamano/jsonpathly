@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-09-21
+
+### Security
+
+- Queries returning many nodes (`$.a[*]`, `$.a[*].b`, `$..b`, ...) took time quadratic in the number of results, so a large untrusted document could block the event loop for tens of seconds (denial of service). Results are now accumulated in place and these queries run in linear time. Reported and fixed by Alexi Turcotte (CISPA).
+
+### Fixed
+
+- A union containing a wildcard (`$.a[*,0]`) over a very large array no longer throws `RangeError: Maximum call stack size exceeded`.
+- Wildcards skip the holes of sparse JavaScript arrays instead of throwing (`$[*].x`).
+
+### Added
+
+- `SECURITY.md` describing how to report vulnerabilities privately.
+
 ## [3.0.0] - 2025-01-09
 
 ### Breaking Changes
@@ -55,7 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated ANTLR4 version
 - NodeJS webpack config fix
 
-[Unreleased]: https://github.com/atamano/jsonpathly/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/atamano/jsonpathly/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/atamano/jsonpathly/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/atamano/jsonpathly/compare/v2.0.2...v3.0.0
 [2.0.2]: https://github.com/atamano/jsonpathly/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/atamano/jsonpathly/compare/v2.0.0...v2.0.1
