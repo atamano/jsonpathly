@@ -465,6 +465,19 @@ describe('query()', () => {
     });
   });
 
+  describe('sparse arrays', () => {
+    // Not valid JSON, but reachable from JavaScript callers: holes are skipped.
+    // eslint-disable-next-line no-sparse-arrays
+    const data = [, { x: 1 }];
+
+    it('skips holes with a wildcard', () => {
+      expect(query(data, '$[*]')).to.deep.equal([{ x: 1 }]);
+      expect(query(data, '$[*].x')).to.deep.equal([1]);
+      expect(query(data, '$[*,1]')).to.deep.equal([{ x: 1 }, { x: 1 }]);
+      expect(query(data, '$..x')).to.deep.equal([1]);
+    });
+  });
+
   // ============================================
   // OPTIONS
   // ============================================

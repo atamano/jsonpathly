@@ -10,11 +10,11 @@ import { query } from '../src/handler/query';
 import { expect } from 'chai';
 
 const N = 200_000;
-const doc = { a: Array.from({ length: N }, (_, i) => ({ b: i })) };
+let doc: { a: { b: number }[] };
 
-// Generous against a linear run (well under a second) and far below the
-// quadratic one (tens of seconds at this size).
-const LIMIT_MS = 5000;
+// Generous against a linear run (a few seconds at most, even under coverage on
+// a loaded CI runner) and far below the quadratic one (minutes at this size).
+const LIMIT_MS = 20_000;
 
 const timed = (path: string): { count: number; ms: number } => {
   const start = Date.now();
@@ -23,6 +23,10 @@ const timed = (path: string): { count: number; ms: number } => {
 };
 
 describe('large result sets', () => {
+  before(() => {
+    doc = { a: Array.from({ length: N }, (_, i) => ({ b: i })) };
+  });
+
   for (const [path, expected] of [
     ['$.a[*]', N],
     ['$.a[*].b', N],

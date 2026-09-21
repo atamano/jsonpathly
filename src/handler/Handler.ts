@@ -124,10 +124,13 @@ export class Handler<T = unknown> {
 
   private handleWildcard = ({ value, paths }: ValuePath): ValuePath[] => {
     if (isArray(value)) {
-      return value.map((item, index) => ({
-        value: item,
-        paths: formatNumericLiteralPath(paths, index),
-      }));
+      // forEach skips holes of sparse arrays, whereas map keeps them and would
+      // hand undefined entries to the result accumulators.
+      const results: ValuePath[] = [];
+      value.forEach((item, index) => {
+        results.push({ value: item, paths: formatNumericLiteralPath(paths, index) });
+      });
+      return results;
     }
     if (isPlainObject(value)) {
       return Object.keys(value).map((key) => ({
