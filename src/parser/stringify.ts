@@ -155,7 +155,6 @@ function stringifySlice(input: Extract<JsonPathElement, { type: 'slices' }>): st
   return `${start}:${end}${step}`;
 }
 
-
 // ============================================
 // Main Stringify Function
 // ============================================

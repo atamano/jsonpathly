@@ -61,10 +61,7 @@ const normalizeArrayIndex = (index: number, length: number): number => (index < 
  * Returns { exists: true, value, index } if valid, { exists: false } otherwise.
  * This properly handles elements with undefined values.
  */
-const getArrayElement = <T>(
-  arr: T[],
-  index: number
-): { exists: true; value: T; index: number } | { exists: false } => {
+const getArrayElement = <T>(arr: T[], index: number): { exists: true; value: T; index: number } | { exists: false } => {
   const normalized = normalizeArrayIndex(index, arr.length);
   if (normalized >= 0 && normalized < arr.length) {
     return { exists: true, value: arr[normalized], index: normalized };

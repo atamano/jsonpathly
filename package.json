@@ -1,6 +1,6 @@
 {
   "name": "jsonpathly",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "RFC 9535 compliant JSONPath query library for TypeScript/JavaScript - secure, fast, and dependency-free",
   "engines": {
     "node": ">=18"
