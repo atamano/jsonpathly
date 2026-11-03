@@ -5,6 +5,7 @@
  */
 import { isValidIRegexp } from './functions';
 import { isArray, isEqual, isNumber, isString } from './helper';
+import { safeRegexTest } from './regex';
 
 type ComparatorFn = (left: unknown, right: unknown) => boolean;
 
@@ -134,10 +135,6 @@ export const matchRegex = (left: unknown, pattern: string, opts: string): boolea
   const value = pattern.slice(1, -1);
   // RFC 9485: Validate I-Regexp compliance (same as match/search functions)
   if (!isValidIRegexp(value)) return false;
-  try {
-    return !!left.match(new RegExp(value, opts));
-  } catch {
-    // Invalid regex pattern
-    return false;
-  }
+  // Linear-time matcher: V8's backtracking engine is exponential on patterns like (a+)+$
+  return safeRegexTest(value, opts, left);
 };

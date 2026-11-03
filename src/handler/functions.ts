@@ -9,6 +9,7 @@
  * - value(nodelist) - extracts single value from nodelist
  */
 import { isArray, isDefined, isPlainObject, isString } from './helper';
+import { safeRegexTest } from './regex';
 
 type FunctionImpl = (args: unknown[]) => unknown;
 
@@ -87,12 +88,7 @@ const match: FunctionImpl = (args) => {
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
   if (!isValidIRegexp(pattern)) return false;
-  try {
-    const regex = new RegExp(`^(?:${pattern})$`, 'u');
-    return regex.test(val);
-  } /* c8 ignore start */ catch {
-    return false;
-  } /* c8 ignore stop */
+  return safeRegexTest(`^(?:${pattern})$`, 'u', val);
 };
 
 /**
@@ -104,12 +100,7 @@ const search: FunctionImpl = (args) => {
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
   if (!isValidIRegexp(pattern)) return false;
-  try {
-    const regex = new RegExp(pattern, 'u');
-    return regex.test(val);
-  } /* c8 ignore start */ catch {
-    return false;
-  } /* c8 ignore stop */
+  return safeRegexTest(pattern, 'u', val);
 };
 
 /**

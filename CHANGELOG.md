@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Filter regexes (`=~`, `match()`, `search()`) ran the query's pattern on V8's backtracking engine, so a pattern such as `(a+)+$` against a long string could block the event loop for minutes (ReDoS, [GHSA-3v46-5wmv-g87p](https://github.com/atamano/jsonpathly/security/advisories/GHSA-3v46-5wmv-g87p)). Patterns are now evaluated by a linear-time automaton: matching takes time proportional to the string length times the pattern size, whatever the pattern. Reported by [NotAFlightRisk](https://github.com/NotAFlightRisk).
+
+### Changed
+
+- A regex whose compiled form exceeds 1000 instructions (for example `[a-z]{1,600}` or `(a{100}){100}`) now matches nothing, like an invalid pattern, instead of being run.
+
 ## [3.0.1] - 2026-09-21
 
 ### Security
