@@ -9,7 +9,7 @@
  * - value(nodelist) - extracts single value from nodelist
  */
 import { isArray, isDefined, isPlainObject, isString } from './helper';
-import { safeRegexTest } from './regex';
+import { MAX_REGEX_PATTERN_LENGTH, safeRegexTest } from './regex';
 
 type FunctionImpl = (args: unknown[]) => unknown;
 
@@ -102,7 +102,8 @@ const match: FunctionImpl = (args) => {
   const val = args[0];
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
-  if (!isValidIRegexp(pattern)) return false;
+  // Length first: validation scans the whole pattern, once per candidate node.
+  if (pattern.length > MAX_REGEX_PATTERN_LENGTH || !isValidIRegexp(pattern)) return false;
   return safeRegexTest(pattern, 'u', val, true);
 };
 
@@ -114,7 +115,8 @@ const search: FunctionImpl = (args) => {
   const val = args[0];
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
-  if (!isValidIRegexp(pattern)) return false;
+  // Length first: validation scans the whole pattern, once per candidate node.
+  if (pattern.length > MAX_REGEX_PATTERN_LENGTH || !isValidIRegexp(pattern)) return false;
   return safeRegexTest(pattern, 'u', val);
 };
 
