@@ -26,6 +26,7 @@ cases.push(['huge pattern', () => safeRegexTest(')' + 'a'.repeat(1024 * 1024), '
 const shared = { p: 'a'.repeat(1024 * 1024), rows: Array.from({ length: 1024 }, () => ({ a: 'x' })) };
 cases.push(['shared huge pattern, search()', () => query(shared, '$.rows[?search(@.a, $.p)]')]);
 cases.push(['shared huge pattern, match()', () => query(shared, '$.rows[?match(@.a, $.p)]')]);
+cases.push(['huge pattern, =~', () => query(shared.rows, `$[?@.a =~ /${shared.p}/]`)]);
 
 // A short slice of a huge string must not pin that string (V8 sliced strings share their
 // parent from 13 characters on). Each retention path is measured right after its scenario
