@@ -211,6 +211,7 @@ jsonpathly is designed with security in mind:
 - **No dynamic code execution** - Expressions are parsed into an AST and evaluated safely
 - **No code injection** - Script expressions `$(...)` are not supported
 - **I-Regexp compliance** - Regex patterns in `match()` and `search()` are validated against RFC 9485
+- **No ReDoS** - Regex filters (`=~`, `match()`, `search()`) run on a linear-time matcher, never on the backtracking engine, so a pattern like `(a+)+$` cannot hang the event loop. Patterns are limited to 1000 characters, 16 `\p{...}` escapes and 1000 compiled instructions; a larger pattern matches nothing, like an invalid one
 
 ## Comparison with Other Libraries
 
