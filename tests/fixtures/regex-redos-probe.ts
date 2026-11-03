@@ -45,6 +45,9 @@ cases.push([
       // Only the last native match would be kept (legacy RegExp.$_), so use one large parent.
       const r = ('z'.repeat(80 * 1024 * 1024) + '\\p{L}'.repeat(17)).slice(-85);
       query([{ a: 'x', r }], '$[?search(@.a, @.r)]');
+      // Rejected earlier still, by the I-Regexp validation (backreference).
+      const b = ('z'.repeat(80 * 1024 * 1024) + '(a)\\1 backreference').slice(-19);
+      query([{ a: 'x', b }], '$[?search(@.a, @.b)]');
     })();
     gc();
     gc();

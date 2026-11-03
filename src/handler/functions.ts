@@ -42,15 +42,30 @@ const hasWordBoundaryOutsideCharClass = (pattern: string): boolean => {
 /**
  * RFC 9485 I-Regexp validation.
  * Rejects non-interoperable regex features for cross-platform compatibility.
+ *
+ * Scans by hand rather than with native RegExps: a successful native match
+ * records its input in the legacy `RegExp.$_` state, which would keep a
+ * sliced pattern's parent string alive after the pattern is rejected.
  */
 export const isValidIRegexp = (pattern: string): boolean => {
-  // Reject backreferences (\1, \2, etc.)
-  if (/\\[1-9]/.test(pattern)) return false;
-  // Reject lookahead/lookbehind ((?=, (?!, (?<=, (?<!)
-  if (/\(\?[=!]/.test(pattern)) return false;
-  if (/\(\?<[=!]/.test(pattern)) return false;
-  // Reject named capture groups ((?<name>...)
-  if (/\(\?<[a-zA-Z]/.test(pattern)) return false;
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i];
+    if (char === '\\') {
+      const next = pattern[i + 1];
+      // Reject backreferences (\1, \2, etc.)
+      if (next >= '1' && next <= '9') return false;
+      i++;
+    } else if (char === '(' && pattern[i + 1] === '?') {
+      const next = pattern[i + 2];
+      // Reject lookahead ((?=, (?!)
+      if (next === '=' || next === '!') return false;
+      if (next === '<') {
+        const after = pattern[i + 3];
+        // Reject lookbehind ((?<=, (?<!) and named capture groups ((?<name>...)
+        if (after === '=' || after === '!' || /[a-zA-Z]/.test(after ?? '')) return false;
+      }
+    }
+  }
   // Reject word boundaries (\b, \B) outside character classes
   if (hasWordBoundaryOutsideCharClass(pattern)) return false;
   return true;

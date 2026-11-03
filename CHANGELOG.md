@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter regexes (`=~`, `match()`, `search()`) ran the query's pattern on V8's backtracking engine, so a pattern such as `(a+)+$` against a long string could block the event loop for minutes (ReDoS, [GHSA-3v46-5wmv-g87p](https://github.com/atamano/jsonpathly/security/advisories/GHSA-3v46-5wmv-g87p)). Patterns are now evaluated by a linear-time automaton: matching takes time proportional to the string length times the pattern size, whatever the pattern. Reported by [NotAFlightRisk](https://github.com/NotAFlightRisk).
 
+### Fixed
+
+- `\\\\1` (an escaped backslash followed by a digit) was rejected as a backreference by the I-Regexp validation; it is now accepted as the literal it is.
+
 ### Changed
 
 - Filter regexes now match nothing, like an invalid pattern, when they exceed one of these limits: 1000 characters, 16 `\p{...}`/`\P{...}` escapes, or 1000 instructions once compiled (for example `[a-z]{1,600}` or `(a{100}){100}`). Flags other than `d`, `g`, `i`, `m`, `s`, `u` and `y` are rejected.
