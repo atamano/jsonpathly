@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-11-03
+
 ### Security
 
 - Filter regexes (`=~`, `match()`, `search()`) ran the query's pattern on V8's backtracking engine, so a pattern such as `(a+)+$` against a long string could block the event loop for minutes (ReDoS, [GHSA-3v46-5wmv-g87p](https://github.com/atamano/jsonpathly/security/advisories/GHSA-3v46-5wmv-g87p)). Patterns are now evaluated by a linear-time automaton: matching takes time proportional to the string length times the pattern size, whatever the pattern. Reported by [NotAFlightRisk](https://github.com/NotAFlightRisk).
