@@ -33,7 +33,19 @@ export const MAX_REGEX_PATTERN_LENGTH = 1000;
 export const MAX_REGEX_PROPERTY_ESCAPES = 16;
 
 const SUPPORTED_FLAGS_RE = /^[dgimsuy]*$/;
-const PROPERTY_ESCAPE_RE = /\\[pP]\{/g;
+
+/**
+ * Counts `\p{` / `\P{` occurrences without a native RegExp: a successful native
+ * match records its input in the legacy `RegExp.$_` state, which would keep a
+ * sliced pattern's parent string alive even when the pattern is rejected.
+ */
+const countPropertyEscapes = (pattern: string): number => {
+  let n = 0;
+  for (let i = 0; i + 2 < pattern.length; i++) {
+    if (pattern[i] === '\\' && (pattern[i + 1] === 'p' || pattern[i + 1] === 'P') && pattern[i + 2] === '{') n++;
+  }
+  return n;
+};
 
 /** Flags that groups such as `(?i:...)` can switch on or off for part of a pattern. */
 type Modifiers = { i: boolean; m: boolean; s: boolean };
@@ -477,7 +489,7 @@ export const safeRegexTest = (pattern: string, flags: string, input: string): bo
   // Bounds checked before V8 sees the pattern and before it is cached, so oversized
   // patterns cost neither native compile time nor cache memory.
   if (pattern.length > MAX_REGEX_PATTERN_LENGTH || flags.length > 7 || !SUPPORTED_FLAGS_RE.test(flags)) return false;
-  if ((pattern.match(PROPERTY_ESCAPE_RE)?.length ?? 0) > MAX_REGEX_PROPERTY_ESCAPES) return false;
+  if (countPropertyEscapes(pattern) > MAX_REGEX_PROPERTY_ESCAPES) return false;
   let prog = cache.get(`${flags}/${pattern}`);
   if (prog === undefined) {
     // A pattern produced by slice() keeps its whole parent string alive in V8, so a

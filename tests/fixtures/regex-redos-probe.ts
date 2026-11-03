@@ -31,17 +31,24 @@ cases.push([
     if (!gc) return 'gc unavailable';
     gc();
     const before = process.memoryUsage().heapUsed;
-    // V8 only shares the parent for slices of 13+ characters; shorter ones are copied.
-    for (let i = 0; i < 8; i++) {
-      const big = 'z'.repeat(10 * 1024 * 1024);
-      const p = (big + `)invalid-regex-${i}`).slice(-16);
-      query([{ a: 'x', p }], '$[?search(@.a, @.p)]');
-      const q = (big + `valid-regex-${i}`).slice(-13);
-      query([{ a: 'x', q }], '$[?search(@.a, @.q)]');
-    }
+    // Allocated inside a function that has returned, so nothing here is live when measuring.
+    (() => {
+      // V8 only shares the parent for slices of 13+ characters; shorter ones are copied.
+      for (let i = 0; i < 8; i++) {
+        const big = 'z'.repeat(10 * 1024 * 1024);
+        const p = (big + `)invalid-regex-${i}`).slice(-16);
+        query([{ a: 'x', p }], '$[?search(@.a, @.p)]');
+        const q = (big + `valid-regex-${i}`).slice(-13);
+        query([{ a: 'x', q }], '$[?search(@.a, @.q)]');
+      }
+      // Rejected by the property-escape budget before compiling: must not be retained either.
+      // Only the last native match would be kept (legacy RegExp.$_), so use one large parent.
+      const r = ('z'.repeat(80 * 1024 * 1024) + '\\p{L}'.repeat(17)).slice(-85);
+      query([{ a: 'x', r }], '$[?search(@.a, @.r)]');
+    })();
     gc();
     gc();
-    // Pinned parents would add 160 MiB (16 x 10 MiB); a single GC pass leaves ~20 MiB of noise.
+    // Pinned parents would add 160 MiB (16 x 10 MiB) or 80 MiB; a GC pass leaves ~20 MiB of noise.
     return (process.memoryUsage().heapUsed - before) / 1048576 > 64;
   },
 ]);
