@@ -9,6 +9,15 @@ import {
   safeRegexTest,
 } from '../src/handler/regex';
 
+const NATIVE_MODIFIERS = ((): boolean => {
+  try {
+    new RegExp('(?i:a)');
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
 /**
  * GHSA-3v46-5wmv-g87p: `=~`, match() and search() ran query-supplied patterns
  * on V8's backtracking engine, so `(a+)+$` against "aaaa...!" hung the event loop.
@@ -58,10 +67,15 @@ describe('regex filters run in linear time (ReDoS)', () => {
     expect(safeRegexTest('\\p{L}'.repeat(MAX_REGEX_PROPERTY_ESCAPES), 'u', 'a'.repeat(16))).to.equal(true);
   });
 
-  it('supports modifier groups and Annex B escapes like master did', () => {
-    expect(query([{ a: 'A' }], '$[?match(@.a, "(?i:a)")]')).to.deep.equal([{ a: 'A' }]);
+  it('supports Annex B escapes like master did', () => {
     expect(query([{ a: '\x01' }], '$[?@.a =~ /\\01/]')).to.deep.equal([{ a: '\x01' }]);
     expect(query([{ a: '\\c' }], '$[?@.a =~ /^\\c$/]')).to.deep.equal([{ a: '\\c' }]);
+  });
+
+  // Modifier groups need V8 support (Node 23+); older runtimes reject them, as master did.
+  it('supports modifier groups where the runtime does', () => {
+    const expected = NATIVE_MODIFIERS ? [{ a: 'A' }] : [];
+    expect(query([{ a: 'A' }], '$[?match(@.a, "(?i:a)")]')).to.deep.equal(expected);
   });
 });
 
@@ -163,7 +177,11 @@ describe('safeRegexTest agrees with RegExp.prototype.test', () => {
   ];
 
   for (const [p, f] of patterns) {
-    it(`/${p}/${f}`, () => {
+    it(`/${p}/${f}`, function () {
+      if (!NATIVE_MODIFIERS && p.includes('(?') && !p.includes('(?:')) {
+        expect(safeRegexTest(p, f, 'a')).to.equal(false);
+        return;
+      }
       const native = new RegExp(p, f);
       for (const s of inputs) {
         native.lastIndex = 0;
