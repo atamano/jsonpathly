@@ -23,37 +23,49 @@ cases.push(['repeated empty groups', () => safeRegexTest('(?:(?:(?:(?:){1000}){1
 cases.push(['many property escapes', () => safeRegexTest(`[${'\\p{L}'.repeat(4000)}]`, 'u', 'x')]);
 cases.push(['huge pattern', () => safeRegexTest(')' + 'a'.repeat(1024 * 1024), 'u', '')]);
 
-// A short slice of a huge string must not pin that string through the cache (V8 sliced strings).
+// A short slice of a huge string must not pin that string (V8 sliced strings share their
+// parent from 13 characters on). Each retention path is measured right after its scenario
+// returns, with no query in between: any native match in a later query would overwrite the
+// legacy RegExp.$_ state and hide a leak through it.
+const retains = (scenario: () => void): boolean | string => {
+  const gc = (globalThis as { gc?: () => void }).gc;
+  if (!gc) return 'gc unavailable';
+  gc();
+  gc();
+  const before = process.memoryUsage().heapUsed;
+  scenario();
+  gc();
+  gc();
+  // A pinned parent adds 80 MiB or more; GC noise stays around 20 MiB.
+  return (process.memoryUsage().heapUsed - before) / 1048576 > 48;
+};
+const parent = () => 'z'.repeat(80 * 1024 * 1024);
+
 cases.push([
   'cache retains sliced patterns',
-  () => {
-    const gc = (globalThis as { gc?: () => void }).gc;
-    if (!gc) return 'gc unavailable';
-    gc();
-    const before = process.memoryUsage().heapUsed;
-    // Allocated inside a function that has returned, so nothing here is live when measuring.
-    (() => {
-      // V8 only shares the parent for slices of 13+ characters; shorter ones are copied.
-      for (let i = 0; i < 8; i++) {
-        const big = 'z'.repeat(10 * 1024 * 1024);
-        const p = (big + `)invalid-regex-${i}`).slice(-16);
-        query([{ a: 'x', p }], '$[?search(@.a, @.p)]');
-        const q = (big + `valid-regex-${i}`).slice(-13);
-        query([{ a: 'x', q }], '$[?search(@.a, @.q)]');
-      }
-      // Rejected by the property-escape budget before compiling: must not be retained either.
-      // Only the last native match would be kept (legacy RegExp.$_), so use one large parent.
-      const r = ('z'.repeat(80 * 1024 * 1024) + '\\p{L}'.repeat(17)).slice(-85);
+  () =>
+    retains(() => {
+      const p = (parent() + ')invalid-regex-x').slice(-16);
+      query([{ a: 'x', p }], '$[?search(@.a, @.p)]');
+      const q = (parent() + 'valid-regex-x').slice(-13);
+      query([{ a: 'x', q }], '$[?search(@.a, @.q)]');
+    }),
+]);
+cases.push([
+  'property-escape budget retains sliced pattern',
+  () =>
+    retains(() => {
+      const r = (parent() + '\\p{L}'.repeat(17)).slice(-85);
       query([{ a: 'x', r }], '$[?search(@.a, @.r)]');
-      // Rejected earlier still, by the I-Regexp validation (backreference).
-      const b = ('z'.repeat(80 * 1024 * 1024) + '(a)\\1 backreference').slice(-19);
+    }),
+]);
+cases.push([
+  'I-Regexp validation retains sliced pattern',
+  () =>
+    retains(() => {
+      const b = (parent() + '(a)\\1 backreference').slice(-19);
       query([{ a: 'x', b }], '$[?search(@.a, @.b)]');
-    })();
-    gc();
-    gc();
-    // Pinned parents would add 160 MiB (16 x 10 MiB) or 80 MiB; a GC pass leaves ~20 MiB of noise.
-    return (process.memoryUsage().heapUsed - before) / 1048576 > 64;
-  },
+    }),
 ]);
 
 for (const [name, run] of cases) {

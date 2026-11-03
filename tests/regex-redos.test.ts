@@ -61,6 +61,13 @@ describe('regex filters run in linear time (ReDoS)', () => {
     expect(safeRegexTest('[a&&b]', 'v', 'a')).to.equal(false);
   });
 
+  it('gives match() the same 1000-character budget as search()', () => {
+    const limit = '[' + 'a'.repeat(MAX_REGEX_PATTERN_LENGTH - 2) + ']';
+    expect(query([{ a: 'a', p: limit }], '$[?match(@.a, @.p)]')).to.have.length(1);
+    expect(query([{ a: 'a', p: limit }], '$[?search(@.a, @.p)]')).to.have.length(1);
+    expect(query([{ a: 'a', p: limit + 'a?' }], '$[?match(@.a, @.p)]')).to.have.length(0);
+  });
+
   it('rejects oversized patterns before compiling them', () => {
     expect(safeRegexTest('a'.repeat(MAX_REGEX_PATTERN_LENGTH + 1), '', 'a'.repeat(2000))).to.equal(false);
     expect(safeRegexTest('\\p{L}'.repeat(MAX_REGEX_PROPERTY_ESCAPES + 1), 'u', 'a'.repeat(20))).to.equal(false);

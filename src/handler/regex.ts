@@ -482,23 +482,26 @@ const cache = new Map<string, Program | null>();
 
 /**
  * Test whether `pattern` (JavaScript syntax, compiled with `flags`) matches
- * somewhere in `input`, in time linear in the input length.
+ * somewhere in `input`, in time linear in the input length. With `anchored`,
+ * the whole input must match (the pattern is wrapped as `^(?:pattern)$`
+ * after the length check, so the wrapper does not eat into the budget).
  * Returns false for invalid or unsupported patterns.
  */
-export const safeRegexTest = (pattern: string, flags: string, input: string): boolean => {
+export const safeRegexTest = (pattern: string, flags: string, input: string, anchored = false): boolean => {
   // Bounds checked before V8 sees the pattern and before it is cached, so oversized
   // patterns cost neither native compile time nor cache memory.
   if (pattern.length > MAX_REGEX_PATTERN_LENGTH || flags.length > 7 || !SUPPORTED_FLAGS_RE.test(flags)) return false;
   if (countPropertyEscapes(pattern) > MAX_REGEX_PROPERTY_ESCAPES) return false;
-  let prog = cache.get(`${flags}/${pattern}`);
+  const prefix = `${flags}/${anchored ? 1 : 0}/`;
+  let prog = cache.get(prefix + pattern);
   if (prog === undefined) {
     // A pattern produced by slice() keeps its whole parent string alive in V8, so a
     // 19-character slice of a 10 MiB string would pin those 10 MiB in the cache (via
     // the key and the atom sources). Copy it into an independent string first.
     const flat = Array.from(pattern).join('');
-    prog = compile(flat, flags);
+    prog = compile(anchored ? `^(?:${flat})$` : flat, flags);
     if (cache.size >= MAX_CACHE_SIZE) cache.clear();
-    cache.set(`${flags}/${flat}`, prog);
+    cache.set(prefix + flat, prog);
   }
   return prog !== null && run(prog, input);
 };

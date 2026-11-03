@@ -103,7 +103,7 @@ const match: FunctionImpl = (args) => {
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
   if (!isValidIRegexp(pattern)) return false;
-  return safeRegexTest(`^(?:${pattern})$`, 'u', val);
+  return safeRegexTest(pattern, 'u', val, true);
 };
 
 /**
