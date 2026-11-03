@@ -23,6 +23,29 @@ cases.push(['repeated empty groups', () => safeRegexTest('(?:(?:(?:(?:){1000}){1
 cases.push(['many property escapes', () => safeRegexTest(`[${'\\p{L}'.repeat(4000)}]`, 'u', 'x')]);
 cases.push(['huge pattern', () => safeRegexTest(')' + 'a'.repeat(1024 * 1024), 'u', '')]);
 
+// A short slice of a huge string must not pin that string through the cache (V8 sliced strings).
+cases.push([
+  'cache retains sliced patterns',
+  () => {
+    const gc = (globalThis as { gc?: () => void }).gc;
+    if (!gc) return 'gc unavailable';
+    gc();
+    const before = process.memoryUsage().heapUsed;
+    // V8 only shares the parent for slices of 13+ characters; shorter ones are copied.
+    for (let i = 0; i < 8; i++) {
+      const big = 'z'.repeat(10 * 1024 * 1024);
+      const p = (big + `)invalid-regex-${i}`).slice(-16);
+      query([{ a: 'x', p }], '$[?search(@.a, @.p)]');
+      const q = (big + `valid-regex-${i}`).slice(-13);
+      query([{ a: 'x', q }], '$[?search(@.a, @.q)]');
+    }
+    gc();
+    gc();
+    // Pinned parents would add 160 MiB (16 x 10 MiB); a single GC pass leaves ~20 MiB of noise.
+    return (process.memoryUsage().heapUsed - before) / 1048576 > 64;
+  },
+]);
+
 for (const [name, run] of cases) {
   const start = Date.now();
   const result = run();

@@ -26,7 +26,7 @@ describe('regex filters run in linear time (ReDoS)', () => {
   it('evaluates adversarial patterns quickly (child process with a hard timeout)', function () {
     this.timeout(90_000);
     const probe = path.join(__dirname, 'fixtures', 'regex-redos-probe.ts');
-    const child = spawnSync(process.execPath, ['-r', 'ts-node/register/transpile-only', probe], {
+    const child = spawnSync(process.execPath, ['--expose-gc', '-r', 'ts-node/register/transpile-only', probe], {
       encoding: 'utf8',
       timeout: 60_000,
     });

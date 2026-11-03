@@ -478,12 +478,15 @@ export const safeRegexTest = (pattern: string, flags: string, input: string): bo
   // patterns cost neither native compile time nor cache memory.
   if (pattern.length > MAX_REGEX_PATTERN_LENGTH || flags.length > 7 || !SUPPORTED_FLAGS_RE.test(flags)) return false;
   if ((pattern.match(PROPERTY_ESCAPE_RE)?.length ?? 0) > MAX_REGEX_PROPERTY_ESCAPES) return false;
-  const key = `${flags}/${pattern}`;
-  let prog = cache.get(key);
+  let prog = cache.get(`${flags}/${pattern}`);
   if (prog === undefined) {
-    prog = compile(pattern, flags);
+    // A pattern produced by slice() keeps its whole parent string alive in V8, so a
+    // 19-character slice of a 10 MiB string would pin those 10 MiB in the cache (via
+    // the key and the atom sources). Copy it into an independent string first.
+    const flat = Array.from(pattern).join('');
+    prog = compile(flat, flags);
     if (cache.size >= MAX_CACHE_SIZE) cache.clear();
-    cache.set(key, prog);
+    cache.set(`${flags}/${flat}`, prog);
   }
   return prog !== null && run(prog, input);
 };
