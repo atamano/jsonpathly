@@ -51,6 +51,12 @@ describe('regex filters run in linear time (ReDoS)', () => {
     expect(safeRegexTest(`a{${MAX_REGEX_PROGRAM_SIZE + 1}}`, '', 'a')).to.equal(false);
   });
 
+  it('bounds compile work for repeated empty groups', () => {
+    const start = Date.now();
+    expect(safeRegexTest('(?:(?:(?:(?:){1000}){1000}){1000}){1000}', '', 'x')).to.equal(false);
+    expect(Date.now() - start).to.be.below(500);
+  });
+
   it('rejects invalid patterns and flags', () => {
     expect(safeRegexTest('(', '', '(')).to.equal(false);
     expect(safeRegexTest('a', 'gg', 'a')).to.equal(false);

@@ -250,7 +250,12 @@ class Compiler {
     this.emit(OP_MATCH);
   }
 
+  // Counts compile() calls: an empty group emits nothing, so the instruction cap
+  // alone would let (?:(?:(?:){1000}){1000}){1000} expand a billion times.
+  private work = 0;
+
   compile(node: Node): void {
+    if (++this.work > 4 * MAX_REGEX_PROGRAM_SIZE) throw new UnsupportedRegex('pattern too large');
     switch (node.t) {
       case 'atom':
         this.emit(OP_CHAR, this.atomId(node));
