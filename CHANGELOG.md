@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- A regex whose compiled form exceeds 1000 instructions (for example `[a-z]{1,600}` or `(a{100}){100}`) now matches nothing, like an invalid pattern, instead of being run.
+- Filter regexes now match nothing, like an invalid pattern, when they exceed one of these limits: 1000 characters, 16 `\p{...}`/`\P{...}` escapes, or 1000 instructions once compiled (for example `[a-z]{1,600}` or `(a{100}){100}`). Flags other than `d`, `g`, `i`, `m`, `s`, `u` and `y` are rejected.
 
 ## [3.0.1] - 2026-09-21
 

@@ -22,10 +22,26 @@
 /** Upper bound on compiled NFA instructions (bounds `a{1000}{1000}` and similar). */
 export const MAX_REGEX_PROGRAM_SIZE = 1000;
 
+/** Longest pattern accepted, checked before any native RegExp is built or anything is cached. */
+export const MAX_REGEX_PATTERN_LENGTH = 1000;
+
+/**
+ * Most `\p{...}` / `\P{...}` escapes accepted in one pattern. V8 expands each
+ * property into a large code point set, so a class holding thousands of them
+ * takes seconds to compile and test natively, even on a one-character input.
+ */
+export const MAX_REGEX_PROPERTY_ESCAPES = 16;
+
+const SUPPORTED_FLAGS_RE = /^[dgimsuy]*$/;
+const PROPERTY_ESCAPE_RE = /\\[pP]\{/g;
+
+/** Flags that groups such as `(?i:...)` can switch on or off for part of a pattern. */
+type Modifiers = { i: boolean; m: boolean; s: boolean };
+
 type Node =
-  | { t: 'atom'; src: string; literal?: string }
-  | { t: 'bol' }
-  | { t: 'eol' }
+  | { t: 'atom'; src: string; literal?: string; mods: Modifiers }
+  | { t: 'bol'; multiline: boolean }
+  | { t: 'eol'; multiline: boolean }
   | { t: 'cat'; items: Node[] }
   | { t: 'alt'; alts: Node[] }
   | { t: 'rep'; node: Node; min: number; max: number };
@@ -45,21 +61,28 @@ type Program = {
   y: number[];
   atoms: Array<{ re: RegExp; literal?: string }>;
   unicode: boolean;
-  multiline: boolean;
   sticky: boolean;
 };
 
 const SYNTAX_CHARS = new Set(['^', '$', '\\', '.', '*', '+', '?', '(', ')', '[', ']', '{', '}', '|', '/']);
 const QUANTIFIER_RE = /^\{(\d+)(?:,(\d*))?\}/;
 const HEX4_RE = /^[0-9a-fA-F]{4}/;
+const MODIFIER_GROUP_RE = /^\(\?([ims]*)(?:-([ims]*))?:/;
 
 const isLineTerminator = (code: number): boolean =>
   code === 0x0a || code === 0x0d || code === 0x2028 || code === 0x2029;
 
 class Parser {
   private i = 0;
+  private mods: Modifiers;
 
-  constructor(private readonly src: string, private readonly unicode: boolean) {}
+  constructor(private readonly src: string, private readonly unicode: boolean, flags: string) {
+    this.mods = { i: flags.includes('i'), m: flags.includes('m'), s: flags.includes('s') };
+  }
+
+  private atom(src: string, literal?: string): Node {
+    return { t: 'atom', src, literal, mods: this.mods };
+  }
 
   parse(): Node {
     const node = this.parseAlt();
@@ -88,11 +111,11 @@ class Parser {
     const ch = this.src[this.i];
     if (ch === '^') {
       this.i++;
-      return { t: 'bol' };
+      return { t: 'bol', multiline: this.mods.m };
     }
     if (ch === '$') {
       this.i++;
-      return { t: 'eol' };
+      return { t: 'eol', multiline: this.mods.m };
     }
     return this.parseQuantifier(this.parseAtom());
   }
@@ -103,15 +126,23 @@ class Parser {
     const ch = src[start];
 
     if (ch === '(') {
+      const outer = this.mods;
       if (src[start + 1] === '?') {
-        if (src[start + 2] !== ':') throw new UnsupportedRegex('group modifier');
-        this.i = start + 3;
+        // (?:...) or a modifier group such as (?i:...), (?-i:...), (?s-m:...).
+        const m = MODIFIER_GROUP_RE.exec(src.slice(start, start + 12));
+        if (!m) throw new UnsupportedRegex('lookaround or named group');
+        const mods = { ...outer };
+        for (const f of m[1]) mods[f as keyof Modifiers] = true;
+        for (const f of m[2] ?? '') mods[f as keyof Modifiers] = false;
+        this.mods = mods;
+        this.i = start + m[0].length;
       } else {
         this.i = start + 1;
       }
       const inner = this.parseAlt();
       if (src[this.i] !== ')') throw new UnsupportedRegex('unclosed group');
       this.i++;
+      this.mods = outer;
       return inner;
     }
 
@@ -121,17 +152,22 @@ class Parser {
       while (j < src.length && src[j] !== ']') j += src[j] === '\\' ? 2 : 1;
       if (j >= src.length) throw new UnsupportedRegex('unclosed class');
       this.i = j + 1;
-      return { t: 'atom', src: src.slice(start, this.i) };
+      return this.atom(src.slice(start, this.i));
     }
 
     if (ch === '.') {
       this.i++;
-      return { t: 'atom', src: '.' };
+      return this.atom('.');
     }
 
     if (ch === '\\') {
+      // Annex B: `\c` not followed by a letter is a literal backslash, then `c` is read normally.
+      if (!this.unicode && src[start + 1] === 'c' && !/[a-zA-Z]/.test(src[start + 2] ?? '')) {
+        this.i = start + 1;
+        return this.atom('\\\\', '\\');
+      }
       this.i = start + this.escapeLength(start);
-      return { t: 'atom', src: src.slice(start, this.i) };
+      return this.atom(src.slice(start, this.i));
     }
 
     // V8 already rejects these when validating the pattern; kept as a guard.
@@ -144,7 +180,7 @@ class Parser {
     const code = src.codePointAt(start) as number;
     const literal = this.unicode && code > 0xffff ? String.fromCodePoint(code) : ch;
     this.i = start + literal.length;
-    return { t: 'atom', src: SYNTAX_CHARS.has(literal) ? `\\${literal}` : literal, literal };
+    return this.atom(SYNTAX_CHARS.has(literal) ? `\\${literal}` : literal, literal);
   }
 
   /** Length of the escape sequence starting at `start` (which holds a backslash). */
@@ -154,11 +190,15 @@ class Parser {
     if (next === undefined) throw new UnsupportedRegex('trailing backslash');
     if (next === 'b' || next === 'B') throw new UnsupportedRegex('word boundary');
     if (next >= '1' && next <= '9') throw new UnsupportedRegex('backreference');
-    if (next === '0' && /[0-9]/.test(src[start + 2] ?? '')) throw new UnsupportedRegex('octal escape');
-    if (next === 'c') {
-      if (!/[a-zA-Z]/.test(src[start + 2] ?? '')) throw new UnsupportedRegex('control escape');
-      return 3;
+    if (next === '0') {
+      // Annex B legacy octal: \0 followed by up to two octal digits (\01, \017). `\08` is NUL then `8`.
+      if (unicode) return 2;
+      let len = 2;
+      while (len < 4 && /[0-7]/.test(src[start + len] ?? '')) len++;
+      return len;
     }
+    // `\c` without a letter was handled by the caller (non-unicode) or rejected by V8 (unicode).
+    if (next === 'c') return 3;
     if (next === 'x' && /^[0-9a-fA-F]{2}/.test(src.slice(start + 2))) return 4;
     if (unicode && (next === 'p' || next === 'P' || next === 'u') && src[start + 2] === '{') {
       const close = src.indexOf('}', start + 3);
@@ -222,7 +262,7 @@ class Compiler {
   readonly atoms: Program['atoms'] = [];
   private readonly atomIds = new Map<string, number>();
 
-  constructor(private readonly atomFlags: string) {}
+  constructor(private readonly unicode: boolean) {}
 
   private emit(op: number, x = 0, y = 0): number {
     if (this.op.length >= MAX_REGEX_PROGRAM_SIZE) throw new UnsupportedRegex('pattern too large');
@@ -232,16 +272,17 @@ class Compiler {
     return this.op.length - 1;
   }
 
-  private atomId(node: { src: string; literal?: string }): number {
-    let id = this.atomIds.get(node.src);
+  private atomId(node: { src: string; literal?: string; mods: Modifiers }): number {
+    const flags = (node.mods.i ? 'i' : '') + (node.mods.s ? 's' : '') + (this.unicode ? 'u' : '');
+    const key = `${flags}/${node.src}`;
+    let id = this.atomIds.get(key);
     if (id === undefined) {
       id = this.atoms.length;
-      const caseInsensitive = this.atomFlags.includes('i');
       this.atoms.push({
-        re: new RegExp(`^(?:${node.src})$`, this.atomFlags),
-        literal: caseInsensitive ? undefined : node.literal,
+        re: new RegExp(`^(?:${node.src})$`, flags),
+        literal: node.mods.i ? undefined : node.literal,
       });
-      this.atomIds.set(node.src, id);
+      this.atomIds.set(key, id);
     }
     return id;
   }
@@ -261,10 +302,10 @@ class Compiler {
         this.emit(OP_CHAR, this.atomId(node));
         return;
       case 'bol':
-        this.emit(OP_BOL);
+        this.emit(OP_BOL, node.multiline ? 1 : 0);
         return;
       case 'eol':
-        this.emit(OP_EOL);
+        this.emit(OP_EOL, node.multiline ? 1 : 0);
         return;
       case 'cat':
         for (const item of node.items) this.compile(item);
@@ -316,9 +357,8 @@ const compile = (pattern: string, flags: string): Program | null => {
     // Let V8 reject syntax errors and bad flags (compiling is linear, running is what backtracks).
     new RegExp(pattern, flags);
     const unicode = flags.includes('u');
-    const ast = new Parser(pattern, unicode).parse();
-    const atomFlags = [...flags].filter((f) => f === 'i' || f === 's' || f === 'u').join('');
-    const compiler = new Compiler(atomFlags);
+    const ast = new Parser(pattern, unicode, flags).parse();
+    const compiler = new Compiler(unicode);
     compiler.compile(ast);
     compiler.finish();
     return {
@@ -327,7 +367,6 @@ const compile = (pattern: string, flags: string): Program | null => {
       y: compiler.y,
       atoms: compiler.atoms,
       unicode,
-      multiline: flags.includes('m'),
       sticky: flags.includes('y'),
     };
   } catch {
@@ -336,7 +375,7 @@ const compile = (pattern: string, flags: string): Program | null => {
 };
 
 const run = (prog: Program, input: string): boolean => {
-  const { op, x, y, atoms, unicode, multiline, sticky } = prog;
+  const { op, x, y, atoms, unicode, sticky } = prog;
   const size = op.length;
   let clist = new Int32Array(size);
   let nlist = new Int32Array(size);
@@ -375,10 +414,10 @@ const run = (prog: Program, input: string): boolean => {
           stack[sp++] = x[p];
           break;
         case OP_BOL:
-          if (pos === 0 || (multiline && isLineTerminator(input.charCodeAt(pos - 1)))) stack[sp++] = p + 1;
+          if (pos === 0 || (x[p] === 1 && isLineTerminator(input.charCodeAt(pos - 1)))) stack[sp++] = p + 1;
           break;
         case OP_EOL:
-          if (pos === input.length || (multiline && isLineTerminator(input.charCodeAt(pos)))) stack[sp++] = p + 1;
+          if (pos === input.length || (x[p] === 1 && isLineTerminator(input.charCodeAt(pos)))) stack[sp++] = p + 1;
           break;
       }
     }
@@ -435,6 +474,10 @@ const cache = new Map<string, Program | null>();
  * Returns false for invalid or unsupported patterns.
  */
 export const safeRegexTest = (pattern: string, flags: string, input: string): boolean => {
+  // Bounds checked before V8 sees the pattern and before it is cached, so oversized
+  // patterns cost neither native compile time nor cache memory.
+  if (pattern.length > MAX_REGEX_PATTERN_LENGTH || flags.length > 7 || !SUPPORTED_FLAGS_RE.test(flags)) return false;
+  if ((pattern.match(PROPERTY_ESCAPE_RE)?.length ?? 0) > MAX_REGEX_PROPERTY_ESCAPES) return false;
   const key = `${flags}/${pattern}`;
   let prog = cache.get(key);
   if (prog === undefined) {

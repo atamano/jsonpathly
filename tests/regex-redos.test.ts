@@ -1,44 +1,37 @@
 import { expect } from 'chai';
+import { spawnSync } from 'child_process';
+import * as path from 'path';
 import { query } from '../src';
-import { MAX_REGEX_PROGRAM_SIZE, safeRegexTest } from '../src/handler/regex';
+import {
+  MAX_REGEX_PATTERN_LENGTH,
+  MAX_REGEX_PROGRAM_SIZE,
+  MAX_REGEX_PROPERTY_ESCAPES,
+  safeRegexTest,
+} from '../src/handler/regex';
 
 /**
  * GHSA-3v46-5wmv-g87p: `=~`, match() and search() ran query-supplied patterns
  * on V8's backtracking engine, so `(a+)+$` against "aaaa...!" hung the event loop.
  */
 describe('regex filters run in linear time (ReDoS)', () => {
-  const evil = 'a'.repeat(50_000) + '!';
-  const doc = [{ a: evil }];
-
-  const timed = (fn: () => unknown): number => {
-    const start = Date.now();
-    fn();
-    return Date.now() - start;
-  };
-
-  // Each pattern fails on "aaa...a!", after exponential or high-polynomial backtracking in V8.
-  const patterns = ['(a+)+$', '(a|a)+$', '(a*)*b', '(a|aa)+$', 'a*a*a*a*a*a*b', '(\\w+\\s?)+$', '(.*a){12}$'];
-
-  for (const p of patterns) {
-    it(`search() with ${p}`, () => {
-      const ms = timed(() => expect(query(doc, `$[?search(@.a, "${p.replace(/\\/g, '\\\\')}")]`)).to.have.length(0));
-      expect(ms).to.be.below(2000);
+  it('evaluates adversarial patterns quickly (child process with a hard timeout)', function () {
+    this.timeout(90_000);
+    const probe = path.join(__dirname, 'fixtures', 'regex-redos-probe.ts');
+    const child = spawnSync(process.execPath, ['-r', 'ts-node/register/transpile-only', probe], {
+      encoding: 'utf8',
+      timeout: 60_000,
     });
-
-    it(`match() with ${p}`, () => {
-      const ms = timed(() => expect(query(doc, `$[?match(@.a, "${p.replace(/\\/g, '\\\\')}")]`)).to.have.length(0));
-      expect(ms).to.be.below(2000);
-    });
-
-    it(`=~ with ${p}`, () => {
-      const ms = timed(() => expect(query(doc, `$[?@.a =~ /${p}/]`)).to.have.length(0));
-      expect(ms).to.be.below(2000);
-    });
-  }
-
-  it('reproduces the advisory proof of concept', () => {
-    const ms = timed(() => query([{ a: 'a'.repeat(40) + '!' }], '$[?search(@.a,"(a+)+$")]'));
-    expect(ms).to.be.below(500);
+    expect(child.signal, `probe killed after timeout; output so far:\n${child.stdout}`).to.equal(null);
+    expect(child.status, child.stderr).to.equal(0);
+    const results = child.stdout
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as { name: string; ms: number; matched: boolean });
+    expect(results).to.have.length.above(20);
+    for (const r of results) {
+      expect(r.matched, r.name).to.equal(false);
+      expect(r.ms, r.name).to.be.below(2000);
+    }
   });
 
   it('still matches when the evil pattern does match', () => {
@@ -51,16 +44,24 @@ describe('regex filters run in linear time (ReDoS)', () => {
     expect(safeRegexTest(`a{${MAX_REGEX_PROGRAM_SIZE + 1}}`, '', 'a')).to.equal(false);
   });
 
-  it('bounds compile work for repeated empty groups', () => {
-    const start = Date.now();
-    expect(safeRegexTest('(?:(?:(?:(?:){1000}){1000}){1000}){1000}', '', 'x')).to.equal(false);
-    expect(Date.now() - start).to.be.below(500);
-  });
-
   it('rejects invalid patterns and flags', () => {
     expect(safeRegexTest('(', '', '(')).to.equal(false);
     expect(safeRegexTest('a', 'gg', 'a')).to.equal(false);
     expect(safeRegexTest('a{', 'u', 'a{')).to.equal(false);
+    // The v flag changes class syntax ([a&&b]), which this matcher does not implement.
+    expect(safeRegexTest('[a&&b]', 'v', 'a')).to.equal(false);
+  });
+
+  it('rejects oversized patterns before compiling them', () => {
+    expect(safeRegexTest('a'.repeat(MAX_REGEX_PATTERN_LENGTH + 1), '', 'a'.repeat(2000))).to.equal(false);
+    expect(safeRegexTest('\\p{L}'.repeat(MAX_REGEX_PROPERTY_ESCAPES + 1), 'u', 'a'.repeat(20))).to.equal(false);
+    expect(safeRegexTest('\\p{L}'.repeat(MAX_REGEX_PROPERTY_ESCAPES), 'u', 'a'.repeat(16))).to.equal(true);
+  });
+
+  it('supports modifier groups and Annex B escapes like master did', () => {
+    expect(query([{ a: 'A' }], '$[?match(@.a, "(?i:a)")]')).to.deep.equal([{ a: 'A' }]);
+    expect(query([{ a: '\x01' }], '$[?@.a =~ /\\01/]')).to.deep.equal([{ a: '\x01' }]);
+    expect(query([{ a: '\\c' }], '$[?@.a =~ /^\\c$/]')).to.deep.equal([{ a: '\\c' }]);
   });
 });
 
@@ -110,6 +111,16 @@ describe('safeRegexTest agrees with RegExp.prototype.test', () => {
     ['[😀]', 'u'],
     ['(a|b)*c(d|e)?', 'g'],
     ['.*foo.*', ''],
+    ['\\01', ''],
+    ['\\017+', ''],
+    ['^\\08$', ''],
+    ['\\c', ''],
+    ['\\c*', ''],
+    ['(?i:a)b', ''],
+    ['(?-i:a)b', 'i'],
+    ['(?s:.)', ''],
+    ['(?m:^b)', ''],
+    ['(?i-s:A.)', 's'],
   ];
   const inputs = [
     '',
