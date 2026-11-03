@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Node.js 18 (end of life since April 2025) is no longer supported: `engines.node` is now `>=20` and CI tests on Node 20, 22 and 24. The library code itself is unchanged.
+- Development tooling updated (mocha 12, c8 12, eslint 10); `npm audit` reports no known vulnerabilities in the development dependencies.
+
 ## [3.0.2] - 2026-11-03
 
 ### Security
