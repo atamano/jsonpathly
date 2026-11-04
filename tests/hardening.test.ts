@@ -481,20 +481,18 @@ describe('hardening', () => {
       // 2^k duplicates of one node: each is a step, but the memory grows with
       // the nodelist, so it is bounded separately and lower than the step floor.
       const doc = nestedArrays(40);
-      expect(() => query(doc, '$' + '[0,0]'.repeat(40))).to.throw(
-        JSONPathLimitError,
-        /retains more than 1000000 nodes/,
-      );
-      expect(() => paths(doc, '$' + '[0,0]'.repeat(40))).to.throw(JSONPathLimitError, /retains/);
+      // On a small document both floors are 1,000,000 and the step limit fires first.
+      expect(() => query(doc, '$' + '[0,0]'.repeat(40))).to.throw(JSONPathLimitError, /1000000/);
+      expect(() => paths(doc, '$' + '[0,0]'.repeat(40))).to.throw(JSONPathLimitError, /1000000/);
       // A large document justifies large nodelists.
       const wide = { a: Array.from({ length: 1_200_000 }, (_, i) => i) };
       expect(query(wide, '$..*')).to.have.length(1_200_001);
       expect(query(wide, '$.a[*]')).to.have.length(1_200_000);
       // An explicit budget bounds them on its own.
       expect(query(nestedArrays(21), '$' + '[0,0]'.repeat(21), { maxSteps: 10_000_000 })).to.have.length(2 ** 21);
-      // Counted as they are produced, inside one selector too: 11 wildcards over
-      // 100,000 elements would allocate 1,100,000 nodes before any check made
-      // between segments, and the step floor alone allows that.
+      // Counted as they are produced, inside one selector too: 21 wildcards over
+      // 100,000 elements would allocate 2,100,000 nodes before any check made
+      // between segments, and the step budget alone allows that.
       const reads = { count: 0 };
       const array = new Proxy(
         Array.from({ length: 100_000 }, (_, i) => i),
@@ -505,17 +503,39 @@ describe('hardening', () => {
           },
         },
       );
-      expect(() => query(array, '$[' + Array(11).fill('*').join(',') + ']')).to.throw(JSONPathLimitError, /retains/);
-      // The query stops on the node past its limit of 1,000,010 (ten per document
-      // node); weighing the document reads its 100,000 elements once.
-      expect(reads.count).to.be.at.most(1_000_011 + 100_000);
-      // Ten nodes per document node is enough for ten wildcards over it.
+      expect(() => query(array, '$[' + Array(21).fill('*').join(',') + ']')).to.throw(JSONPathLimitError, /retains/);
+      // The query stops on the node past its limit of 2,000,020 (twenty per
+      // document node); weighing the document reads its 100,000 elements once.
+      expect(reads.count).to.be.at.most(2_000_021 + 100_000);
+      // Twenty nodes per document node is enough for twenty wildcards over it...
       expect(
         query(
           Array.from({ length: 100_000 }, (_, i) => i),
-          '$[' + Array(10).fill('*').join(',') + ']',
+          '$[' + Array(20).fill('*').join(',') + ']',
         ),
-      ).to.have.length(1_000_000);
+      ).to.have.length(2_000_000);
+      // ...and for `$..*..*`, whose segments produce about eleven per node together.
+      let deep: unknown = Array(100_000).fill(0);
+      for (let i = 0; i < 10; i++) deep = [deep];
+      expect(query(deep, '$..*..*')).to.have.length(1_000_045);
+    });
+
+    it('weighs only as much of the document as the budget needs', () => {
+      // A query stopping soon after the floor must not pay a full pass over a
+      // large document: element reads through a Proxy show how far weighing went.
+      let reads = 0;
+      const items = Array.from({ length: 300_000 }, (_, i) => ({ v: i }));
+      const doc = {
+        items: new Proxy(items, {
+          get(target, key, receiver) {
+            if (typeof key === 'string' && /^\d+$/.test(key)) reads++;
+            return Reflect.get(target, key, receiver);
+          },
+        }),
+      };
+      // About 1,300,000 steps: a deficit of 300,000 needs 3,000 nodes weighed, one chunk of 10,000.
+      expect(query(doc, '$.items[?@.v > 299990 && @.v < 299995]')).to.have.length(4);
+      expect(reads).to.be.below(300_000 + 30_000);
     });
 
     it('maxSteps: Infinity disables the limit', () => {
@@ -849,7 +869,7 @@ describe('hardening', () => {
     it('weighs strings by their length for linear string work', () => {
       const n = 2_000_000;
       const doc = { items: Array(10).fill(0), s: 'a'.repeat(n), t: ['a'.repeat(n - 1), 'a'].join('') };
-      // 10 comparisons of 2,000,000 characters exceed the 10,000,000 floor.
+      // 10 comparisons of 2,000,000 characters exceed the 1,000,000 floor.
       expect(query(doc, '$.items[?$.s == $.t]')).to.have.length(10);
       expect(query(doc, '$.items[?$.s =~ /^a+$/]')).to.have.length(10);
     });
@@ -1113,7 +1133,7 @@ describe('hardening', () => {
       for (let i = 0; i < 24; i++) doc = [doc];
       const q = '$' + '[0,0]'.repeat(24) + ' '.repeat(50_000);
       // Neither bound grows with the 50,000 characters of padding.
-      expect(() => query(doc, q)).to.throw(JSONPathLimitError, /retains more than 1000000 nodes/);
+      expect(() => query(doc, q)).to.throw(JSONPathLimitError, / 1000000 evaluation steps/);
       expect(() => query(doc, q, { maxSteps: 10_000_000 })).to.throw(JSONPathLimitError, / 10000000 evaluation steps/);
     });
 

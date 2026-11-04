@@ -141,7 +141,7 @@ query(legends, "$.champions[0].era");
 | :--------------- | :-------- | :--------------------------------------------------------------- |
 | `hideExceptions` | `boolean` | Return `undefined` instead of throwing (or `[]` if `returnArray` is true) |
 | `returnArray`    | `boolean` | Always return results as an array                                |
-| `maxSteps`       | `number`  | Evaluation steps allowed before throwing `JSONPathLimitError` (default: the larger of 10,000,000 and 100 per document node or string character, plus a linear regex scan of the document's strings; `Infinity` disables it). Independently, a query may place at most the larger of 1,000,000 and 10 per document node nodes in its nodelists |
+| `maxSteps`       | `number`  | Evaluation steps allowed before throwing `JSONPathLimitError` (default: the larger of 1,000,000 and 100 per document node or string character, plus a linear regex scan of the document's strings; `Infinity` disables it). With the default budget, a query may also place at most the larger of 1,000,000 and 20 per document node nodes in its nodelists; an explicit `maxSteps` bounds those on its own, since each is a step |
 
 ### paths(data, path, options?)
 

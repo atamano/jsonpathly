@@ -112,7 +112,7 @@ const appendAll = <T>(target: T[], items: T[]): void => {
  * Steps a query may always take, whatever the document size. A step is a node
  * selected or visited, a filter evaluated, or a value compared.
  */
-export const MIN_STEP_BUDGET = 10_000_000;
+export const MIN_STEP_BUDGET = 1_000_000;
 
 /**
  * Past MIN_STEP_BUDGET, steps allowed per node of the document. Queries whose
@@ -130,57 +130,91 @@ export const STEPS_PER_DOCUMENT_NODE = 100;
  */
 export const MIN_RETAINED_NODES = 1_000_000;
 
-/** Past MIN_RETAINED_NODES, nodes a query may retain per node of the document. */
-export const RETAINED_PER_DOCUMENT_NODE = 10;
+/**
+ * Past MIN_RETAINED_NODES, nodes a query may retain per node of the document.
+ * Counted over all segments, so `$..*..*` on n nodes produces about 11n.
+ */
+export const RETAINED_PER_DOCUMENT_NODE = 20;
+
+/** Nodes weighed per request at least, to amortize the resumed traversal. */
+const WEIGH_CHUNK = 10_000;
 
 const MAX_COUNTED_HOLES = 1_000_000;
 
-type DocumentWeight = {
-  /** Distinct objects and arrays, scalars, member names and string characters. */
-  weight: number;
-  /** Values alone: what a query can select. */
-  nodes: number;
-  /** String characters plus one per string: the positions a regex can scan. */
-  stringPositions: number;
-};
+/** A container being weighed: its children are read one at a time, when visited. */
+type WeighFrame = { container: unknown[] | Record<string, unknown>; keys: string[] | null; length: number; i: number };
 
-/** Size of the document, counted iteratively. */
-const weighDocument = (root: unknown): DocumentWeight => {
-  const seen = new Set<object>();
-  const stack: unknown[] = [root];
-  let count = 0;
-  let nodes = 0;
-  let stringPositions = 0;
+/**
+ * Size of the document, counted iteratively and only as far as the budget
+ * needs it: the traversal is resumed in chunks and reads one child per node
+ * weighed, so a query that stops soon after the floor weighs a few thousand
+ * nodes rather than the whole document.
+ */
+class DocumentWeigher {
+  /** Distinct objects and arrays, scalars, member names and string characters. */
+  weight = 0;
+  /** Values alone: what a query can select. */
+  nodes = 0;
+  /** String characters plus one per string: the positions a regex can scan. */
+  stringPositions = 0;
+  /** True once the whole document has been weighed. */
+  done = false;
+
+  private readonly seen = new Set<object>();
+  private readonly frames: WeighFrame[] = [];
   // Holes of sparse (non-JSON) arrays weigh nothing. Scanning them stops, for
   // the whole document, once they outnumber the weight counted by MAX_COUNTED_HOLES.
-  let holes = 0;
-  while (stack.length > 0) {
-    const value = stack.pop();
-    nodes++;
-    // Strings weigh their length: comparisons and regexes are charged per character.
-    count += typeof value === 'string' ? 1 + value.length : 1;
-    if (typeof value === 'string') stringPositions += 1 + value.length;
-    if (typeof value !== 'object' || value === null || seen.has(value)) continue;
-    seen.add(value);
-    if (isArray(value)) {
-      // Length read once: a getter that appends elements must not keep the scan going.
-      const length = lengthOf(value);
-      for (let i = 0; i < length; i++) {
-        if (hasOwn(value, i)) stack.push(value[i]);
-        else if (++holes > MAX_COUNTED_HOLES + count) break;
+  private holes = 0;
+
+  constructor(root: unknown) {
+    this.visit(root);
+  }
+
+  /** Weighs at least `minNodes` more nodes, or the rest of the document. */
+  advance(minNodes: number): void {
+    const target = this.nodes + minNodes;
+    const { frames } = this;
+    while (frames.length > 0 && this.nodes < target) {
+      const frame = frames[frames.length - 1];
+      if (frame.i >= frame.length) {
+        frames.pop();
+        continue;
       }
-    } else if (isPlainObject(value)) {
-      for (const key of ownKeys(value)) {
+      const i = frame.i++;
+      if (frame.keys === null) {
+        const array = frame.container as unknown[];
+        if (hasOwn(array, i)) this.visit(array[i]);
+        else if (++this.holes > MAX_COUNTED_HOLES + this.weight) frame.i = frame.length;
+      } else {
+        const object = frame.container as Record<string, unknown>;
+        const key = frame.keys[i];
         // A getter read before it may have deleted the member: own members only.
-        if (!hasOwn(value, key)) continue;
+        if (!hasOwn(object, key)) continue;
         // Names weigh their length too: escaping them in paths is charged per character.
-        count += key.length;
-        stack.push(value[key]);
+        this.weight += key.length;
+        this.visit(object[key]);
       }
     }
+    if (frames.length === 0) this.done = true;
   }
-  return { weight: count, nodes, stringPositions };
-};
+
+  /** Counts a value and, for a container not seen before, opens a frame on its children. */
+  private visit(value: unknown): void {
+    this.nodes++;
+    // Strings weigh their length: comparisons and regexes are charged per character.
+    this.weight += typeof value === 'string' ? 1 + value.length : 1;
+    if (typeof value === 'string') this.stringPositions += 1 + value.length;
+    if (typeof value !== 'object' || value === null || this.seen.has(value)) return;
+    this.seen.add(value);
+    if (isArray(value)) {
+      // Length read once: a getter that appends elements must not keep the scan going.
+      this.frames.push({ container: value, keys: null, length: lengthOf(value), i: 0 });
+    } else if (isPlainObject(value)) {
+      const keys = ownKeys(value);
+      this.frames.push({ container: value, keys, length: keys.length, i: 0 });
+    }
+  }
+}
 
 /** An AST node (typed, or an array of arguments or selectors) being classified. */
 type AstFrame = { node: object; children: unknown[]; i: number; reads: boolean };
@@ -188,7 +222,7 @@ type AstFrame = { node: object; children: unknown[]; i: number; reads: boolean }
 export type HandlerOptions = {
   /**
    * Maximum number of evaluation steps before the query is aborted with a
-   * JSONPathLimitError. Defaults to the larger of 10,000,000 and 100 per
+   * JSONPathLimitError. Defaults to the larger of 1,000,000 and 100 per
    * document node or string character, plus the work of regexes up to the
    * largest program size per string character (a linear scan of every
    * string by it).
@@ -208,7 +242,7 @@ export class Handler<T = unknown> {
   private stepLimit: number;
   private retainedLimit: number;
   private readonly adaptiveLimit: boolean;
-  private documentWeight: DocumentWeight | undefined;
+  private weigher: DocumentWeigher | undefined;
   private largestRegexProgram = 0;
   private regexSteps = 0;
 
@@ -298,11 +332,28 @@ export class Handler<T = unknown> {
   private retain = (): void => {
     if (++this.retained <= this.retainedLimit) return;
     if (this.adaptiveLimit) {
-      this.documentWeight ??= weighDocument(this.rootPayload.value);
-      this.retainedLimit = Math.max(MIN_RETAINED_NODES, RETAINED_PER_DOCUMENT_NODE * this.documentWeight.nodes);
+      const weigher = (this.weigher ??= new DocumentWeigher(this.rootPayload.value));
+      while (!weigher.done) {
+        weigher.advance(
+          Math.max(WEIGH_CHUNK, Math.ceil((this.retained - this.retainedLimit) / RETAINED_PER_DOCUMENT_NODE)),
+        );
+        this.raiseLimits(weigher);
+        if (this.retained <= this.retainedLimit) return;
+      }
+      this.raiseLimits(weigher);
       if (this.retained <= this.retainedLimit) return;
     }
     throw new JSONPathLimitError(`Query retains more than ${this.retainedLimit} nodes`);
+  };
+
+  /** Both limits, from what has been weighed so far. */
+  private raiseLimits = (weigher: DocumentWeigher): void => {
+    // Regexes get a linear scan of the strings by the largest program on top,
+    // but only for the regex work done: unused allowance would let one cheap
+    // regex pay for unrelated polynomial work.
+    const regexAllowance = Math.min(this.regexSteps, this.largestRegexProgram * weigher.stringPositions);
+    this.stepLimit = Math.max(MIN_STEP_BUDGET, STEPS_PER_DOCUMENT_NODE * weigher.weight) + regexAllowance;
+    this.retainedLimit = Math.max(MIN_RETAINED_NODES, RETAINED_PER_DOCUMENT_NODE * weigher.nodes);
   };
 
   private tick: Tick = Object.assign(
@@ -311,14 +362,15 @@ export class Handler<T = unknown> {
       if (this.steps <= this.stepLimit) return;
       if (this.adaptiveLimit) {
         // The document is weighed only once a query turns out to be expensive,
-        // so cheap queries on large documents never pay for it.
-        this.documentWeight ??= weighDocument(this.rootPayload.value);
-        const { weight, stringPositions } = this.documentWeight;
-        // Regexes get a linear scan of the strings by the largest program on
-        // top, but only for the regex work done: unused allowance would let
-        // one cheap regex pay for unrelated polynomial work.
-        const regexAllowance = Math.min(this.regexSteps, this.largestRegexProgram * stringPositions);
-        this.stepLimit = Math.max(MIN_STEP_BUDGET, STEPS_PER_DOCUMENT_NODE * weight) + regexAllowance;
+        // and only as far as needed to cover the deficit, so cheap queries on
+        // large documents never pay for it and expensive ones pay gradually.
+        const weigher = (this.weigher ??= new DocumentWeigher(this.rootPayload.value));
+        while (!weigher.done) {
+          weigher.advance(Math.max(WEIGH_CHUNK, Math.ceil((this.steps - this.stepLimit) / STEPS_PER_DOCUMENT_NODE)));
+          this.raiseLimits(weigher);
+          if (this.steps <= this.stepLimit) return;
+        }
+        this.raiseLimits(weigher);
         if (this.steps <= this.stepLimit) return;
       }
       throw new JSONPathLimitError(`Query exceeded ${this.stepLimit} evaluation steps`);
