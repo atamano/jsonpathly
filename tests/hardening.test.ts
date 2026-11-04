@@ -559,6 +559,21 @@ describe('hardening', () => {
       const heavy = '$.items[?' + Array(250).fill('@ == 1').join(' || ') + ']';
       // About 1,250,000 steps against a document weighing about 8,000: the floor holds.
       expect(() => query(budgetDoc, heavy)).to.throw(JSONPathLimitError, / 1000000 evaluation steps/);
+      // A key at 2^32 - 1 is a plain member too, outside any array's length.
+      const beyond: unknown[] = new Array(10_002);
+      (beyond as unknown as Record<string, unknown>)['4294967295'] = 'x'.repeat(20_000);
+      expect(() => query({ a: beyond, items: Array(1000).fill(0) }, heavy)).to.throw(
+        JSONPathLimitError,
+        / 1000000 evaluation steps/,
+      );
+      // Non-enumerable own elements are elements: counted like the others.
+      const hidden: unknown[] = new Array(10_002);
+      Object.defineProperty(hidden, 10_001, { value: Array(250_001).fill(0) });
+      expect(query({ a: hidden }, '$.a[10001][?@ == 1]')).to.deep.equal([]);
+      // Weighing counts; the member-name limit applies only to objects the query enumerates.
+      const unrelated = { unused: { ['x'.repeat(1001)]: 0 }, items: Array(250_001).fill(0) };
+      expect(query(unrelated, '$.items[?@ == 1]')).to.deep.equal([]);
+      expect(() => query(unrelated, '$.unused.*')).to.throw(JSONPathLimitError, /Member name too long/);
     });
 
     it('maxSteps: Infinity disables the limit', () => {

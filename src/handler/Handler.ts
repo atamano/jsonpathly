@@ -203,12 +203,14 @@ class DocumentWeigher {
           this.visit(array[i]);
         } else if (++frame.holes > HOLE_SCAN_LIMIT) {
           // Holes weigh nothing; past the scan limit the remaining own indices
-          // are enumerated (ascending, as V8 lists them) instead of scanned.
-          // Canonical indices only: a key such as "010002" is a plain member,
-          // and counting it as index 10002 would weigh that element twice.
-          const indices = Object.keys(array).filter((key) => {
+          // are enumerated (ascending, as V8 lists them, enumerable or not)
+          // instead of scanned. Canonical indices within the length only: a
+          // key such as "010002" or "4294967295" is a plain member, and
+          // counting it as an element would weigh what the query cannot select.
+          const length = frame.length;
+          const indices = Object.getOwnPropertyNames(array).filter((key) => {
             const index = Number(key);
-            return Number.isInteger(index) && index > i && String(index) === key;
+            return Number.isInteger(index) && index > i && index < length && String(index) === key;
           });
           frame.indices = indices;
           frame.length = indices.length;
@@ -239,7 +241,9 @@ class DocumentWeigher {
       // Length read once: a getter that appends elements must not keep the scan going.
       this.frames.push({ container: value, keys: null, indices: null, length: lengthOf(value), i: 0, holes: 0 });
     } else if (isPlainObject(value)) {
-      const keys = ownKeys(value);
+      // Plain Object.keys: weighing counts, it does not apply the member-name
+      // limit, which belongs to the objects a query enumerates or compares.
+      const keys = Object.keys(value);
       this.frames.push({ container: value, keys, indices: null, length: keys.length, i: 0, holes: 0 });
     }
   }
