@@ -61,6 +61,7 @@ const EXPECTED_OUTCOMES: Record<string, ProbeResult['outcome']> = {
   'budget: regex with many live threads': 'limit',
   'budget: match() over a long string': 'limit',
   'eval: long member name selected many times': 'ok',
+  'budget: member name longer than the limit': 'limit',
   'budget: in over long strings': 'limit',
   'budget: subsetof over long equal strings': 'limit',
   'budget: in over a sparse array': 'limit',
@@ -94,6 +95,24 @@ const EXPECTED_OUTCOMES: Record<string, ProbeResult['outcome']> = {
   'budget: repeated unions padded with whitespace': 'limit',
   'eval: long cached pattern matching at once': 'ok',
   'parse: 400 unclosed negations around a long regex': 'syntax',
+  'stringify: cyclic non-enumerable array element': 'type',
+  'stringify: cyclic non-enumerable field': 'type',
+  'stringify: cyclic inherited array element': 'ok',
+  'stringify: cyclic inherited field': 'type',
+  'budget: array growing while the document is weighed': 'ok',
+  'stringify: AST growing its prototype chain under a getter': 'ok',
+  'stringify: segment link read once': 'ok',
+  'stringify: function arguments appended by a getter': 'ok',
+  'stringify: literal array with a throwing inherited index': 'ok',
+  'budget: member deleted while the document is weighed': 'ok',
+  'stringify: literal array with an infinite length': 'type',
+  'budget: array with an infinite length while the document is weighed': 'type',
+  'stringify: cyclic sparse literal array of maximal length': 'type',
+  'budget: numbers chosen to collide in a set operand': 'ok',
+  'budget: long strings of one length in a set operand': 'ok',
+  'budget: strings at the hashing boundary in a set operand': 'ok',
+  'parse: many member names over the limit as selectors': 'syntax',
+  'parse: object literal with member names over the limit': 'syntax',
 };
 
 // Generous for a loaded CI runner; the regressions take seconds to forever.
@@ -150,6 +169,258 @@ describe('hardening', () => {
       // $.0.5 used to select the index 0.5 (reported as present); now two segments.
       expect(query([[0, 5]], '$.0.1')).to.equal(5);
       expect(paths([[0, 5]], '$.0.1')).to.deep.equal(['$[0][1]']);
+    });
+
+    it('does not return array elements inherited from a prototype', () => {
+      // An array whose (non-standard) prototype supplies index 0.
+      const proto = Object.create(Array.prototype);
+      proto[0] = Object.prototype;
+      const arr = Object.setPrototypeOf(new Array(1), proto) as unknown[];
+      expect(arr[0]).to.equal(Object.prototype);
+      expect(query(arr, '$[0]')).to.equal(undefined);
+      expect(query(arr, '$[-1]')).to.equal(undefined);
+      expect(query(arr, '$.0')).to.equal(undefined);
+      expect(query(arr, '$[*]')).to.deep.equal([]);
+      expect(query(arr, '$..*')).to.deep.equal([]);
+      expect(query(arr, '$[?@]')).to.deep.equal([]);
+      // Unions and slices read holes as undefined; an inherited element is treated as a hole.
+      expect(query(arr, '$[0,0]')).to.deep.equal([undefined, undefined]);
+      expect(query(arr, '$[0:1]')).to.deep.equal([undefined]);
+      expect(paths(arr, '$[*]')).to.deep.equal([]);
+      expect(Object.prototype).to.not.have.property('polluted');
+    });
+
+    it('reads inherited array elements as holes in operands, functions and literals', () => {
+      const proto = Object.assign(Object.create(Array.prototype), { 0: 7 });
+      const inherited = Object.setPrototypeOf(new Array(1), proto) as unknown[];
+      const hole = new Array(1) as unknown[];
+      expect(inherited[0]).to.equal(7);
+      for (const q of [
+        '$[?7 in @]',
+        '$[?7 nin @]',
+        '$[?[7] subsetof @]',
+        '$[?@ subsetof [7]]',
+        '$[?[7] anyof @]',
+        '$[?[7] noneof @]',
+        '$[?@ == [7]]',
+        '$[?value(@) == 7]',
+        '$[?@[0] == 7]',
+        '$[?@[-1:] == [7]]',
+        '$[?length(@) == 1]',
+      ]) {
+        // Same selection as for a hole (the selected candidate is the array itself,
+        // which JSON.stringify and deep-equal would read through its prototype).
+        expect(query([inherited], q), q).to.have.length((query([hole], q) as unknown[]).length);
+      }
+      expect(query([inherited], '$[?value(@) == 7]')).to.deep.equal([]);
+      expect(query(inherited, '$[0]')).to.equal(undefined);
+      const literal = (value: unknown): never => ({ type: 'value', subtype: 'array', value } as never);
+      expect(stringify(literal(inherited))).to.equal(stringify(literal(hole)));
+    });
+
+    it('does not return a member deleted by a getter visited before it', () => {
+      // The own "__proto__" member is deleted while `a` is read, which uncovers Object.prototype.
+      const make = (): object => ({
+        get a() {
+          Reflect.deleteProperty(this, '__proto__');
+          return 0;
+        },
+        ['__proto__']: 1,
+      });
+      expect(Object.keys(make())).to.deep.equal(['a', '__proto__']);
+      for (const q of ['$.*', '$[*]', '$[?@]', '$..*', '$..[?@]', "$['a','__proto__']"]) {
+        expect(query(make(), q), q).to.deep.equal([0]);
+      }
+      expect(paths(make(), '$.*')).to.deep.equal(["$['a']"]);
+      // Equality rechecks ownership of each member as it reads it.
+      const right = { toString: 0 };
+      const left = {
+        get toString() {
+          Reflect.deleteProperty(right, 'toString');
+          return Object.prototype.toString;
+        },
+      };
+      expect(query([{ left, right }], '$[?@.left == @.right]')).to.deep.equal([]);
+      // Weighing the document (triggered by the long comparison) skips it too.
+      const obj = Object.setPrototypeOf(
+        {
+          get a() {
+            Reflect.deleteProperty(this, 'b');
+            return 0;
+          },
+          b: 0,
+        },
+        Object.create(null, {
+          b: {
+            get() {
+              throw new Error('inherited b');
+            },
+          },
+        }),
+      );
+      const s = 'x'.repeat(1_000_001);
+      expect(query({ s, obj }, '$[?@ == $.s]')).to.deep.equal([s]);
+    });
+
+    it('reads an array length or a scalar AST field once per operation', () => {
+      // A Proxy whose length grows on every read: the first read decides.
+      const counting = (): unknown[] => {
+        let reads = 0;
+        return new Proxy([7, 8], {
+          get(target, key, receiver) {
+            return key === 'length' ? ++reads : Reflect.get(target, key, receiver);
+          },
+        });
+      };
+      expect(query(counting(), '$[1]')).to.equal(undefined);
+      expect(query(counting(), '$[0]')).to.equal(7);
+      expect(query([{ a: counting(), b: [7] }], '$[?@.a == @.b]')).to.have.length(1);
+      // stringify reads each scalar field once.
+      let reads = 0;
+      const slice = {
+        type: 'slices',
+        get start() {
+          return ++reads;
+        },
+        end: null,
+        step: null,
+      };
+      expect(stringify(slice as never)).to.equal('1:');
+      let operators = ['eq', 'ne'];
+      const comparator = {
+        type: 'comparator',
+        get operator() {
+          return operators.shift();
+        },
+        left: { type: 'value', subtype: 'number', value: 1 },
+        right: { type: 'value', subtype: 'number', value: 1 },
+      };
+      expect(stringify(comparator as never)).to.equal('1 == 1');
+      operators = ['empty', 'eq'];
+      expect(stringify(comparator as never)).to.equal('1 empty');
+    });
+
+    it('rejects an array whose reported length is not a valid one', () => {
+      // Only a Proxy can report such a length; trusting it meant endless loops.
+      const infinite = (): unknown[] =>
+        new Proxy([], { get: (t, k, r) => (k === 'length' ? Infinity : Reflect.get(t, k, r)) });
+      // Rejected before any element is visited: a tiny budget is never reached.
+      for (const q of ['$[*]', '$[0]', '$[0:]', '$..*', '$[?@ == 0]']) {
+        expect(() => query(infinite(), q, { maxSteps: 10 }), q).to.throw(TypeError, /array length/);
+      }
+      // 2^32 - 1 is the largest valid array length.
+      const tooLong = new Proxy([7], { get: (t, k, r) => (k === 'length' ? 2 ** 32 : Reflect.get(t, k, r)) });
+      expect(() => query(tooLong, '$[0]')).to.throw(TypeError, /array length/);
+      for (const q of [
+        '$[?1 in @]',
+        '$[?@ subsetof [1]]',
+        '$[?[1] anyof @]',
+        '$[?@ == [1]]',
+        '$[?[] == @]',
+        '$[?length(@) > 0]',
+        '$[?value(@) == 1]',
+        '$[?@ sizeof @]',
+        '$[?@ size 1]',
+        '$[?@ empty]',
+      ]) {
+        expect(() => query([infinite()], q, { maxSteps: 10 }), q).to.throw(TypeError, /array length/);
+      }
+      expect(query(infinite(), '$[*]', { hideExceptions: true })).to.equal(undefined);
+      const literal = { type: 'value', subtype: 'array', value: infinite() };
+      expect(() => stringify(literal as never)).to.throw(TypeError, /array length/);
+      const notAString = new Proxy({}, { get: (_, k) => (k === 'length' ? Infinity : '') });
+      for (const ast of [
+        { type: 'stringLiteral', value: notAString },
+        { type: 'identifier', value: 42 },
+        { type: 'functionCall', name: 42, args: [] },
+        { type: 'value', subtype: 'regex', value: 42, opts: 'i' },
+        { type: 'value', subtype: 'regex', value: '/a/', opts: 7 },
+        { type: 'value', subtype: 'string', value: 42 },
+      ]) {
+        expect(() => stringify(ast as never), JSON.stringify(ast)).to.throw(TypeError, /string/);
+      }
+      const leaf = { type: 'current', next: null };
+      for (const ast of [
+        { type: 'comparator', operator: 42, left: leaf, right: leaf },
+        { type: 'comparator', operator: 'constructor', left: leaf, right: leaf },
+        { type: 'operation', operator: 'and', left: leaf, right: leaf },
+        { type: 'logicalExpression', operator: 'plus', left: leaf, right: leaf },
+        { type: 42 },
+        { type: 'value', subtype: 42, value: 1 },
+      ]) {
+        expect(() => stringify(ast as never), JSON.stringify(ast)).to.throw(TypeError);
+      }
+      // Scalar payloads are checked too: JSON.stringify or String() would serialize anything.
+      const proxied = new Proxy([7], { get: (t, k, r) => (k === 'length' ? 1.5 : Reflect.get(t, k, r)) });
+      for (const ast of [
+        { type: 'value', subtype: 'number', value: proxied },
+        { type: 'value', subtype: 'number', value: '1' },
+        { type: 'value', subtype: 'boolean', value: 1 },
+        { type: 'value', subtype: 'null', value: 0 },
+        { type: 'numericLiteral', value: '1' },
+        { type: 'slices', start: '1', end: null, step: null },
+        { type: 'slices', start: null, end: null, step: [1] },
+      ]) {
+        expect(() => stringify(ast as never), JSON.stringify(ast)).to.throw(TypeError, /Expected/);
+      }
+      expect(stringify({ type: 'value', subtype: 'number', value: NaN } as never)).to.equal('null');
+      // The rejection must not coerce the offending value: String() of a deeply
+      // nested array joins it recursively.
+      let nested: unknown[] = [];
+      for (let i = 0; i < 10_000; i++) nested = [nested];
+      for (const ast of [
+        { type: 'operation', operator: nested, left: leaf, right: leaf },
+        { type: 'comparator', operator: nested, left: leaf, right: leaf },
+        { type: 'logicalExpression', operator: nested, left: leaf, right: leaf },
+        { type: nested },
+        { type: 'value', subtype: nested, value: 1 },
+      ]) {
+        expect(() => stringify(ast as never), 'nested field').to.throw(TypeError, /Expected a string/);
+      }
+    });
+
+    it('skips non-enumerable members when enumerating, reads them when named', () => {
+      // As in 3.1.0: Object.keys drives enumeration, own-property checks drive names and indices.
+      const obj = Object.defineProperty({ shown: 1 }, 'hidden', { value: 7 });
+      expect(query(obj, '$.hidden')).to.equal(7);
+      expect(query(obj, '$.*')).to.deep.equal([1]);
+      expect(query(obj, '$..*')).to.deep.equal([1]);
+      expect(query(obj, '$[?@ == 7]')).to.deep.equal([]);
+      expect(query([obj], '$[?length(@) == 1]')).to.have.length(1);
+      const arr = Object.defineProperty([], '0', { value: 7 });
+      expect(query(arr, '$[0]')).to.equal(7);
+      expect(query(arr, '$[*]')).to.deep.equal([7]);
+    });
+
+    it('limits member names to 1,000 characters', () => {
+      const ok = 'a'.repeat(1000);
+      const long = 'a'.repeat(1001);
+      // In a query: a syntax error, wherever the name appears.
+      for (const q of [
+        `$.${long}`,
+        `$['${long}']`,
+        `$['a','${long}']`,
+        `$..${long}`,
+        `$[?@.${long}]`,
+        `$[?@ == {"${long}": 1}]`,
+      ]) {
+        expect(() => parse(q), q).to.throw(JSONPathSyntaxError, /Member name too long/);
+      }
+      expect(query({ [ok]: 1 }, `$.${ok}`)).to.equal(1);
+      expect(query({ [ok]: 1 }, `$['${ok}']`)).to.equal(1);
+      // In a document: a limit error once the query enumerates or compares that object...
+      const doc = { b: 2, [long]: 1 };
+      for (const q of ['$.*', '$..*', '$[?@ == 1]', '$[?$ == $]', "$['b','c']"]) {
+        if (q === "$['b','c']") continue;
+        expect(() => query(doc, q), q).to.throw(JSONPathLimitError, /Member name too long/);
+      }
+      expect(() => query([doc], '$[?length(@) == 2]')).to.throw(JSONPathLimitError, /Member name too long/);
+      expect(() => paths(doc, '$.*')).to.throw(JSONPathLimitError, /Member name too long/);
+      expect(query(doc, '$.*', { hideExceptions: true })).to.equal(undefined);
+      // ...but not before: a selector that never touches the long name is fine.
+      expect(query(doc, '$.b')).to.equal(2);
+      expect(query(doc, "$['b','c']")).to.deep.equal([2]);
+      expect(query({ a: doc, s: 'x'.repeat(1_000_001) }, '$.a.b')).to.equal(2);
     });
 
     it('keeps "__proto__" in an object literal as a member', () => {
@@ -220,9 +491,10 @@ describe('hardening', () => {
     it('charges the keys of compared objects', () => {
       const keys = Object.fromEntries(Array.from({ length: 2000 }, (_, i) => ['k' + i, 0]));
       const doc = { items: [0], x: { ...keys }, y: { ...keys } };
-      // About 2,000 member comparisons plus 4,000 keys enumerated.
+      // About 2,000 member comparisons, 4,000 keys enumerated and 9,000 key
+      // characters hashed for the lookups.
       expect(() => query(doc, '$.items[?$.x == $.y]', { maxSteps: 4000 })).to.throw(JSONPathLimitError);
-      expect(query(doc, '$.items[?$.x == $.y]', { maxSteps: 7000 })).to.deep.equal([0]);
+      expect(query(doc, '$.items[?$.x == $.y]', { maxSteps: 20_000 })).to.deep.equal([0]);
     });
 
     // Reads of array elements through a Proxy show how far a selection got
@@ -245,6 +517,287 @@ describe('hardening', () => {
         expect(reads()).to.be.below(20);
       });
     }
+
+    it('does not walk prototype chains for every candidate', () => {
+      // Each level of the chain is a Proxy counting prototype reads through it.
+      let reads = 0;
+      let proto: object = Object.prototype;
+      for (let i = 0; i < 400; i++) {
+        proto = new Proxy(Object.create(proto), {
+          getPrototypeOf(target) {
+            reads++;
+            return Reflect.getPrototypeOf(target);
+          },
+        });
+      }
+      const doc = Array.from({ length: 400 }, () => Object.create(proto));
+      expect(query(doc, '$[?length(@) > 0]', { maxSteps: 6 * 400 })).to.deep.equal([]);
+      // Deciding plainness read the whole 400-level chain per candidate: 160,000 reads.
+      expect(reads).to.be.below(400 * 10);
+    });
+
+    it('does not visit elements appended during a traversal', () => {
+      const growing = (): unknown[] => {
+        const arr: unknown[] = [0];
+        Object.defineProperty(arr, '0', {
+          enumerable: true,
+          get() {
+            arr.push(1);
+            return 0;
+          },
+        });
+        return arr;
+      };
+      // forEach reads the length once; so does the budgeted iteration.
+      expect(query(growing(), '$[*]')).to.deep.equal([0]);
+      expect(query(growing(), '$..*')).to.deep.equal([0]);
+      expect(query(growing(), '$[?@ == 0]')).to.deep.equal([0]);
+      // includes(), every() and some() read it once too.
+      expect(query([growing()], '$[?1 in @]')).to.deep.equal([]);
+      expect(query([growing()], '$[?@ subsetof [0]]')).to.have.length(1);
+      expect(query([growing()], '$[?@ anyof [1]]')).to.deep.equal([]);
+      expect(query([growing()], '$[?@ noneof [1]]')).to.have.length(1);
+      expect(query([growing()], '$[?[1] anyof @]')).to.deep.equal([]);
+      expect(query([growing()], '$[?@ == [0]]')).to.have.length(1);
+    });
+
+    it('reads a descendant only if its parent still owns it when visited', () => {
+      // A getter visited first deletes a sibling that the prototype also supplies.
+      const proto = Object.assign(Object.create(Array.prototype), { 1: { x: 2 } });
+      const deleting = Object.setPrototypeOf([0, { x: 1 }], proto) as unknown[];
+      Object.defineProperty(deleting, 0, {
+        get() {
+          delete deleting[1];
+          return 0;
+        },
+      });
+      expect(query(deleting, '$..x')).to.deep.equal([]);
+
+      // A getter visited first fills a hole that comes after it.
+      const filling: unknown[] = [0, ,];
+      Object.defineProperty(filling, 0, {
+        get() {
+          filling[1] = { x: 1 };
+          return 0;
+        },
+      });
+      expect(query(filling, '$..x')).to.deep.equal([1]);
+      expect(paths(filling, '$..x')).to.deep.equal(["$[1]['x']"]);
+    });
+
+    it('runs the document getters in the order of the recursive traversal', () => {
+      let n = 0;
+      const doc = {
+        get a() {
+          return { x: ++n };
+        },
+        get b() {
+          return { x: ++n };
+        },
+      };
+      // Children are read when visited, not when queued in reverse.
+      expect(query(doc, '$..x')).to.deep.equal([1, 2]);
+
+      n = 0;
+      const node = (): object => ({
+        get a() {
+          n++;
+          return {
+            get b() {
+              return ++n;
+            },
+          };
+        },
+      });
+      // Segments are applied node by node, not one segment to every node.
+      expect(query([node(), node()], '$[*].a.b')).to.deep.equal([2, 4]);
+    });
+
+    it('charges the keys of each object a descendant traversal enters', () => {
+      // A cycle through the first of 20,000 keys: each level used to snapshot
+      // every key while charging only the one child visited.
+      let snapshots = 0;
+      const target: Record<string, unknown> = {};
+      const doc: Record<string, unknown> = new Proxy(target, {
+        ownKeys(t) {
+          snapshots++;
+          return Reflect.ownKeys(t);
+        },
+      });
+      target.first = doc;
+      for (let i = 0; i < 20_000; i++) target['k' + i] = i;
+      expect(() => query(doc, '$..missing', { maxSteps: 500 })).to.throw(JSONPathLimitError);
+      expect(snapshots).to.be.below(5);
+    });
+
+    it('charges the keys of each object a filter enters', () => {
+      // Nested `$[?...]` filters over a wide object: each level used to snapshot
+      // every key while charging one key at a time.
+      let snapshots = 0;
+      const target = Object.fromEntries(Array.from({ length: 20_000 }, (_, i) => ['k' + i, 0]));
+      const doc = new Proxy(target, {
+        ownKeys(t) {
+          snapshots++;
+          return Reflect.ownKeys(t);
+        },
+      });
+      const q = '$[?'.repeat(100) + '@' + ']'.repeat(100);
+      expect(() => query(doc, q, { maxSteps: 300 })).to.throw(JSONPathLimitError);
+      expect(snapshots).to.be.below(5);
+    });
+
+    it('evaluates every operand of an arithmetic chain, as the recursive evaluator did', () => {
+      // The first candidate lacks `m`; its `b` getter must still run.
+      const second = { m: 0, a: 0, b: 0 };
+      const doc = [
+        {
+          a: 0,
+          get b() {
+            second.b = 1;
+            return 0;
+          },
+        },
+        second,
+      ];
+      expect(paths(doc, '$[?@.m + @.a + @.b == 1]')).to.deep.equal(['$[1]']);
+      // Same after a division by zero.
+      const other = { a: 0, z: 1, b: 0 };
+      const doc2 = [
+        {
+          a: 1,
+          z: 0,
+          get b() {
+            other.b = 1;
+            return 0;
+          },
+        },
+        other,
+      ];
+      expect(paths(doc2, '$[?@.a / @.z + @.b == 1]')).to.deep.equal(['$[1]']);
+    });
+
+    it('rebuilds the Set of an operand read through @ for each candidate', () => {
+      // The same array object appears twice; a getter answers differently each
+      // time, as the recursive evaluator saw. Only `$` operands are built once.
+      const shared = (): unknown[] => {
+        let reads = 0;
+        const arr: unknown[] = [];
+        Object.defineProperty(arr, '0', {
+          enumerable: true,
+          get() {
+            return ++reads;
+          },
+        });
+        return arr;
+      };
+      let s = shared();
+      expect(paths([s, s], '$[?[2] subsetof @]')).to.deep.equal(['$[1]']);
+      s = shared();
+      expect(paths([s, s], '$[?[2] anyof @]')).to.deep.equal(['$[1]']);
+      s = shared();
+      expect(paths([s, s], '$[?[2] noneof @]')).to.deep.equal(['$[0]']);
+    });
+
+    it('evaluates invariant groups and negations once per query', () => {
+      const doc = Array(1000).fill(0);
+      const arithmetic = '$[?@ == ' + '('.repeat(100) + '0' + ')'.repeat(100) + ']';
+      expect(query(doc, arithmetic, { maxSteps: 10_000 })).to.have.length(1000);
+      const grouped = '$[?' + '('.repeat(100) + 'true' + ')'.repeat(100) + ']';
+      expect(query(doc, grouped, { maxSteps: 5000 })).to.have.length(1000);
+      const negated = '$[?' + '!('.repeat(100) + 'true' + ')'.repeat(100) + ']'; // an even number of negations
+      expect(query(doc, negated, { maxSteps: 5000 })).to.have.length(1000);
+      expect(query(doc, '$[?!(!(@ == 0))]')).to.have.length(1000);
+    });
+
+    it('charges a member name once per query, found or not', () => {
+      // A missing name was never charged, yet looking up a non-internalized
+      // name costs native work proportional to its length for every candidate.
+      const doc = Array.from({ length: 1000 }, () => ({}));
+      const q = '$[?@.' + 'reviewMiss'.repeat(100) + ']';
+      // 1,000 characters charged once, plus a few steps per candidate.
+      expect(() => query(doc, q, { maxSteps: 2000 })).to.throw(JSONPathLimitError);
+      expect(query(doc, q, { maxSteps: 10_000 })).to.deep.equal([]);
+    });
+
+    it('distinguishes numbers, strings and others in set operands', () => {
+      expect(query([[1, '1', true, null]], '$[?1 in @ && "1" in @]')).to.have.length(1);
+      expect(query([[1]], "$[?['1'] subsetof @]")).to.deep.equal([]);
+      expect(query([['1']], '$[?[1] subsetof @]')).to.deep.equal([]);
+      expect(query([[1, 2]], '$[?[1, 2] subsetof @ && [3] noneof @ && [2, 5] anyof @]')).to.have.length(1);
+      expect(query([[true, null]], '$[?[true, null] subsetof @ && ["true", "null"] noneof @]')).to.have.length(1);
+      expect(query([[-0]], '$[?[0] subsetof @]')).to.have.length(1);
+      // Strings too long for V8 to hash are compared one by one.
+      const long = 'y'.repeat(20_000);
+      const other = 'y'.repeat(19_999) + 'z';
+      expect(
+        query([[long, 1]], `$[?["${long}"] subsetof @ && ["${other}"] noneof @ && ["${long}", 2] anyof @]`),
+      ).to.have.length(1);
+      expect(query([[long]], `$[?["${other}"] subsetof @]`)).to.deep.equal([]);
+      expect(query([[long]], `$[?"${long}" in @ && "${other}" nin @]`)).to.have.length(1);
+    });
+
+    it('settles equality on a key missing on the right before reading the left', () => {
+      // As the recursive evaluator did: the left getter must not run.
+      const later = { left: { a: 0 }, right: { a: 1 } };
+      const first = {
+        left: {
+          get a() {
+            later.left.a = 1;
+            return 1;
+          },
+        },
+        right: { b: 1 },
+      };
+      expect(paths([first, later], '$[?@.left == @.right]')).to.deep.equal([]);
+    });
+
+    it('indexes a $ operand of subsetof, anyof and noneof once per query', () => {
+      // Documented memoization: the Set of `$.allowed` is built once, so a getter
+      // changing that array while the query runs is not seen by later candidates.
+      const allowed = [1];
+      const doc = {
+        allowed,
+        items: [
+          { tags: [1] },
+          {
+            get tags() {
+              allowed[0] = 2;
+              return [2];
+            },
+          },
+        ],
+      };
+      expect(paths(doc, '$.items[?@.tags subsetof $.allowed]')).to.deep.equal(["$['items'][0]"]);
+    });
+
+    it('does not cache a pattern as invalid when compiling it overflowed the stack', () => {
+      // Compiled under 800 nested calls, the pattern's compiler may run out of
+      // stack: that is a limit error for this query, not an invalid pattern for
+      // every later query.
+      const pattern = '('.repeat(490) + 'a' + ')'.repeat(490);
+      const test = `search(@, ${JSON.stringify(pattern)})`;
+      const deep = '$[?' + 'value('.repeat(800) + test + ')'.repeat(800) + ']';
+      try {
+        expect(query(['a'], deep)).to.deep.equal(['a']);
+      } catch (e) {
+        expect(e).to.be.instanceOf(JSONPathLimitError);
+      }
+      expect(query(['a'], `$[?${test}]`)).to.deep.equal(['a']);
+    });
+
+    it('keeps one Set per comparator site, not per array alone', () => {
+      // Two `$` operands yield the same array; a getter changes it in between.
+      const shared = [1];
+      const doc = {
+        items: [[1]],
+        a: shared,
+        get b() {
+          shared[0] = 2;
+          return shared;
+        },
+      };
+      expect(paths(doc, '$.items[?@ subsetof $.a && [2] subsetof $.b]')).to.deep.equal(["$['items'][0]"]);
+    });
 
     it('scales with the document for linear queries', () => {
       const doc = { a: Array.from({ length: 300_000 }, (_, i) => ({ b: i, c: [i] })) };
@@ -628,7 +1181,8 @@ describe('hardening', () => {
     });
 
     it('stringify does not copy nested right operands once per level', () => {
-      const longPath = '$.' + 'x'.repeat(100_000);
+      // A long operand (member names are limited, string values are not).
+      const longPath = 'length("' + 'x'.repeat(100_000) + '")';
       const queries = [
         '$[?' + '1+1+('.repeat(400) + longPath + ')'.repeat(400) + '==0]',
         '$[?' + '@&&('.repeat(400) + longPath + ')'.repeat(400) + ']',
@@ -676,9 +1230,9 @@ describe('hardening', () => {
       });
     });
 
-    it('a Map outgrowing V8 during stringify is a JSONPathLimitError', () => {
+    it('a Set outgrowing V8 during stringify is a JSONPathLimitError', () => {
       const ast = parse('$.a.b');
-      failingInsert(Map.prototype, 'set', 'Map', () => {
+      failingInsert(Set.prototype, 'add', 'Set', () => {
         expect(() => stringify(ast)).to.throw(JSONPathLimitError, /too large/);
       });
     });

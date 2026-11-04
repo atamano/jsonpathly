@@ -5,10 +5,17 @@
  */
 import { noTick, Tick } from './budget';
 import { testRegex } from './functions';
-import { isArray, isEqual, isNumber, isString } from './helper';
+import { hasOwn, isArray, isEqual, isNumber, isString, lengthOf, MAX_HASHED_STRING_LENGTH, ownAt } from './helper';
 
 /** Sets built from right-hand arrays, kept for the duration of one query. */
-export type SetCache = WeakMap<unknown[], Set<unknown>>;
+/**
+ * Membership index of an array: a Set of the values V8 hashes well, plus the
+ * strings too long to be hashed (see MAX_HASHED_STRING_LENGTH), scanned with
+ * one charged comparison each.
+ */
+export type MembershipIndex = { set: Set<unknown>; long: string[] };
+
+export type SetCache = WeakMap<unknown[], MembershipIndex>;
 
 type ComparatorFn = (left: unknown, right: unknown, tick: Tick, sets?: SetCache) => boolean;
 
@@ -67,13 +74,14 @@ const stringCost = (a: unknown, b: unknown): number =>
   typeof a === 'string' && typeof b === 'string' && a.length === b.length ? a.length : 0;
 
 /**
- * Position of `value` in `array` with includes() semantics (SameValueZero),
- * charging each element before inspecting it, so the budget stops long scans
- * and an early match stays cheap.
+ * Position of `value` in `array` with includes() semantics (SameValueZero,
+ * holes read as undefined, length read once), charging each element before
+ * inspecting it, so the budget stops long scans and an early match stays cheap.
  */
 const indexOfCharged = (array: unknown[], value: unknown, tick: Tick): number => {
-  for (let i = 0; i < array.length; i++) {
-    const item = array[i];
+  const length = lengthOf(array);
+  for (let i = 0; i < length; i++) {
+    const item = ownAt(array, i);
     tick(1 + stringCost(item, value));
     if (item === value || (item !== item && value !== value)) {
       return i;
@@ -83,41 +91,68 @@ const indexOfCharged = (array: unknown[], value: unknown, tick: Tick): number =>
 };
 
 /**
+ * Key under which a value is stored in a membership Set. Numbers and strings are
+ * tagged strings: V8 hashes a number by its value, so a document could hold
+ * numbers chosen to collide and make every insertion walk a chain (quadratic
+ * work for one charged step each), whereas string hashes are seeded per process.
+ * SameValueZero is preserved: -0 and 0 both read '0', NaN reads 'NaN'. Other
+ * values (booleans, null, objects) hash by identity or oddball and stay as they are.
+ */
+const setKey = (value: unknown): unknown =>
+  typeof value === 'number' ? 'n' + String(value) : typeof value === 'string' ? 's' + value : value;
+
+/** A string whose tagged key V8 would hash by length only (the tag adds one character). */
+const isUnhashable = (value: unknown): value is string =>
+  typeof value === 'string' && value.length + 1 > MAX_HASHED_STRING_LENGTH;
+
+/**
  * Set of `array`, charging each element and the hashing of its string content.
  * Within a query the right operand is usually the same array for every
  * candidate (`@ anyof $.allowed`), so the Set is built once.
  */
-const toSetCharged = (array: unknown[], tick: Tick, sets?: SetCache): Set<unknown> => {
+const toSetCharged = (array: unknown[], tick: Tick, sets?: SetCache): MembershipIndex => {
   const cached = sets?.get(array);
   if (cached) return cached;
-  const set = new Set<unknown>();
-  for (const item of array) {
+  const index: MembershipIndex = { set: new Set(), long: [] };
+  const length = lengthOf(array);
+  for (let i = 0; i < length; i++) {
+    const item = ownAt(array, i);
     tick(1 + (typeof item === 'string' ? item.length : 0));
-    set.add(item);
+    if (isUnhashable(item)) index.long.push(item);
+    else index.set.add(setKey(item));
   }
-  sets?.set(array, set);
-  return set;
+  sets?.set(array, index);
+  return index;
 };
 
 /** Set lookup charging the element and, for a string, its hashing and comparison. */
-const hasCharged = (set: Set<unknown>, item: unknown, tick: Tick): boolean => {
+const hasCharged = ({ set, long }: MembershipIndex, item: unknown, tick: Tick): boolean => {
+  if (isUnhashable(item)) {
+    // Too long to hash: compared with each long entry, equal lengths charged in full.
+    for (const entry of long) {
+      tick(1 + stringCost(entry, item));
+      if (entry === item) return true;
+    }
+    return false;
+  }
   if (set.size === 0) {
     tick();
     return false;
   }
   tick(1 + (typeof item === 'string' ? 2 * item.length : 0));
-  return set.has(item);
+  return set.has(setKey(item));
 };
 
 /**
- * Whether `test` holds for some element of `array`, skipping holes like
- * Array.prototype.some but charging every index first: the native method
- * scans the holes of a sparse array without calling back.
+ * Whether `test` holds for some own element of `array`, reading the length
+ * once and skipping holes like Array.prototype.some, but charging every index
+ * first: the native method scans the holes of a sparse array without calling back.
  */
 const someCharged = (array: unknown[], test: (item: unknown) => boolean, tick: Tick): boolean => {
-  for (let i = 0; i < array.length; i++) {
+  const length = lengthOf(array);
+  for (let i = 0; i < length; i++) {
     tick();
-    if (i in array && test(array[i])) return true;
+    if (hasOwn(array, i) && test(array[i])) return true;
   }
   return false;
 };
@@ -160,7 +195,7 @@ const sizeof: ComparatorFn = (left, right) => {
   if ((!isArray(left) && !isString(left)) || (!isArray(right) && !isString(right))) {
     return false;
   }
-  return left.length === right.length;
+  return (isArray(left) ? lengthOf(left) : left.length) === (isArray(right) ? lengthOf(right) : right.length);
 };
 
 /** Extension: Check if left has specific length (number) */
@@ -168,7 +203,7 @@ const size: ComparatorFn = (left, right) => {
   if ((!isArray(left) && !isString(left)) || !isNumber(right)) {
     return false;
   }
-  return left.length === right;
+  return (isArray(left) ? lengthOf(left) : left.length) === right;
 };
 
 /**
@@ -197,7 +232,7 @@ export const comparators: Record<string, ComparatorFn> = {
  */
 export const isEmpty = (value: unknown): boolean => {
   if (!isArray(value) && !isString(value)) return false;
-  return value.length === 0;
+  return (isArray(value) ? lengthOf(value) : value.length) === 0;
 };
 
 /**

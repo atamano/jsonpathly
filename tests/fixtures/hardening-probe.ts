@@ -156,7 +156,12 @@ run('budget: match() over a long string', () => {
   query({ a: { s: 'a'.repeat(n) } }, dup(n) + '[?match(@, "a*z")]');
 });
 run('eval: long member name selected many times', () => {
-  const key = 'a'.repeat(1_000_000);
+  const key = 'a'.repeat(1000);
+  query({ [key]: 0 }, '$[' + Array(5000).fill('*').join(',') + ']');
+});
+// A member name over the limit (1,000 characters) met while enumerating.
+run('budget: member name longer than the limit', () => {
+  const key = 'a'.repeat(1001);
   query({ [key]: 0 }, '$[' + Array(5000).fill('*').join(',') + ']');
 });
 run('budget: in over long strings', () => {
@@ -269,3 +274,174 @@ run('eval: long cached pattern matching at once', () =>
 run('parse: 400 unclosed negations around a long regex', () =>
   parse('$[?' + '!('.repeat(400) + '@=~/' + 'a'.repeat(1_000_000) + '/'),
 );
+
+// --- final review ---
+// Cycle detection looked at enumerable values only, while the serializer reads
+// every index and field: a non-enumerable cycle made it grow forever.
+run('stringify: cyclic non-enumerable array element', () => {
+  const arr: unknown[] = [];
+  Object.defineProperty(arr, '0', { value: arr });
+  stringify({ type: 'value', subtype: 'array', value: arr } as never);
+});
+run('stringify: cyclic non-enumerable field', () => {
+  const tree = parse('$.a.b') as { next?: unknown };
+  // defineProperty on an existing field keeps it enumerable: remove it first.
+  delete tree.next;
+  Object.defineProperty(tree, 'next', { value: tree });
+  stringify(tree as never);
+});
+// The serializer reads fields and indices through the prototype chain; the
+// cycle check only looked at own properties.
+run('stringify: cyclic inherited array element', () => {
+  const arr = new Array(1) as unknown[];
+  Object.setPrototypeOf(arr, Object.assign(Object.create(Array.prototype), { 0: arr }));
+  stringify({ type: 'value', subtype: 'array', value: arr } as never);
+});
+run('stringify: cyclic inherited field', () => {
+  const proto: Record<string, unknown> = {};
+  const node = Object.assign(Object.create(proto), parse('$.a')) as Record<string, unknown>;
+  delete node.next;
+  proto.next = node;
+  stringify(node as never);
+});
+// Weighing the document re-read the length of an array whose getter appends
+// an element on every read, so it never finished.
+run('budget: array growing while the document is weighed', () => {
+  const arr: unknown[] = [];
+  const grow = (): number => {
+    Object.defineProperty(arr, arr.length, { get: grow });
+    return 0;
+  };
+  Object.defineProperty(arr, 0, { get: grow });
+  query({ s: 'x'.repeat(1_000_001), arr }, '$[?@ == $.s]');
+});
+// Cycles are now detected as links are read, each exactly once: a check made
+// beforehand read the AST again, and getters could change it in between.
+run('stringify: AST growing its prototype chain under a getter', () => {
+  const ast: Record<string, unknown> = { type: 'identifier' };
+  let tail = ast;
+  Object.defineProperty(ast, 'value', {
+    enumerable: true,
+    get() {
+      const p = { value: 'a' };
+      Object.setPrototypeOf(tail, p);
+      tail = p;
+      return 'a';
+    },
+  });
+  stringify(ast as never);
+});
+run('stringify: segment link read once', () => {
+  const ast = parse('$.a') as { next: Record<string, unknown> };
+  const segment = ast.next;
+  let reads = 0;
+  Object.defineProperty(segment, 'next', { get: () => (++reads === 1 ? null : segment) });
+  stringify(ast as never);
+});
+run('stringify: function arguments appended by a getter', () => {
+  const args: unknown[] = [];
+  const zero = {
+    type: 'value',
+    subtype: 'number',
+    get value() {
+      args.push(zero);
+      return 0;
+    },
+  };
+  args.push(zero);
+  stringify({ type: 'functionCall', name: 'length', args } as never);
+});
+run('stringify: literal array with a throwing inherited index', () => {
+  const arr = Object.setPrototypeOf(
+    new Array(1),
+    Object.create(Array.prototype, {
+      0: {
+        get() {
+          throw new Error('inherited index');
+        },
+      },
+    }),
+  ) as unknown[];
+  stringify({ type: 'value', subtype: 'array', value: arr } as never);
+});
+run('budget: member deleted while the document is weighed', () => {
+  const obj = Object.setPrototypeOf(
+    {
+      get a() {
+        Reflect.deleteProperty(this, 'b');
+        return 0;
+      },
+      b: 0,
+    },
+    Object.create(null, {
+      b: {
+        get() {
+          throw new Error('inherited b');
+        },
+      },
+    }),
+  );
+  query({ s: 'x'.repeat(1_000_001), obj }, '$[?@ == $.s]');
+});
+// A Proxy can report any length; a loop over an infinite one never ended.
+run('stringify: literal array with an infinite length', () => {
+  const arr = new Proxy([], { get: (t, k, r) => (k === 'length' ? Infinity : Reflect.get(t, k, r)) });
+  stringify({ type: 'value', subtype: 'array', value: arr } as never);
+});
+// Weighing the document trusted a Proxy's infinite length and pushed forever.
+run('budget: array with an infinite length while the document is weighed', () => {
+  const descriptor = { configurable: true, value: 0 };
+  const arr = new Proxy([], {
+    get: (_, key) => (key === 'length' ? Infinity : 0),
+    getOwnPropertyDescriptor: () => descriptor,
+  });
+  query({ s: 'x'.repeat(1_000_001), arr }, '$[?@ == $.s]');
+});
+// Every element of a literal array used to be queued before any was looked at:
+// a cycle at index 0 of a huge sparse array exhausted the heap first.
+run('stringify: cyclic sparse literal array of maximal length', () => {
+  const arr: unknown[] = new Array(2 ** 32 - 1);
+  arr[0] = arr;
+  stringify({ type: 'value', subtype: 'array', value: arr } as never);
+});
+// V8 hashes a number by its value: numbers chosen to share a bucket made each
+// Set insertion walk a chain, quadratic work for one charged step each.
+const undo = (x: number, shift: number): number => {
+  let y = x;
+  for (let s = shift; s < 32; s += shift) y ^= x >>> s;
+  return y;
+};
+const colliding = (i: number): number => {
+  let x = undo(i << 16, 16);
+  x = undo(Math.imul(x, -924973511), 4);
+  x = undo(Math.imul(x, -858993459), 12);
+  return Math.imul(x + 1, -1073774593);
+};
+const collidingDoc = JSON.parse(JSON.stringify([Array.from({ length: 120_000 }, (_, i) => colliding(i))]));
+run('budget: numbers chosen to collide in a set operand', () => {
+  query(collidingDoc, '$[?[0] subsetof @ && [0] anyof @ && @ noneof [0]]');
+});
+// Strings longer than 16,383 characters all hash alike in V8: a Set or Map of
+// many such strings of one length is a list with a full comparison per entry.
+const longWords = (n: number): string[] =>
+  Array.from({ length: n }, (_, i) => 'x'.repeat(20_000 - 8) + i.toString(16).padStart(8, '0'));
+// Fixtures are built outside the timed runs: building them is not the query's work.
+const longWordList = longWords(3000);
+run('budget: long strings of one length in a set operand', () => {
+  query([longWordList], '$[?[0] subsetof @ && ["' + longWordList[2999] + '"] subsetof @]', {
+    maxSteps: 3000 * 20_001 * 2 + 100,
+  });
+});
+// 16,383-character values become 16,384-character tagged keys, the first length V8 hashes by length only.
+const boundaryWords = Array.from({ length: 4000 }, (_, i) => 'x'.repeat(16_375) + String(i).padStart(8, '0'));
+run('budget: strings at the hashing boundary in a set operand', () => {
+  query([boundaryWords], '$[?[] subsetof @]', { maxSteps: 4000 * 16_384 + 10 });
+});
+// Member names over the limit in a query are syntax errors.
+const longSelectorNames = Array.from({ length: 400 }, (_, i) => 'x'.repeat(993) + String(i).padStart(8, '0'));
+run('parse: many member names over the limit as selectors', () => {
+  query({}, '$[' + longSelectorNames.map((k) => JSON.stringify(k)).join(',') + ']');
+});
+run('parse: object literal with member names over the limit', () => {
+  parse('$[?@ == {' + longSelectorNames.map((k) => JSON.stringify(k) + ':0').join(',') + '}]');
+});

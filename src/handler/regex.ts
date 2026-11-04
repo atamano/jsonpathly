@@ -433,7 +433,11 @@ const compile = (pattern: string, flags: string): Program | null => {
       unicode,
       sticky: flags.includes('y'),
     };
-  } catch {
+  } catch (e) {
+    // Only an invalid or unsupported pattern is null (and cached as such). A
+    // RangeError is the call stack overflowing under a deeply nested query:
+    // it must reach the evaluator's conversion, not poison the cache.
+    if (e instanceof RangeError) throw e;
     return null;
   }
 };

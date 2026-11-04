@@ -349,7 +349,7 @@ function peg$parse(input, options) {
   function peg$f10(content) {    return content;  }
   function peg$f11() {    return { type: 'bracketExpression', value: { type: 'wildcard' } };  }
   function peg$f12(n) {    return { type: 'bracketMember', value: { type: 'numericLiteral', value: n } };  }
-  function peg$f13(s) {    return { type: 'bracketMember', value: { type: 'stringLiteral', value: s } };  }
+  function peg$f13(s) {    return { type: 'bracketMember', value: { type: 'stringLiteral', value: memberName(s) } };  }
   function peg$f14(id) {    return { type: 'bracketMember', value: { type: 'identifier', value: id } };  }
   function peg$f15(expr) {
     return { type: 'bracketExpression', value: { type: 'filterExpression', value: expr } };
@@ -475,7 +475,7 @@ function peg$parse(input, options) {
   }
   function peg$f57() {    return { type: 'wildcard' };  }
   function peg$f58(n) {    return { type: 'numericLiteral', value: n };  }
-  function peg$f59(s) {    return { type: 'stringLiteral', value: s };  }
+  function peg$f59(s) {    return { type: 'stringLiteral', value: memberName(s) };  }
   function peg$f60(id) {    return { type: 'identifier', value: id };  }
   function peg$f61(expr, opts) {
     return { type: 'value', subtype: 'regex', value: expr, opts: opts || '' };
@@ -487,6 +487,7 @@ function peg$parse(input, options) {
   function peg$f66() {    return { type: 'value', value: null, subtype: 'null' };  }
   function peg$f67(s) {    return s;  }
   function peg$f68(pairs) {
+    for (const [key] of pairs || []) memberName(key);
     // fromEntries defines own properties: assigning obj[key] would treat a
     // "__proto__" key as the prototype setter instead of a member.
     return { type: 'value', subtype: 'object', value: Object.fromEntries(pairs || []) };
@@ -503,8 +504,8 @@ function peg$parse(input, options) {
   function peg$f72(head, tail) {
     return [head.value, ...tail.map(t => t[3].value)];
   }
-  function peg$f73(chars) {    return chars;  }
-  function peg$f74(chars) {    return chars;  }
+  function peg$f73(chars) {    return memberName(chars);  }
+  function peg$f74(chars) {    return memberName(chars);  }
   function peg$f75() {    return 'true';  }
   function peg$f76() {    return 'false';  }
   function peg$f77() {    return 'null';  }
@@ -4207,6 +4208,15 @@ function peg$parse(input, options) {
 
 
     return s0;
+  }
+
+
+  // Member names are limited (in documents too, see MAX_MEMBER_NAME_LENGTH in
+  // src/handler/helper.ts): V8 hashes very long strings by their length alone,
+  // and no real document needs such names.
+  function memberName(name) {
+    if (name.length > 1000) error('Member name too long (maximum 1000 characters)');
+    return name;
   }
 
   peg$result = peg$startRuleFunction();

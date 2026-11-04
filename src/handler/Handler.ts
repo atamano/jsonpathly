@@ -26,7 +26,17 @@ import { Tick } from './budget';
 import { comparators, isEmpty, matchRegex, SetCache } from './comparators';
 import { rfc9535Functions } from './functions';
 import type { Program } from './regex';
-import { hasOwn, isArray, isDefined, isNumber, isCapacityError, isPlainObject, isStackOverflow } from './helper';
+import {
+  hasOwn,
+  isArray,
+  isDefined,
+  isNumber,
+  isCapacityError,
+  isPlainObject,
+  isStackOverflow,
+  lengthOf,
+  ownKeys,
+} from './helper';
 
 // ============================================
 // Path Formatting Utilities
@@ -60,12 +70,19 @@ const normalizeArrayIndex = (index: number, length: number): number => (index < 
 /**
  * Check if array index is valid and get element.
  * Returns { exists: true, value, index } if valid, { exists: false } otherwise.
- * This properly handles elements with undefined values.
+ * This properly handles elements with undefined values. An index the array
+ * does not own (a hole, or an element inherited from a non-standard
+ * prototype) reads as undefined, like a hole always did.
  */
-const getArrayElement = <T>(arr: T[], index: number): { exists: true; value: T; index: number } | { exists: false } => {
-  const normalized = normalizeArrayIndex(index, arr.length);
-  if (normalized >= 0 && normalized < arr.length) {
-    return { exists: true, value: arr[normalized], index: normalized };
+const getArrayElement = <T>(
+  arr: T[],
+  index: number,
+): { exists: true; value: T | undefined; index: number } | { exists: false } => {
+  // Length read once.
+  const length = lengthOf(arr);
+  const normalized = normalizeArrayIndex(index, length);
+  if (normalized >= 0 && normalized < length) {
+    return { exists: true, value: hasOwn(arr, normalized) ? arr[normalized] : undefined, index: normalized };
   }
   return { exists: false };
 };
@@ -130,12 +147,16 @@ const weighDocument = (root: unknown): DocumentWeight => {
     if (typeof value !== 'object' || value === null || seen.has(value)) continue;
     seen.add(value);
     if (isArray(value)) {
-      for (let i = 0; i < value.length; i++) {
-        if (i in value) stack.push(value[i]);
+      // Length read once: a getter that appends elements must not keep the scan going.
+      const length = lengthOf(value);
+      for (let i = 0; i < length; i++) {
+        if (hasOwn(value, i)) stack.push(value[i]);
         else if (++holes > MAX_COUNTED_HOLES + count) break;
       }
     } else if (isPlainObject(value)) {
-      for (const key of Object.keys(value)) {
+      for (const key of ownKeys(value)) {
+        // A getter read before it may have deleted the member: own members only.
+        if (!hasOwn(value, key)) continue;
         // Names weigh their length too: escaping them in paths is charged per character.
         count += key.length;
         stack.push(value[key]);
@@ -181,7 +202,41 @@ export class Handler<T = unknown> {
 
   // Sets built by subsetof/anyof/noneof, per right-hand array, for this query only
   // (the caller may change the document between queries).
-  private readonly setCache: SetCache = new WeakMap();
+  private readonly setCaches = new Map<object, SetCache>();
+
+  /**
+   * Sets built by subsetof/anyof/noneof, for this query only, per comparator
+   * site and per right-hand array: an operand that does not read `@` yields the
+   * same array for every candidate, but the same array reached through another
+   * operand may have been changed in between by a getter.
+   */
+  private siteSetCache = (site: object): SetCache => {
+    let cache = this.setCaches.get(site);
+    if (cache === undefined) {
+      cache = new WeakMap();
+      this.setCaches.set(site, cache);
+    }
+    return cache;
+  };
+
+  // Member names from the query, canonicalized (internalized) once per selector
+  // and charged by their length then: looking up a non-internalized name costs
+  // native work proportional to its length for every candidate, found or not.
+  // Keyed by the selector node: a lookup by the name itself would compare its
+  // characters again whenever another selector holds an equal name.
+  private readonly canonicalNames = new Map<object, string>();
+
+  private canonicalName = (selector: object, name: string): string => {
+    let canonical = this.canonicalNames.get(selector);
+    if (canonical === undefined) {
+      // One charge covers canonicalizing and escaping the name.
+      this.tick(name.length);
+      canonical = Object.keys({ [name]: 0 })[0];
+      this.canonicalNames.set(selector, canonical);
+      if (!this.escapedNames.has(canonical)) this.escapedNames.set(canonical, escapeName(canonical));
+    }
+    return canonical;
+  };
 
   // Escaped member names: a name is escaped once per query and its characters
   // charged then, instead of rescanning a long name for every path built with it.
@@ -198,14 +253,17 @@ export class Handler<T = unknown> {
   };
 
   /**
-   * Calls `fn` for each element of `array`, skipping the holes of sparse arrays
-   * as forEach does, but charging every index first: forEach scans holes
-   * without calling back, so a sparse array of length 2^32 - 1 escaped the budget.
+   * Calls `fn` for each own element of `array`, like forEach: the length is
+   * read once (elements a getter appends are not visited) and holes are
+   * skipped, as are elements inherited from a non-standard prototype. Unlike
+   * forEach, every index is charged first: forEach scans holes without
+   * calling back, so a sparse array of length 2^32 - 1 escaped the budget.
    */
   private forEachElement = (array: unknown[], fn: (item: unknown, index: number) => void): void => {
-    for (let i = 0; i < array.length; i++) {
+    const length = lengthOf(array);
+    for (let i = 0; i < length; i++) {
       this.tick();
-      if (i in array) fn(array[i], i);
+      if (hasOwn(array, i)) fn(array[i], i);
     }
   };
 
@@ -322,18 +380,21 @@ export class Handler<T = unknown> {
   // Property Access Handlers
   // ============================================
 
-  private handleIdentifier = (payload: ValuePath, tree: Identifier): ValuePath | undefined => {
-    if (!isPlainObject(payload.value) || !hasOwn(payload.value, tree.value)) {
-      return;
-    }
-    return { value: payload.value[tree.value], paths: this.formatStringLiteralPath(payload.paths, tree.value) };
-  };
+  private handleIdentifier = (payload: ValuePath, tree: Identifier): ValuePath | undefined =>
+    this.selectMember(payload, tree);
 
-  private handleStringLiteral = ({ value, paths }: ValuePath, tree: StringLiteral): ValuePath | undefined => {
-    if (!isPlainObject(value) || !hasOwn(value, tree.value)) {
+  private handleStringLiteral = (payload: ValuePath, tree: StringLiteral): ValuePath | undefined =>
+    this.selectMember(payload, tree);
+
+  private selectMember = ({ value, paths }: ValuePath, selector: Identifier | StringLiteral): ValuePath | undefined => {
+    if (!isPlainObject(value)) {
       return;
     }
-    return { value: value[tree.value], paths: this.formatStringLiteralPath(paths, tree.value) };
+    const name = this.canonicalName(selector, selector.value);
+    if (!hasOwn(value, name)) {
+      return;
+    }
+    return { value: value[name], paths: this.formatStringLiteralPath(paths, name) };
   };
 
   private handleWildcard = ({ value, paths }: ValuePath): ValuePath[] => {
@@ -347,12 +408,16 @@ export class Handler<T = unknown> {
       return results;
     }
     if (isPlainObject(value)) {
-      const keys = Object.keys(value);
+      const keys = ownKeys(value);
       this.tick(keys.length);
-      return keys.map((key) => ({
-        value: value[key],
-        paths: this.formatStringLiteralPath(paths, key),
-      }));
+      const results: ValuePath[] = [];
+      for (const key of keys) {
+        // Still own? A getter read before it may have deleted the member.
+        if (hasOwn(value, key)) {
+          results.push({ value: value[key], paths: this.formatStringLiteralPath(paths, key) });
+        }
+      }
+      return results;
     }
     return [];
   };
@@ -402,7 +467,7 @@ export class Handler<T = unknown> {
       return [];
     }
 
-    const len = value.length;
+    const len = lengthOf(value);
     const step = tree.step ?? 1;
 
     // Step of 0 returns empty per RFC 9535
@@ -441,7 +506,8 @@ export class Handler<T = unknown> {
 
     while ((step > 0 && i < upper) || (step < 0 && i > lower)) {
       this.tick();
-      results.push({ value: value[i], paths: formatNumericLiteralPath(paths, i) });
+      // Holes and inherited elements read as undefined, as holes always did.
+      results.push({ value: hasOwn(value, i) ? value[i] : undefined, paths: formatNumericLiteralPath(paths, i) });
       i += step;
     }
 
@@ -505,12 +571,16 @@ export class Handler<T = unknown> {
   // document order of the recursive version.
   private collectDotdot = (start: ValuePath, tree: DotDot, results: ValuePath[]): void => {
     const treeValue = tree.value;
-    const stack: ValuePath[] = [start];
-    // Each node is charged when queued, before its payload and path are built.
+    // One frame per ancestor on the current path, holding the keys or length
+    // read when the ancestor was visited. Each child is read when visited, so
+    // the document's getters run in the order of the recursive traversal, and
+    // only if the parent still owns it at that moment.
+    const frames: { parent: ValuePath; keys: string[] | null; length: number; i: number }[] = [];
+    // Each node is charged when visited, before its payload and path are built.
     this.tick();
 
-    while (stack.length > 0) {
-      const payload = stack.pop() as ValuePath;
+    let payload: ValuePath | undefined = start;
+    while (payload !== undefined) {
       const value = payload.value;
 
       // Match at current level
@@ -541,22 +611,40 @@ export class Handler<T = unknown> {
         }
       }
 
-      // Queue children, last first
+      // Descend into the children
       if (isPlainObject(value)) {
-        const keys = Object.keys(value);
-        for (let i = keys.length - 1; i >= 0; i--) {
-          this.tick();
-          stack.push({ value: value[keys[i]], paths: this.formatStringLiteralPath(payload.paths, keys[i]) });
-        }
+        const keys = ownKeys(value);
+        // The keys are charged when snapshotted: a cycle through the first key
+        // of a wide object would otherwise retain one snapshot per level while
+        // paying for a single child each.
+        this.tick(keys.length);
+        frames.push({ parent: payload, keys, length: keys.length, i: 0 });
       } else if (isArray(value)) {
-        const children: ValuePath[] = [];
-        // Holes of sparse arrays are skipped, like the wildcard does.
-        this.forEachElement(value, (item, index) => {
-          children.push({ value: item, paths: formatNumericLiteralPath(payload.paths, index) });
-        });
-        for (let i = children.length - 1; i >= 0; i--) {
-          stack.push(children[i]);
+        frames.push({ parent: payload, keys: null, length: lengthOf(value), i: 0 });
+      }
+
+      // Next child in pre-order. Every array index is charged; holes, inherited
+      // elements and members deleted meanwhile are skipped, like the wildcard does.
+      payload = undefined;
+      while (frames.length > 0) {
+        const frame = frames[frames.length - 1];
+        if (frame.i >= frame.length) {
+          frames.pop();
+          continue;
         }
+        const i = frame.i++;
+        if (frame.keys === null) {
+          this.tick();
+          const parent = frame.parent.value as unknown[];
+          if (!hasOwn(parent, i)) continue;
+          payload = { value: parent[i], paths: formatNumericLiteralPath(frame.parent.paths, i) };
+        } else {
+          const parent = frame.parent.value as Record<string, unknown>;
+          const key = frame.keys[i];
+          if (!hasOwn(parent, key)) continue;
+          payload = { value: parent[key], paths: this.formatStringLiteralPath(frame.parent.paths, key) };
+        }
+        break;
       }
     }
   };
@@ -575,7 +663,8 @@ export class Handler<T = unknown> {
       case 'value':
         return { value: tree.value, paths: payload.paths };
       case 'groupOperation':
-        return this.handleOperationContent(payload, tree.value);
+        // Memoized when the group does not read `@`, like the other invariant tests.
+        return this.memoInvariant(tree, () => this.handleOperationContent(payload, tree.value));
       case 'functionCall': {
         const result = this.handleFunctionCall(payload, tree);
         return { value: result, paths: payload.paths };
@@ -589,12 +678,15 @@ export class Handler<T = unknown> {
           steps.push({ operator: node.operator, right: node.right });
           node = node.left;
         }
-        let acc = this.handleOperationContent(payload, node)?.value;
+        let acc: unknown = this.handleOperationContent(payload, node)?.value;
         this.tick(steps.length);
+        // Every operand is evaluated, as the recursive version did (a getter in
+        // a later operand still runs); an invalid intermediate makes the result Nothing.
         for (let i = steps.length - 1; i >= 0; i--) {
           const right = this.handleOperationContent(payload, steps[i].right)?.value;
           if (!isNumber(acc) || !isNumber(right)) {
-            return;
+            acc = undefined;
+            continue;
           }
           switch (steps[i].operator) {
             case 'plus':
@@ -604,15 +696,14 @@ export class Handler<T = unknown> {
               acc = acc - right;
               break;
             case 'div':
-              if (right === 0) return;
-              acc = acc / right;
+              acc = right === 0 ? undefined : acc / right;
               break;
             case 'multi':
               acc = acc * right;
               break;
           }
         }
-        return { value: acc, paths: payload.paths };
+        return isNumber(acc) ? { value: acc, paths: payload.paths } : undefined;
       }
     }
   };
@@ -642,7 +733,12 @@ export class Handler<T = unknown> {
     const comparatorFn = comparators[tree.operator];
 
     if (comparatorFn) {
-      return comparatorFn(leftValue, rightValue, this.tick, this.setCache);
+      // Sets built from the right operand are reused across candidates only
+      // when the operand does not read `@`: the same array object is then the
+      // same operand (`@ anyof $.allowed`), whereas an operand read through `@`
+      // may be a document array whose getters answer differently each time.
+      const sets = this.isInvariant(tree.right) ? this.siteSetCache(tree.right) : undefined;
+      return comparatorFn(leftValue, rightValue, this.tick, sets);
     }
     /* c8 ignore next */
     return false;
@@ -706,10 +802,11 @@ export class Handler<T = unknown> {
         return this.handleLogicalExpression(payload, tree);
       case 'comparator':
         return this.handleComparator(payload, tree);
+      // Memoized when the wrapped test does not read `@`, like the tests themselves.
       case 'groupExpression':
-        return this.handleFilterExpressionContent(payload, tree.value);
+        return this.memoInvariant(tree, () => this.handleFilterExpressionContent(payload, tree.value));
       case 'notExpression':
-        return !this.handleFilterExpressionContent(payload, tree.value);
+        return this.memoInvariant(tree, () => !this.handleFilterExpressionContent(payload, tree.value));
       case 'functionCall':
         return !!this.handleFunctionCall(payload, tree);
       case 'root': {
@@ -764,10 +861,15 @@ export class Handler<T = unknown> {
             }
           });
         } else if (isPlainObject(payloadValue)) {
-          // For objects, iterate over values (children), not the root object
-          for (const key of Object.keys(payloadValue)) {
+          // For objects, iterate over values (children), not the root object.
+          // The keys are charged when snapshotted: nested filters over a wide
+          // object retained one uncharged snapshot per level.
+          const keys = ownKeys(payloadValue);
+          this.tick(keys.length);
+          for (const key of keys) {
+            // Still own? A getter read before it may have deleted the member.
+            if (!hasOwn(payloadValue, key)) continue;
             const item = { value: payloadValue[key], paths: this.formatStringLiteralPath(payload.paths, key) };
-            this.tick();
             if (this.handleFilterExpressionContent(item, tree.value)) {
               results.push(item);
             }
@@ -828,47 +930,51 @@ export class Handler<T = unknown> {
   // Main Subscript Handler
   // ============================================
 
-  // Applies the segments one after the other to the whole nodelist (RFC 9535
-  // section 2.1.2). A loop rather than one recursive call per segment, so long
-  // queries on deep documents cannot overflow the call stack. Results are
-  // appended in place: rebuilding the accumulator per item made large result
-  // sets quadratic.
+  // Applies the segments depth first, node by node, as the recursive version
+  // did (so the document's getters run in the same order), but with an explicit
+  // stack instead of one call frame per segment: long queries on deep documents
+  // cannot overflow the call stack. Results are appended in place: rebuilding
+  // the accumulator per item made large result sets quadratic.
   private handleSubscript = (payload: ValuePath, tree: Subscript | null): ValuePath | undefined => {
     if (tree === null) {
       return payload;
     }
 
-    let nodes: ValuePath[] = [payload];
+    const results: ValuePath[] = [];
+    const stack: { node: ValuePath; segment: Subscript }[] = [{ node: payload, segment: tree }];
+    // The result is a nodelist once some node reaches a segment that can
+    // select any number of nodes; `$.missing[*]` stays a single, missing value.
     let indefinite = false;
 
-    for (let segment: Subscript | null = tree; segment !== null; segment = segment.next) {
-      const selected: ValuePath[] = [];
+    while (stack.length > 0) {
+      const { node, segment } = stack.pop() as { node: ValuePath; segment: Subscript };
+      let selected: ValuePath[];
       if (this.isIndefiniteSegment(segment)) {
         indefinite = true;
-        for (const node of nodes) {
-          appendAll(selected, this.selectMany(node, segment));
-        }
+        selected = this.selectMany(node, segment);
       } else {
-        this.tick(nodes.length);
-        for (const node of nodes) {
-          const result = this.selectOne(node, segment);
-          if (isDefined(result)) selected.push(result);
-        }
+        this.tick();
+        const result = this.selectOne(node, segment);
+        if (!isDefined(result)) continue;
+        selected = [result];
       }
-      nodes = selected;
-      if (nodes.length === 0) {
-        if (!indefinite) return;
-        break;
+      const next = segment.next;
+      if (next === null) {
+        appendAll(results, selected);
+      } else {
+        for (let i = selected.length - 1; i >= 0; i--) {
+          stack.push({ node: selected[i], segment: next });
+        }
       }
     }
 
     if (!indefinite) {
-      return nodes[0];
+      return results[0];
     }
 
     const values: unknown[] = [];
     const paths: string[] = [];
-    for (const node of nodes) {
+    for (const node of results) {
       values.push(node.value);
       paths.push(node.paths as string);
     }

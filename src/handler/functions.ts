@@ -9,7 +9,7 @@
  * - value(nodelist) - extracts single value from nodelist
  */
 import { Tick } from './budget';
-import { isArray, isDefined, isPlainObject, isString } from './helper';
+import { isArray, isDefined, isPlainObject, isString, lengthOf, ownAt, ownKeys } from './helper';
 import { MAX_REGEX_PATTERN_LENGTH, regexProgram, runProgram } from './regex';
 
 /** `site`: the call's AST node, when its pattern argument is a literal. */
@@ -135,9 +135,9 @@ export const testRegex = (
 const length: FunctionImpl = (args, tick) => {
   const val = args[0];
   if (isString(val)) return val.length;
-  if (isArray(val)) return val.length;
+  if (isArray(val)) return lengthOf(val);
   if (isPlainObject(val)) {
-    const keys = Object.keys(val);
+    const keys = ownKeys(val);
     tick(keys.length);
     return keys.length;
   }
@@ -150,7 +150,7 @@ const length: FunctionImpl = (args, tick) => {
  */
 const count: FunctionImpl = (args) => {
   const val = args[0];
-  if (isArray(val)) return val.length;
+  if (isArray(val)) return lengthOf(val);
   return isDefined(val) ? 1 : 0;
 };
 
@@ -183,7 +183,7 @@ const search: FunctionImpl = (args, tick, site) => {
  */
 const value: FunctionImpl = (args) => {
   const val = args[0];
-  if (isArray(val) && val.length === 1) return val[0];
+  if (isArray(val) && lengthOf(val) === 1) return ownAt(val, 0);
   if (!isArray(val) && isDefined(val)) return val;
   return undefined;
 };

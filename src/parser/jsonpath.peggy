@@ -31,6 +31,16 @@
   }
 }}
 
+{
+  // Member names are limited (in documents too, see MAX_MEMBER_NAME_LENGTH in
+  // src/handler/helper.ts): V8 hashes very long strings by their length alone,
+  // and no real document needs such names.
+  function memberName(name) {
+    if (name.length > 1000) error('Member name too long (maximum 1000 characters)');
+    return name;
+  }
+}
+
 // ===================
 // Entry Point
 // ===================
@@ -85,7 +95,7 @@ bracketContent
   / selectorList
   / STAR { return { type: 'bracketExpression', value: { type: 'wildcard' } }; }
   / n:INTEGER { return { type: 'bracketMember', value: { type: 'numericLiteral', value: n } }; }
-  / s:STRING { return { type: 'bracketMember', value: { type: 'stringLiteral', value: s } }; }
+  / s:STRING { return { type: 'bracketMember', value: { type: 'stringLiteral', value: memberName(s) } }; }
   / id:identifier { return { type: 'bracketMember', value: { type: 'identifier', value: id } }; }
 
 // ===================
@@ -291,7 +301,7 @@ selectorList
 selector
   = STAR { return { type: 'wildcard' }; }
   / n:INTEGER { return { type: 'numericLiteral', value: n }; }
-  / s:STRING { return { type: 'stringLiteral', value: s }; }
+  / s:STRING { return { type: 'stringLiteral', value: memberName(s) }; }
   / id:identifier { return { type: 'identifier', value: id }; }
 
 // ===================
@@ -321,6 +331,7 @@ stringLiteral "string"
 
 obj
   = BRACE_LEFT _ pairs:pairList? _ BRACE_RIGHT {
+      for (const [key] of pairs || []) memberName(key);
       // fromEntries defines own properties: assigning obj[key] would treat a
       // "__proto__" key as the prototype setter instead of a member.
       return { type: 'value', subtype: 'object', value: Object.fromEntries(pairs || []) };
@@ -351,8 +362,8 @@ valueList
 // ===================
 
 identifier
-  = chars:KEY { return chars; }
-  / chars:SPECIAL_KEY { return chars; }
+  = chars:KEY { return memberName(chars); }
+  / chars:SPECIAL_KEY { return memberName(chars); }
   / TRUE { return 'true'; }
   / FALSE { return 'false'; }
   / NULL { return 'null'; }

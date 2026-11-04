@@ -48,7 +48,8 @@ const shapes = {
   'unclosed match()': (n) => '$[?' + 'match(@, '.repeat(n),
   'unclosed arrays': (n) => '$[?@==' + '['.repeat(n),
   'unclosed objects': (n) => '$[?@==' + '{"a":'.repeat(n),
-  'mixed groups and calls': (n) => '$[?' + '!((@ && length('.repeat(n) + '@',
+  // A function argument is a filter query, so the nesting stays grammatical.
+  'mixed groups and calls': (n) => '$[?' + '!((@ && length($[?'.repeat(n) + '@',
   'closed negations': (n) => '$[?' + '!('.repeat(n) + '@' + ')'.repeat(n) + ']',
   'closed groups of filters': (n) => {
     let e = '@';
@@ -71,7 +72,9 @@ let failed = false;
 for (const [name, shape] of Object.entries(shapes)) {
   const [a, b, c] = [40, 80, 160].map((n) => calls(shape(n)));
   const growth = Math.max(b / a, c / b);
-  const ok = growth <= 2.3 && c <= CAP;
+  // Work must grow with the depth: a constant count means the shape fails to
+  // parse before its nesting starts and exercises nothing.
+  const ok = growth <= 2.3 && c <= CAP && a < b && b < c;
   if (!ok) failed = true;
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: ${a} ${b} ${c} rule calls (x${growth.toFixed(2)} per doubling)`);
 }
