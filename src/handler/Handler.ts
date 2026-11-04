@@ -139,10 +139,26 @@ export const RETAINED_PER_DOCUMENT_NODE = 20;
 /** Nodes weighed per request at least, to amortize the resumed traversal. */
 const WEIGH_CHUNK = 10_000;
 
-const MAX_COUNTED_HOLES = 1_000_000;
+/**
+ * Holes of a sparse (non-JSON) array scanned one by one before its own indices
+ * are enumerated instead: bounds the scan of `new Array(2 ** 32 - 1)` without
+ * giving up on populated elements further on.
+ */
+const HOLE_SCAN_LIMIT = 10_000;
 
-/** A container being weighed: its children are read one at a time, when visited. */
-type WeighFrame = { container: unknown[] | Record<string, unknown>; keys: string[] | null; length: number; i: number };
+/**
+ * A container being weighed: its children are read one at a time, when
+ * visited. `keys` holds an object's member names; `indices` holds the own
+ * indices of an array found to be sparse, once its holes stopped being scanned.
+ */
+type WeighFrame = {
+  container: unknown[] | Record<string, unknown>;
+  keys: string[] | null;
+  indices: string[] | null;
+  length: number;
+  i: number;
+  holes: number;
+};
 
 /**
  * Size of the document, counted iteratively and only as far as the budget
@@ -162,9 +178,6 @@ class DocumentWeigher {
 
   private readonly seen = new Set<object>();
   private readonly frames: WeighFrame[] = [];
-  // Holes of sparse (non-JSON) arrays weigh nothing. Scanning them stops, for
-  // the whole document, once they outnumber the weight counted by MAX_COUNTED_HOLES.
-  private holes = 0;
 
   constructor(root: unknown) {
     this.visit(root);
@@ -183,8 +196,19 @@ class DocumentWeigher {
       const i = frame.i++;
       if (frame.keys === null) {
         const array = frame.container as unknown[];
-        if (hasOwn(array, i)) this.visit(array[i]);
-        else if (++this.holes > MAX_COUNTED_HOLES + this.weight) frame.i = frame.length;
+        if (frame.indices !== null) {
+          const index = Number(frame.indices[i]);
+          if (hasOwn(array, index)) this.visit(array[index]);
+        } else if (hasOwn(array, i)) {
+          this.visit(array[i]);
+        } else if (++frame.holes > HOLE_SCAN_LIMIT) {
+          // Holes weigh nothing; past the scan limit the remaining own indices
+          // are enumerated (ascending, as V8 lists them) instead of scanned.
+          const indices = Object.keys(array).filter((key) => /^\d+$/.test(key) && Number(key) > i);
+          frame.indices = indices;
+          frame.length = indices.length;
+          frame.i = 0;
+        }
       } else {
         const object = frame.container as Record<string, unknown>;
         const key = frame.keys[i];
@@ -208,10 +232,10 @@ class DocumentWeigher {
     this.seen.add(value);
     if (isArray(value)) {
       // Length read once: a getter that appends elements must not keep the scan going.
-      this.frames.push({ container: value, keys: null, length: lengthOf(value), i: 0 });
+      this.frames.push({ container: value, keys: null, indices: null, length: lengthOf(value), i: 0, holes: 0 });
     } else if (isPlainObject(value)) {
       const keys = ownKeys(value);
-      this.frames.push({ container: value, keys, length: keys.length, i: 0 });
+      this.frames.push({ container: value, keys, indices: null, length: keys.length, i: 0, holes: 0 });
     }
   }
 }

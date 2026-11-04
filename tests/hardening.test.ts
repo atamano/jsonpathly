@@ -538,6 +538,20 @@ describe('hardening', () => {
       expect(reads).to.be.below(300_000 + 30_000);
     });
 
+    it('weighs sparse arrays by their own indices, not by scanning their holes', () => {
+      // A populated tail far past a million holes still counts (it used to be
+      // given up on), and a 2^32-1 length array costs a bounded scan.
+      const tail = Array(250_001).fill(0);
+      const sparse: unknown[] = [];
+      sparse[1_000_100] = tail;
+      expect(query({ a: sparse, s: 'x'.repeat(1000) }, '$.a[1000100][?@ == 1]')).to.deep.equal([]);
+      const start = Date.now();
+      const doc = { pad: 'x'.repeat(2_000_000), unused: new Array(0xffffffff), items: Array(250_001).fill(0) };
+      expect(query(doc, '$.items[?@ == 1]')).to.deep.equal([]);
+      // Scanning the 4 billion holes took 13 seconds; generous for a loaded runner.
+      expect(Date.now() - start).to.be.below(3000);
+    });
+
     it('maxSteps: Infinity disables the limit', () => {
       const doc = nestedObjects(150);
       expect(query(doc, '$..[?@..[?@..a]]', { maxSteps: Infinity })).to.have.length(148);
