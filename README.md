@@ -141,7 +141,7 @@ query(legends, "$.champions[0].era");
 | :--------------- | :-------- | :--------------------------------------------------------------- |
 | `hideExceptions` | `boolean` | Return `undefined` instead of throwing (or `[]` if `returnArray` is true) |
 | `returnArray`    | `boolean` | Always return results as an array                                |
-| `maxSteps`       | `number`  | Evaluation steps allowed before throwing `JSONPathLimitError` (default: the larger of 1,000,000 and 100 per document node or string character, plus a linear regex scan of the document's strings; `Infinity` disables it) |
+| `maxSteps`       | `number`  | Evaluation steps allowed before throwing `JSONPathLimitError` (default: the larger of 10,000,000 and 100 per document node or string character, plus a linear regex scan of the document's strings; `Infinity` disables it) |
 
 ### paths(data, path, options?)
 

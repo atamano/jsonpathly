@@ -112,7 +112,7 @@ const appendAll = <T>(target: T[], items: T[]): void => {
  * Steps a query may always take, whatever the document size. A step is a node
  * selected or visited, a filter evaluated, or a value compared.
  */
-export const MIN_STEP_BUDGET = 1_000_000;
+export const MIN_STEP_BUDGET = 10_000_000;
 
 /**
  * Past MIN_STEP_BUDGET, steps allowed per node of the document. Queries whose
@@ -172,7 +172,7 @@ type AstFrame = { node: object; children: unknown[]; i: number; reads: boolean }
 export type HandlerOptions = {
   /**
    * Maximum number of evaluation steps before the query is aborted with a
-   * JSONPathLimitError. Defaults to the larger of 1,000,000 and 100 per
+   * JSONPathLimitError. Defaults to the larger of 10,000,000 and 100 per
    * document node or string character, plus the work of regexes up to the
    * largest program size per string character (a linear scan of every
    * string by it).

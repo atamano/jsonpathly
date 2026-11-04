@@ -79,9 +79,12 @@ run('eval: equality of root arrays differing at the first element', () => {
 
 // --- budget (polynomial queries stop with JSONPathLimitError) ---
 const chain = nestedObjects(600);
-run('budget: nested descendant filters', () => query(chain, '$..[?@..[?@..a]]'));
-run('budget: chained descendants', () => query(chain, '$..*..*..*.missing'));
-run('budget: repeated unions', () => query(nestedArrays(40), '$' + '[0,0]'.repeat(40)));
+// These only need the budget to stop them: a smaller one than the default
+// floor (10,000,000 steps) keeps each case well under its deadline on a loaded runner.
+const SMALL_BUDGET = { maxSteps: 1_000_000 };
+run('budget: nested descendant filters', () => query(chain, '$..[?@..[?@..a]]', SMALL_BUDGET));
+run('budget: chained descendants', () => query(chain, '$..*..*..*.missing', SMALL_BUDGET));
+run('budget: repeated unions', () => query(nestedArrays(40), '$' + '[0,0]'.repeat(40), SMALL_BUDGET));
 run('budget: in over a large nodelist', () =>
   query(
     Array.from({ length: 30_000 }, (_, i) => ({ x: i })),
@@ -96,6 +99,7 @@ run('budget: union of missing names', () => {
   query(
     Array.from({ length: n }, () => ({})),
     '$[*][' + Array(n).fill('"z"').join(',') + ']',
+    SMALL_BUDGET,
   );
 });
 run('budget: long arithmetic chain per element', () => {
@@ -135,7 +139,7 @@ for (const op of ['<', '==']) {
 run('budget: cyclic object', () => {
   const cyclic: Record<string, unknown> = { a: {} };
   (cyclic.a as Record<string, unknown>).b = cyclic;
-  query(cyclic, '$..x');
+  query(cyclic, '$..x', SMALL_BUDGET);
 });
 run('budget: cyclic object with a long key', () => {
   const cyclic: Record<string, unknown> = {};
@@ -177,10 +181,12 @@ run('budget: wildcard over a sparse array', () => query(new Array(2 ** 32 - 1), 
 run('budget: wildcard over a sparse array, default budget', () => query(new Array(2 ** 32 - 1), '$[*]'));
 run('budget: descendants of a sparse array', () => query({ a: new Array(2 ** 32 - 1) }, '$..x'));
 run('budget: hideExceptions returns no result', () => {
-  const r = query(chain, '$..[?@..[?@..a]]', { hideExceptions: true, returnArray: true }) as unknown[];
+  const r = query(chain, '$..[?@..[?@..a]]', { ...SMALL_BUDGET, hideExceptions: true, returnArray: true }) as unknown[];
   if (r.length !== 0) throw new Error('expected []');
 });
-run('budget: the right operand alone exceeds the budget', () => query({ a: chain }, '$[?$..[?@..[?@..a]]]'));
+run('budget: the right operand alone exceeds the budget', () =>
+  query({ a: chain }, '$[?$..[?@..[?@..a]]]', SMALL_BUDGET),
+);
 run('eval: false && short-circuits that operand', () => query({ a: chain }, '$[?false && $..[?@..[?@..a]]]'));
 run('eval: true || short-circuits that operand', () => query({ a: chain }, '$[?true || $..[?@..[?@..a]]]'));
 run('stringify: cyclic literal', () => {
@@ -262,7 +268,7 @@ run('parse: 5,000 conditions', () => parse('$[?' + Array(5000).fill('@.a == "xyz
 run('budget: repeated unions padded with whitespace', () => {
   let doc: unknown = 0;
   for (let i = 0; i < 24; i++) doc = [doc];
-  query(doc, '$' + '[0,0]'.repeat(24) + ' '.repeat(50_000));
+  query(doc, '$' + '[0,0]'.repeat(24) + ' '.repeat(50_000), SMALL_BUDGET);
 });
 // The pattern matches at once; every call used to rescan it to build a cache key.
 run('eval: long cached pattern matching at once', () =>
@@ -313,7 +319,7 @@ run('budget: array growing while the document is weighed', () => {
     return 0;
   };
   Object.defineProperty(arr, 0, { get: grow });
-  query({ s: 'x'.repeat(1_000_001), arr }, '$[?@ == $.s]');
+  query({ s: 'x'.repeat(10_000_001), arr }, '$[?@ == $.s]');
 });
 // Cycles are now detected as links are read, each exactly once: a check made
 // beforehand read the AST again, and getters could change it in between.
@@ -381,7 +387,7 @@ run('budget: member deleted while the document is weighed', () => {
       },
     }),
   );
-  query({ s: 'x'.repeat(1_000_001), obj }, '$[?@ == $.s]');
+  query({ s: 'x'.repeat(10_000_001), obj }, '$[?@ == $.s]');
 });
 // A Proxy can report any length; a loop over an infinite one never ended.
 run('stringify: literal array with an infinite length', () => {
@@ -395,7 +401,7 @@ run('budget: array with an infinite length while the document is weighed', () =>
     get: (_, key) => (key === 'length' ? Infinity : 0),
     getOwnPropertyDescriptor: () => descriptor,
   });
-  query({ s: 'x'.repeat(1_000_001), arr }, '$[?@ == $.s]');
+  query({ s: 'x'.repeat(10_000_001), arr }, '$[?@ == $.s]');
 });
 // Every element of a literal array used to be queued before any was looked at:
 // a cycle at index 0 of a huge sparse array exhausted the heap first.

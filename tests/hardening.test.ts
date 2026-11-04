@@ -258,7 +258,7 @@ describe('hardening', () => {
           },
         }),
       );
-      const s = 'x'.repeat(1_000_001);
+      const s = 'x'.repeat(10_000_001);
       expect(query({ s, obj }, '$[?@ == $.s]')).to.deep.equal([s]);
     });
 
@@ -420,7 +420,7 @@ describe('hardening', () => {
       // ...but not before: a selector that never touches the long name is fine.
       expect(query(doc, '$.b')).to.equal(2);
       expect(query(doc, "$['b','c']")).to.deep.equal([2]);
-      expect(query({ a: doc, s: 'x'.repeat(1_000_001) }, '$.a.b')).to.equal(2);
+      expect(query({ a: doc, s: 'x'.repeat(10_000_001) }, '$.a.b')).to.equal(2);
     });
 
     it('keeps "__proto__" in an object literal as a member', () => {
@@ -808,7 +808,7 @@ describe('hardening', () => {
     it('weighs strings by their length for linear string work', () => {
       const n = 2_000_000;
       const doc = { items: Array(10).fill(0), s: 'a'.repeat(n), t: ['a'.repeat(n - 1), 'a'].join('') };
-      // 10 comparisons of 2,000,000 characters exceed the 1,000,000 floor.
+      // 10 comparisons of 2,000,000 characters exceed the 10,000,000 floor.
       expect(query(doc, '$.items[?$.s == $.t]')).to.have.length(10);
       expect(query(doc, '$.items[?$.s =~ /^a+$/]')).to.have.length(10);
     });
@@ -1071,7 +1071,7 @@ describe('hardening', () => {
       let doc: unknown = 0;
       for (let i = 0; i < 24; i++) doc = [doc];
       const q = '$' + '[0,0]'.repeat(24) + ' '.repeat(50_000);
-      expect(() => query(doc, q)).to.throw(JSONPathLimitError, / 1000000 evaluation steps/);
+      expect(() => query(doc, q)).to.throw(JSONPathLimitError, / 10000000 evaluation steps/);
     });
 
     it('evaluates a long query on a small document within a small budget', () => {
