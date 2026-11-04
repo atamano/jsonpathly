@@ -477,6 +477,23 @@ describe('hardening', () => {
       expect(paths([1, 2, 3], '$[*]', { maxSteps: 2, hideExceptions: true })).to.deep.equal([]);
     });
 
+    it('bounds the nodes a query keeps live on a small document', () => {
+      // 2^k duplicates of one node: each is a step, but the memory grows with
+      // the nodelist, so it is bounded separately and lower than the step floor.
+      const doc = nestedArrays(40);
+      expect(() => query(doc, '$' + '[0,0]'.repeat(40))).to.throw(
+        JSONPathLimitError,
+        /retains more than 1000000 nodes/,
+      );
+      expect(() => paths(doc, '$' + '[0,0]'.repeat(40))).to.throw(JSONPathLimitError, /retains/);
+      // A large document justifies large nodelists.
+      const wide = { a: Array.from({ length: 1_200_000 }, (_, i) => i) };
+      expect(query(wide, '$..*')).to.have.length(1_200_001);
+      expect(query(wide, '$.a[*]')).to.have.length(1_200_000);
+      // An explicit budget bounds them on its own.
+      expect(query(nestedArrays(21), '$' + '[0,0]'.repeat(21), { maxSteps: 10_000_000 })).to.have.length(2 ** 21);
+    });
+
     it('maxSteps: Infinity disables the limit', () => {
       const doc = nestedObjects(150);
       expect(query(doc, '$..[?@..[?@..a]]', { maxSteps: Infinity })).to.have.length(148);
@@ -1071,7 +1088,9 @@ describe('hardening', () => {
       let doc: unknown = 0;
       for (let i = 0; i < 24; i++) doc = [doc];
       const q = '$' + '[0,0]'.repeat(24) + ' '.repeat(50_000);
-      expect(() => query(doc, q)).to.throw(JSONPathLimitError, / 10000000 evaluation steps/);
+      // Neither bound grows with the 50,000 characters of padding.
+      expect(() => query(doc, q)).to.throw(JSONPathLimitError, /retains more than 1000000 nodes/);
+      expect(() => query(doc, q, { maxSteps: 10_000_000 })).to.throw(JSONPathLimitError, / 10000000 evaluation steps/);
     });
 
     it('evaluates a long query on a small document within a small budget', () => {

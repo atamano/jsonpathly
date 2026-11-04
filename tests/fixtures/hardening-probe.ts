@@ -84,7 +84,8 @@ const chain = nestedObjects(600);
 const SMALL_BUDGET = { maxSteps: 1_000_000 };
 run('budget: nested descendant filters', () => query(chain, '$..[?@..[?@..a]]', SMALL_BUDGET));
 run('budget: chained descendants', () => query(chain, '$..*..*..*.missing', SMALL_BUDGET));
-run('budget: repeated unions', () => query(nestedArrays(40), '$' + '[0,0]'.repeat(40), SMALL_BUDGET));
+// On the default budget: the retained-node bound stops it long before the step floor.
+run('budget: repeated unions', () => query(nestedArrays(40), '$' + '[0,0]'.repeat(40)));
 run('budget: in over a large nodelist', () =>
   query(
     Array.from({ length: 30_000 }, (_, i) => ({ x: i })),

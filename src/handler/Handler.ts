@@ -121,6 +121,14 @@ export const MIN_STEP_BUDGET = 10_000_000;
  */
 export const STEPS_PER_DOCUMENT_NODE = 100;
 
+/**
+ * Nodes a query may keep live at once (the nodelists being built) before the
+ * document is weighed; past that, STEPS_PER_DOCUMENT_NODE per document node.
+ * Steps bound the time; this bounds the memory, which repeated unions such as
+ * `$[0,0][0,0]...` grow faster than the step floor alone would allow.
+ */
+export const MIN_RETAINED_NODES = 1_000_000;
+
 const MAX_COUNTED_HOLES = 1_000_000;
 
 type DocumentWeight = {
@@ -190,6 +198,7 @@ export class Handler<T = unknown> {
 
   private steps = 0;
   private stepLimit: number;
+  private retainedLimit: number;
   private readonly adaptiveLimit: boolean;
   private documentWeight: DocumentWeight | undefined;
   private largestRegexProgram = 0;
@@ -271,7 +280,20 @@ export class Handler<T = unknown> {
     this.rootPayload = { value: rootPayload, paths: '$' };
     this.adaptiveLimit = options.maxSteps === undefined;
     this.stepLimit = options.maxSteps ?? MIN_STEP_BUDGET;
+    // Every retained node was a step, so an explicit budget bounds them too.
+    this.retainedLimit = this.adaptiveLimit ? MIN_RETAINED_NODES : Infinity;
   }
+
+  /** Stops a query whose live nodelists outgrow what the document justifies. */
+  private checkRetained = (live: number): void => {
+    if (live <= this.retainedLimit) return;
+    if (this.adaptiveLimit) {
+      this.documentWeight ??= weighDocument(this.rootPayload.value);
+      this.retainedLimit = Math.max(MIN_RETAINED_NODES, STEPS_PER_DOCUMENT_NODE * this.documentWeight.weight);
+      if (live <= this.retainedLimit) return;
+    }
+    throw new JSONPathLimitError(`Query retains more than ${this.retainedLimit} nodes`);
+  };
 
   private tick: Tick = Object.assign(
     (n = 1): void => {
@@ -582,6 +604,7 @@ export class Handler<T = unknown> {
     let payload: ValuePath | undefined = start;
     while (payload !== undefined) {
       const value = payload.value;
+      this.checkRetained(results.length);
 
       // Match at current level
       switch (treeValue.type) {
@@ -958,6 +981,7 @@ export class Handler<T = unknown> {
         if (!isDefined(result)) continue;
         selected = [result];
       }
+      this.checkRetained(results.length + stack.length + selected.length);
       const next = segment.next;
       if (next === null) {
         appendAll(results, selected);
