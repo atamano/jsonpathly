@@ -204,7 +204,12 @@ class DocumentWeigher {
         } else if (++frame.holes > HOLE_SCAN_LIMIT) {
           // Holes weigh nothing; past the scan limit the remaining own indices
           // are enumerated (ascending, as V8 lists them) instead of scanned.
-          const indices = Object.keys(array).filter((key) => /^\d+$/.test(key) && Number(key) > i);
+          // Canonical indices only: a key such as "010002" is a plain member,
+          // and counting it as index 10002 would weigh that element twice.
+          const indices = Object.keys(array).filter((key) => {
+            const index = Number(key);
+            return Number.isInteger(index) && index > i && String(index) === key;
+          });
           frame.indices = indices;
           frame.length = indices.length;
           frame.i = 0;

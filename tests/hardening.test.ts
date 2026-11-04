@@ -550,6 +550,15 @@ describe('hardening', () => {
       expect(query(doc, '$.items[?@ == 1]')).to.deep.equal([]);
       // Scanning the 4 billion holes took 13 seconds; generous for a loaded runner.
       expect(Date.now() - start).to.be.below(3000);
+      // Non-canonical index-like keys ("010002") are members, not elements: they
+      // must not make the element they alias weigh once more each.
+      const aliased: unknown[] = [];
+      aliased[10_002] = 'x'.repeat(7000);
+      for (let i = 1; i <= 20; i++) (aliased as unknown as Record<string, unknown>)['0'.repeat(i) + '10002'] = 0;
+      const budgetDoc = { a: aliased, items: Array(1000).fill(0) };
+      const heavy = '$.items[?' + Array(250).fill('@ == 1').join(' || ') + ']';
+      // About 1,250,000 steps against a document weighing about 8,000: the floor holds.
+      expect(() => query(budgetDoc, heavy)).to.throw(JSONPathLimitError, / 1000000 evaluation steps/);
     });
 
     it('maxSteps: Infinity disables the limit', () => {
