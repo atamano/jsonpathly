@@ -492,6 +492,30 @@ describe('hardening', () => {
       expect(query(wide, '$.a[*]')).to.have.length(1_200_000);
       // An explicit budget bounds them on its own.
       expect(query(nestedArrays(21), '$' + '[0,0]'.repeat(21), { maxSteps: 10_000_000 })).to.have.length(2 ** 21);
+      // Counted as they are produced, inside one selector too: 11 wildcards over
+      // 100,000 elements would allocate 1,100,000 nodes before any check made
+      // between segments, and the step floor alone allows that.
+      const reads = { count: 0 };
+      const array = new Proxy(
+        Array.from({ length: 100_000 }, (_, i) => i),
+        {
+          get(target, key, receiver) {
+            if (typeof key === 'string' && /^\d+$/.test(key)) reads.count++;
+            return Reflect.get(target, key, receiver);
+          },
+        },
+      );
+      expect(() => query(array, '$[' + Array(11).fill('*').join(',') + ']')).to.throw(JSONPathLimitError, /retains/);
+      // The query stops on the node past its limit of 1,000,010 (ten per document
+      // node); weighing the document reads its 100,000 elements once.
+      expect(reads.count).to.be.at.most(1_000_011 + 100_000);
+      // Ten nodes per document node is enough for ten wildcards over it.
+      expect(
+        query(
+          Array.from({ length: 100_000 }, (_, i) => i),
+          '$[' + Array(10).fill('*').join(',') + ']',
+        ),
+      ).to.have.length(1_000_000);
     });
 
     it('maxSteps: Infinity disables the limit', () => {

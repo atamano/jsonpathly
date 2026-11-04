@@ -122,18 +122,24 @@ export const MIN_STEP_BUDGET = 10_000_000;
 export const STEPS_PER_DOCUMENT_NODE = 100;
 
 /**
- * Nodes a query may keep live at once (the nodelists being built) before the
- * document is weighed; past that, STEPS_PER_DOCUMENT_NODE per document node.
- * Steps bound the time; this bounds the memory, which repeated unions such as
- * `$[0,0][0,0]...` grow faster than the step floor alone would allow.
+ * Nodes a query may place in nodelists before the document is weighed; past
+ * that, RETAINED_PER_DOCUMENT_NODE per document node. Steps bound the time;
+ * this bounds the memory, which repeated unions such as `$[0,0][0,0]...` grow
+ * faster than the step floor alone would allow. Counted as the nodes are
+ * produced, as a total for the query: an upper bound on the nodes live at once.
  */
 export const MIN_RETAINED_NODES = 1_000_000;
+
+/** Past MIN_RETAINED_NODES, nodes a query may retain per node of the document. */
+export const RETAINED_PER_DOCUMENT_NODE = 10;
 
 const MAX_COUNTED_HOLES = 1_000_000;
 
 type DocumentWeight = {
   /** Distinct objects and arrays, scalars, member names and string characters. */
   weight: number;
+  /** Values alone: what a query can select. */
+  nodes: number;
   /** String characters plus one per string: the positions a regex can scan. */
   stringPositions: number;
 };
@@ -143,12 +149,14 @@ const weighDocument = (root: unknown): DocumentWeight => {
   const seen = new Set<object>();
   const stack: unknown[] = [root];
   let count = 0;
+  let nodes = 0;
   let stringPositions = 0;
   // Holes of sparse (non-JSON) arrays weigh nothing. Scanning them stops, for
   // the whole document, once they outnumber the weight counted by MAX_COUNTED_HOLES.
   let holes = 0;
   while (stack.length > 0) {
     const value = stack.pop();
+    nodes++;
     // Strings weigh their length: comparisons and regexes are charged per character.
     count += typeof value === 'string' ? 1 + value.length : 1;
     if (typeof value === 'string') stringPositions += 1 + value.length;
@@ -171,7 +179,7 @@ const weighDocument = (root: unknown): DocumentWeight => {
       }
     }
   }
-  return { weight: count, stringPositions };
+  return { weight: count, nodes, stringPositions };
 };
 
 /** An AST node (typed, or an array of arguments or selectors) being classified. */
@@ -284,13 +292,15 @@ export class Handler<T = unknown> {
     this.retainedLimit = this.adaptiveLimit ? MIN_RETAINED_NODES : Infinity;
   }
 
-  /** Stops a query whose live nodelists outgrow what the document justifies. */
-  private checkRetained = (live: number): void => {
-    if (live <= this.retainedLimit) return;
+  private retained = 0;
+
+  /** Counts a node placed in a nodelist; stops the query past what the document justifies. */
+  private retain = (): void => {
+    if (++this.retained <= this.retainedLimit) return;
     if (this.adaptiveLimit) {
       this.documentWeight ??= weighDocument(this.rootPayload.value);
-      this.retainedLimit = Math.max(MIN_RETAINED_NODES, STEPS_PER_DOCUMENT_NODE * this.documentWeight.weight);
-      if (live <= this.retainedLimit) return;
+      this.retainedLimit = Math.max(MIN_RETAINED_NODES, RETAINED_PER_DOCUMENT_NODE * this.documentWeight.nodes);
+      if (this.retained <= this.retainedLimit) return;
     }
     throw new JSONPathLimitError(`Query retains more than ${this.retainedLimit} nodes`);
   };
@@ -425,6 +435,7 @@ export class Handler<T = unknown> {
       // undefined entries to the result accumulators.
       const results: ValuePath[] = [];
       this.forEachElement(value, (item, index) => {
+        this.retain();
         results.push({ value: item, paths: formatNumericLiteralPath(paths, index) });
       });
       return results;
@@ -436,6 +447,7 @@ export class Handler<T = unknown> {
       for (const key of keys) {
         // Still own? A getter read before it may have deleted the member.
         if (hasOwn(value, key)) {
+          this.retain();
           results.push({ value: value[key], paths: this.formatStringLiteralPath(paths, key) });
         }
       }
@@ -529,6 +541,7 @@ export class Handler<T = unknown> {
     while ((step > 0 && i < upper) || (step < 0 && i > lower)) {
       this.tick();
       // Holes and inherited elements read as undefined, as holes always did.
+      this.retain();
       results.push({ value: hasOwn(value, i) ? value[i] : undefined, paths: formatNumericLiteralPath(paths, i) });
       i += step;
     }
@@ -552,19 +565,28 @@ export class Handler<T = unknown> {
         case 'identifier':
           if (isPlainObject(payload.value)) {
             const result = this.handleIdentifier(payload, selector);
-            if (isDefined(result)) results.push(result);
+            if (isDefined(result)) {
+              this.retain();
+              results.push(result);
+            }
           }
           break;
         case 'stringLiteral':
           if (isPlainObject(payload.value)) {
             const result = this.handleStringLiteral(payload, selector);
-            if (isDefined(result)) results.push(result);
+            if (isDefined(result)) {
+              this.retain();
+              results.push(result);
+            }
           }
           break;
         case 'numericLiteral':
           if (isArray(payload.value)) {
             const result = this.handleNumericLiteral(payload, selector);
-            if (isDefined(result)) results.push(result);
+            if (isDefined(result)) {
+              this.retain();
+              results.push(result);
+            }
           }
           break;
         case 'wildcard':
@@ -604,13 +626,13 @@ export class Handler<T = unknown> {
     let payload: ValuePath | undefined = start;
     while (payload !== undefined) {
       const value = payload.value;
-      this.checkRetained(results.length);
 
       // Match at current level
       switch (treeValue.type) {
         case 'bracketMember': {
           const result = this.handleBracketMemberContent(payload, treeValue.value);
           if (isDefined(result)) {
+            this.retain();
             results.push(result);
           }
           break;
@@ -628,6 +650,7 @@ export class Handler<T = unknown> {
         case 'identifier': {
           const result = this.handleIdentifier(payload, treeValue);
           if (isDefined(result)) {
+            this.retain();
             results.push(result);
           }
           break;
@@ -880,6 +903,7 @@ export class Handler<T = unknown> {
           this.forEachElement(payloadValue, (value, index) => {
             const item = { value, paths: formatNumericLiteralPath(payload.paths, index) };
             if (this.handleFilterExpressionContent(item, tree.value)) {
+              this.retain();
               results.push(item);
             }
           });
@@ -894,6 +918,7 @@ export class Handler<T = unknown> {
             if (!hasOwn(payloadValue, key)) continue;
             const item = { value: payloadValue[key], paths: this.formatStringLiteralPath(payload.paths, key) };
             if (this.handleFilterExpressionContent(item, tree.value)) {
+              this.retain();
               results.push(item);
             }
           }
@@ -981,7 +1006,6 @@ export class Handler<T = unknown> {
         if (!isDefined(result)) continue;
         selected = [result];
       }
-      this.checkRetained(results.length + stack.length + selected.length);
       const next = segment.next;
       if (next === null) {
         appendAll(results, selected);
