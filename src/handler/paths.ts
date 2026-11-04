@@ -4,13 +4,13 @@
  * Returns the normalized paths of matched nodes instead of their values.
  */
 import { parseInternal } from '../parser/parse';
-import { Handler } from './Handler';
+import { Handler, HandlerOptions } from './Handler';
 import { isArray, isUndefined } from './helper';
 
 /**
  * Options for the paths function.
  */
-export type PathsOptions = {
+export type PathsOptions = HandlerOptions & {
   /**
    * If true, returns empty array instead of throwing on invalid paths.
    * @default false
@@ -51,7 +51,7 @@ export type PathsOptions = {
 export const paths = (payload: unknown, path: string, options: PathsOptions = {}): string[] => {
   try {
     const tree = parseInternal(path);
-    const handler = new Handler(payload);
+    const handler = new Handler(payload, options);
     const result = handler.handleRoot(tree);
 
     if (isUndefined(result)) {

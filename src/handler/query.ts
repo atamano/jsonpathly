@@ -4,13 +4,13 @@
  * Main entry point for querying JSON documents using JSONPath expressions.
  */
 import { parseInternal } from '../parser/parse';
-import { Handler } from './Handler';
+import { Handler, HandlerOptions } from './Handler';
 import { isArray, isDefined, isUndefined } from './helper';
 
 /**
  * Options for the query function.
  */
-export type QueryOptions = {
+export type QueryOptions = HandlerOptions & {
   /**
    * If true, returns undefined/empty array instead of throwing on invalid paths.
    * @default false
@@ -29,7 +29,7 @@ export type QueryOptions = {
  */
 const querySingle = (payload: unknown, path: string, options: QueryOptions): unknown => {
   const tree = parseInternal(path);
-  const handler = new Handler(payload);
+  const handler = new Handler(payload, options);
   const result = handler.handleRoot(tree);
 
   if (!result?.isIndefinite && options.returnArray) {

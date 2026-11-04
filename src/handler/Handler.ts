@@ -21,9 +21,12 @@ import {
   Subscript,
   Unions,
 } from '../parser/types';
-import { comparators, isEmpty, matchRegex } from './comparators';
+import { JSONPathLimitError } from '../parser/errors';
+import { Tick } from './budget';
+import { comparators, isEmpty, matchRegex, SetCache } from './comparators';
 import { rfc9535Functions } from './functions';
-import { isArray, isDefined, isNumber, isPlainObject, isUndefined } from './helper';
+import type { Program } from './regex';
+import { hasOwn, isArray, isDefined, isNumber, isCapacityError, isPlainObject, isStackOverflow } from './helper';
 
 // ============================================
 // Path Formatting Utilities
@@ -33,8 +36,8 @@ import { isArray, isDefined, isNumber, isPlainObject, isUndefined } from './help
  * RFC 9535 Normalized Path Format: Use single quotes with proper escaping.
  * Escapes: \' (single quote), \\ (backslash), \b \f \n \r \t (control chars)
  */
-const formatStringLiteralPath = (paths: string | string[], v: string): string | string[] => {
-  const escaped = v
+const escapeName = (v: string): string =>
+  v
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'")
     .replace(/\x08/g, '\\b')
@@ -43,8 +46,6 @@ const formatStringLiteralPath = (paths: string | string[], v: string): string | 
     .replace(/\r/g, '\\r')
     .replace(/\t/g, '\\t')
     .replace(/[\x00-\x07\x0b\x0e-\x1f]/g, (c) => '\\u00' + c.charCodeAt(0).toString(16).padStart(2, '0'));
-  return paths.concat(`['${escaped}']`);
-};
 
 /** Format numeric index for path output */
 const formatNumericLiteralPath = (paths: string | string[], v: number): string | string[] => paths.concat(`[${v}]`);
@@ -79,15 +80,84 @@ type ValuePath<T = unknown> = {
   isIndefinite?: boolean;
 };
 
-/** Append `items` to `target` in place, flattening one level as `concat` does. */
-const appendAll = <T>(target: T[], items: T | T[]): void => {
-  if (isArray(items)) {
-    for (const item of items as T[]) {
-      target.push(item);
-    }
-  } else {
-    target.push(items as T);
+/** Append `items` to `target` in place (no spread: large arrays would overflow push's arguments). */
+const appendAll = <T>(target: T[], items: T[]): void => {
+  for (const item of items) {
+    target.push(item);
   }
+};
+
+// ============================================
+// Evaluation Budget
+// ============================================
+
+/**
+ * Steps a query may always take, whatever the document size. A step is a node
+ * selected or visited, a filter evaluated, or a value compared.
+ */
+export const MIN_STEP_BUDGET = 1_000_000;
+
+/**
+ * Past MIN_STEP_BUDGET, steps allowed per node of the document. Queries whose
+ * cost is linear in the document stay far below it; nested descendant
+ * filters such as `$..[?@..[?@..a]]` grow polynomially and hit it.
+ */
+export const STEPS_PER_DOCUMENT_NODE = 100;
+
+const MAX_COUNTED_HOLES = 1_000_000;
+
+type DocumentWeight = {
+  /** Distinct objects and arrays, scalars, member names and string characters. */
+  weight: number;
+  /** String characters plus one per string: the positions a regex can scan. */
+  stringPositions: number;
+};
+
+/** Size of the document, counted iteratively. */
+const weighDocument = (root: unknown): DocumentWeight => {
+  const seen = new Set<object>();
+  const stack: unknown[] = [root];
+  let count = 0;
+  let stringPositions = 0;
+  // Holes of sparse (non-JSON) arrays weigh nothing. Scanning them stops, for
+  // the whole document, once they outnumber the weight counted by MAX_COUNTED_HOLES.
+  let holes = 0;
+  while (stack.length > 0) {
+    const value = stack.pop();
+    // Strings weigh their length: comparisons and regexes are charged per character.
+    count += typeof value === 'string' ? 1 + value.length : 1;
+    if (typeof value === 'string') stringPositions += 1 + value.length;
+    if (typeof value !== 'object' || value === null || seen.has(value)) continue;
+    seen.add(value);
+    if (isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        if (i in value) stack.push(value[i]);
+        else if (++holes > MAX_COUNTED_HOLES + count) break;
+      }
+    } else if (isPlainObject(value)) {
+      for (const key of Object.keys(value)) {
+        // Names weigh their length too: escaping them in paths is charged per character.
+        count += key.length;
+        stack.push(value[key]);
+      }
+    }
+  }
+  return { weight: count, stringPositions };
+};
+
+/** An AST node (typed, or an array of arguments or selectors) being classified. */
+type AstFrame = { node: object; children: unknown[]; i: number; reads: boolean };
+
+export type HandlerOptions = {
+  /**
+   * Maximum number of evaluation steps before the query is aborted with a
+   * JSONPathLimitError. Defaults to the larger of 1,000,000 and 100 per
+   * document node or string character, plus the work of regexes up to the
+   * largest program size per string character (a linear scan of every
+   * string by it).
+   * Pass Infinity to disable the limit.
+   */
+  maxSteps?: number;
 };
 
 // ============================================
@@ -97,42 +167,191 @@ const appendAll = <T>(target: T[], items: T | T[]): void => {
 export class Handler<T = unknown> {
   rootPayload: ValuePath<T>;
 
-  constructor(rootPayload: T) {
+  private steps = 0;
+  private stepLimit: number;
+  private readonly adaptiveLimit: boolean;
+  private documentWeight: DocumentWeight | undefined;
+  private largestRegexProgram = 0;
+  private regexSteps = 0;
+
+  // Subqueries starting at `$` do not depend on the node being filtered, so
+  // each one is evaluated once per query instead of once per candidate node
+  // (which made `$[?$..x]` quadratic and nested `$` filters exponential).
+  private readonly rootQueryCache = new Map<object, ValuePath | undefined>();
+
+  // Sets built by subsetof/anyof/noneof, per right-hand array, for this query only
+  // (the caller may change the document between queries).
+  private readonly setCache: SetCache = new WeakMap();
+
+  // Escaped member names: a name is escaped once per query and its characters
+  // charged then, instead of rescanning a long name for every path built with it.
+  private readonly escapedNames = new Map<string, string>();
+
+  private formatStringLiteralPath = (paths: string | string[], name: string): string | string[] => {
+    let escaped = this.escapedNames.get(name);
+    if (escaped === undefined) {
+      this.tick(name.length);
+      escaped = escapeName(name);
+      this.escapedNames.set(name, escaped);
+    }
+    return paths.concat(`['${escaped}']`);
+  };
+
+  /**
+   * Calls `fn` for each element of `array`, skipping the holes of sparse arrays
+   * as forEach does, but charging every index first: forEach scans holes
+   * without calling back, so a sparse array of length 2^32 - 1 escaped the budget.
+   */
+  private forEachElement = (array: unknown[], fn: (item: unknown, index: number) => void): void => {
+    for (let i = 0; i < array.length; i++) {
+      this.tick();
+      if (i in array) fn(array[i], i);
+    }
+  };
+
+  constructor(rootPayload: T, options: HandlerOptions = {}) {
     this.rootPayload = { value: rootPayload, paths: '$' };
+    this.adaptiveLimit = options.maxSteps === undefined;
+    this.stepLimit = options.maxSteps ?? MIN_STEP_BUDGET;
   }
+
+  private tick: Tick = Object.assign(
+    (n = 1): void => {
+      this.steps += n;
+      if (this.steps <= this.stepLimit) return;
+      if (this.adaptiveLimit) {
+        // The document is weighed only once a query turns out to be expensive,
+        // so cheap queries on large documents never pay for it.
+        this.documentWeight ??= weighDocument(this.rootPayload.value);
+        const { weight, stringPositions } = this.documentWeight;
+        // Regexes get a linear scan of the strings by the largest program on
+        // top, but only for the regex work done: unused allowance would let
+        // one cheap regex pay for unrelated polynomial work.
+        const regexAllowance = Math.min(this.regexSteps, this.largestRegexProgram * stringPositions);
+        this.stepLimit = Math.max(MIN_STEP_BUDGET, STEPS_PER_DOCUMENT_NODE * weight) + regexAllowance;
+        if (this.steps <= this.stepLimit) return;
+      }
+      throw new JSONPathLimitError(`Query exceeded ${this.stepLimit} evaluation steps`);
+    },
+    {
+      regexProgram: (size: number): void => {
+        this.largestRegexProgram = Math.max(this.largestRegexProgram, size);
+      },
+      regexWork: (n: number): void => {
+        this.regexSteps += n;
+        this.tick(n);
+      },
+      regexSites: new Map<object, Program | null>(),
+    },
+  );
+
+  // Filter subexpressions that do not read `@` (`$.s != $.t`, `length($) > 0`)
+  // have the same value for every candidate: evaluated once per query.
+  private readonly readsCurrent = new WeakMap<object, boolean>();
+  private readonly invariantResults = new Map<object, unknown>();
+
+  private isInvariant = (node: object): boolean => {
+    if (!this.readsCurrent.has(node)) this.classify(node);
+    return !this.readsCurrent.get(node);
+  };
+
+  /**
+   * Records, for `root` and every node below it, whether it reads the current
+   * node `@` of the filter it belongs to. `@` inside a nested filter refers to
+   * that filter's own candidates, and literal values hold data, not AST nodes:
+   * neither is searched. One post-order pass with an explicit stack; every
+   * node classified on the way is cached, so nested function calls are not
+   * rescanned once per level.
+   */
+  private classify = (root: object): void => {
+    const known = this.readsCurrent;
+    const frames: AstFrame[] = [];
+
+    // Returns the answer for a node already known or decided at once, or
+    // undefined after pushing a frame for it.
+    const enter = (value: unknown): boolean | undefined => {
+      if (typeof value !== 'object' || value === null) return false;
+      const cached = known.get(value);
+      if (cached !== undefined) return cached;
+      const type = (value as { type?: unknown }).type;
+      if (type === 'current') {
+        known.set(value, true);
+        return true;
+      }
+      if (type === 'filterExpression' || type === 'value') {
+        known.set(value, false);
+        return false;
+      }
+      // Not charged: every node is classified once per query, so this pass is
+      // linear in the parsed query, like parsing itself. Charging it made the
+      // default budget scale with the query, and padding bought evaluation.
+      const children = Object.values(value);
+      frames.push({ node: value, children, i: 0, reads: false });
+      return undefined;
+    };
+
+    enter(root);
+    while (frames.length > 0) {
+      const frame = frames[frames.length - 1];
+      if (frame.i < frame.children.length) {
+        if (enter(frame.children[frame.i++]) === true) frame.reads = true;
+        continue;
+      }
+      known.set(frame.node, frame.reads);
+      frames.pop();
+      if (frame.reads && frames.length > 0) frames[frames.length - 1].reads = true;
+    }
+  };
+
+  private memoInvariant = <R>(node: object, compute: () => R): R => {
+    if (!this.isInvariant(node)) return compute();
+    if (this.invariantResults.has(node)) return this.invariantResults.get(node) as R;
+    const result = compute();
+    this.invariantResults.set(node, result);
+    return result;
+  };
+
+  private handleRootQuery = (key: object, next: Subscript | null): ValuePath | undefined => {
+    if (this.rootQueryCache.has(key)) return this.rootQueryCache.get(key);
+    const result = this.handleSubscript(this.rootPayload, next);
+    this.rootQueryCache.set(key, result);
+    return result;
+  };
 
   // ============================================
   // Property Access Handlers
   // ============================================
 
   private handleIdentifier = (payload: ValuePath, tree: Identifier): ValuePath | undefined => {
-    if (!isPlainObject(payload.value) || !(tree.value in payload.value)) {
+    if (!isPlainObject(payload.value) || !hasOwn(payload.value, tree.value)) {
       return;
     }
-    return { value: payload.value[tree.value], paths: formatStringLiteralPath(payload.paths, tree.value) };
+    return { value: payload.value[tree.value], paths: this.formatStringLiteralPath(payload.paths, tree.value) };
   };
 
   private handleStringLiteral = ({ value, paths }: ValuePath, tree: StringLiteral): ValuePath | undefined => {
-    if (!isPlainObject(value) || !(tree.value in value)) {
+    if (!isPlainObject(value) || !hasOwn(value, tree.value)) {
       return;
     }
-    return { value: value[tree.value], paths: formatStringLiteralPath(paths, tree.value) };
+    return { value: value[tree.value], paths: this.formatStringLiteralPath(paths, tree.value) };
   };
 
   private handleWildcard = ({ value, paths }: ValuePath): ValuePath[] => {
     if (isArray(value)) {
-      // forEach skips holes of sparse arrays, whereas map keeps them and would
-      // hand undefined entries to the result accumulators.
+      // Holes of sparse arrays are skipped: map would keep them and hand
+      // undefined entries to the result accumulators.
       const results: ValuePath[] = [];
-      value.forEach((item, index) => {
+      this.forEachElement(value, (item, index) => {
         results.push({ value: item, paths: formatNumericLiteralPath(paths, index) });
       });
       return results;
     }
     if (isPlainObject(value)) {
-      return Object.keys(value).map((key) => ({
+      const keys = Object.keys(value);
+      this.tick(keys.length);
+      return keys.map((key) => ({
         value: value[key],
-        paths: formatStringLiteralPath(paths, key),
+        paths: this.formatStringLiteralPath(paths, key),
       }));
     }
     return [];
@@ -165,8 +384,8 @@ export class Handler<T = unknown> {
     }
     if (isPlainObject(value)) {
       const key = String(tree.value);
-      if (key in value) {
-        return { value: value[key], paths: formatStringLiteralPath(paths, key) };
+      if (hasOwn(value, key)) {
+        return { value: value[key], paths: this.formatStringLiteralPath(paths, key) };
       }
       return;
     }
@@ -221,6 +440,7 @@ export class Handler<T = unknown> {
     let i = step > 0 ? lower : upper;
 
     while ((step > 0 && i < upper) || (step < 0 && i > lower)) {
+      this.tick();
       results.push({ value: value[i], paths: formatNumericLiteralPath(paths, i) });
       i += step;
     }
@@ -237,6 +457,9 @@ export class Handler<T = unknown> {
     const results: ValuePath[] = [];
 
     for (const selector of tree.values) {
+      // Charged even when the selector selects nothing: a long list of
+      // missing names applied to many nodes is work too.
+      this.tick();
       switch (selector.type) {
         case 'identifier':
           if (isPlainObject(payload.value)) {
@@ -275,52 +498,66 @@ export class Handler<T = unknown> {
     return results;
   };
 
-  // One accumulator for the whole descent. Returning a fresh array per level
-  // and concatenating it into the parent's copied every result once per
-  // ancestor, which made wide documents quadratic.
-  private collectDotdot = (payload: ValuePath, tree: DotDot, results: ValuePath[]): void => {
+  // One accumulator for the whole descent, and an explicit stack rather than
+  // recursion: returning a fresh array per level copied every result once per
+  // ancestor (quadratic), and recursing overflowed the call stack on deeply
+  // nested documents. Pre-order with children pushed in reverse keeps the
+  // document order of the recursive version.
+  private collectDotdot = (start: ValuePath, tree: DotDot, results: ValuePath[]): void => {
     const treeValue = tree.value;
-    const value = payload.value;
+    const stack: ValuePath[] = [start];
+    // Each node is charged when queued, before its payload and path are built.
+    this.tick();
 
-    // Match at current level
-    switch (treeValue.type) {
-      case 'bracketMember': {
-        const result = this.handleBracketMemberContent(payload, treeValue.value);
-        if (isDefined(result)) {
-          appendAll(results, result);
-        }
-        break;
-      }
-      case 'bracketExpression': {
-        if (isPlainObject(value) || (isArray(value) && treeValue.value.type === 'wildcard')) {
-          appendAll(results, this.handleBracketExpressionContent(payload, treeValue.value));
-        }
-        break;
-      }
-      case 'wildcard': {
-        appendAll(results, this.handleWildcard(payload));
-        break;
-      }
-      case 'identifier': {
-        const result = this.handleIdentifier(payload, treeValue);
-        if (isDefined(result)) {
-          appendAll(results, result);
-        }
-        break;
-      }
-    }
+    while (stack.length > 0) {
+      const payload = stack.pop() as ValuePath;
+      const value = payload.value;
 
-    // Recurse into children
-    if (isPlainObject(value)) {
-      for (const key of Object.keys(value)) {
-        const childPayload = { value: value[key], paths: formatStringLiteralPath(payload.paths, key) };
-        this.collectDotdot(childPayload, tree, results);
+      // Match at current level
+      switch (treeValue.type) {
+        case 'bracketMember': {
+          const result = this.handleBracketMemberContent(payload, treeValue.value);
+          if (isDefined(result)) {
+            results.push(result);
+          }
+          break;
+        }
+        case 'bracketExpression': {
+          if (isPlainObject(value) || (isArray(value) && treeValue.value.type === 'wildcard')) {
+            appendAll(results, this.handleBracketExpressionContent(payload, treeValue.value));
+          }
+          break;
+        }
+        case 'wildcard': {
+          appendAll(results, this.handleWildcard(payload));
+          break;
+        }
+        case 'identifier': {
+          const result = this.handleIdentifier(payload, treeValue);
+          if (isDefined(result)) {
+            results.push(result);
+          }
+          break;
+        }
       }
-    } else if (isArray(value)) {
-      value.forEach((item, index) => {
-        const childPayload = { value: item, paths: formatNumericLiteralPath(payload.paths, index) };
-        this.collectDotdot(childPayload, tree, results);
-      });
+
+      // Queue children, last first
+      if (isPlainObject(value)) {
+        const keys = Object.keys(value);
+        for (let i = keys.length - 1; i >= 0; i--) {
+          this.tick();
+          stack.push({ value: value[keys[i]], paths: this.formatStringLiteralPath(payload.paths, keys[i]) });
+        }
+      } else if (isArray(value)) {
+        const children: ValuePath[] = [];
+        // Holes of sparse arrays are skipped, like the wildcard does.
+        this.forEachElement(value, (item, index) => {
+          children.push({ value: item, paths: formatNumericLiteralPath(payload.paths, index) });
+        });
+        for (let i = children.length - 1; i >= 0; i--) {
+          stack.push(children[i]);
+        }
+      }
     }
   };
 
@@ -329,9 +566,10 @@ export class Handler<T = unknown> {
   // ============================================
 
   private handleOperationContent = (payload: ValuePath, tree: OperationContent): ValuePath | undefined => {
+    this.tick();
     switch (tree.type) {
       case 'root':
-        return this.handleSubscript(this.rootPayload, tree.next);
+        return this.handleRootQuery(tree, tree.next);
       case 'current':
         return this.handleSubscript(payload, tree.next);
       case 'value':
@@ -343,23 +581,38 @@ export class Handler<T = unknown> {
         return { value: result, paths: payload.paths };
       }
       case 'operation': {
-        const left = this.handleOperationContent(payload, tree.left)?.value;
-        const right = this.handleOperationContent(payload, tree.right)?.value;
-
-        if (!isNumber(left) || !isNumber(right)) {
-          return;
+        // Arithmetic chains are left-deep (((a + b) - c) * ...): walk the left
+        // spine in a loop rather than recursing once per operator.
+        const steps: { operator: typeof tree.operator; right: OperationContent }[] = [];
+        let node: OperationContent = tree;
+        while (node.type === 'operation') {
+          steps.push({ operator: node.operator, right: node.right });
+          node = node.left;
         }
-
-        switch (tree.operator) {
-          case 'plus':
-            return { value: left + right, paths: payload.paths };
-          case 'minus':
-            return { value: left - right, paths: payload.paths };
-          case 'div':
-            return right === 0 ? undefined : { value: left / right, paths: payload.paths };
-          case 'multi':
-            return { value: left * right, paths: payload.paths };
+        let acc = this.handleOperationContent(payload, node)?.value;
+        this.tick(steps.length);
+        for (let i = steps.length - 1; i >= 0; i--) {
+          const right = this.handleOperationContent(payload, steps[i].right)?.value;
+          if (!isNumber(acc) || !isNumber(right)) {
+            return;
+          }
+          switch (steps[i].operator) {
+            case 'plus':
+              acc = acc + right;
+              break;
+            case 'minus':
+              acc = acc - right;
+              break;
+            case 'div':
+              if (right === 0) return;
+              acc = acc / right;
+              break;
+            case 'multi':
+              acc = acc * right;
+              break;
+          }
         }
+        return { value: acc, paths: payload.paths };
       }
     }
   };
@@ -368,7 +621,10 @@ export class Handler<T = unknown> {
   // Comparator Handler
   // ============================================
 
-  private handleComparator = (payload: ValuePath, tree: Comparator): boolean => {
+  private handleComparator = (payload: ValuePath, tree: Comparator): boolean =>
+    this.memoInvariant(tree, () => this.evaluateComparator(payload, tree));
+
+  private evaluateComparator = (payload: ValuePath, tree: Comparator): boolean => {
     const leftValue = this.handleOperationContent(payload, tree.left)?.value;
 
     // Handle unary 'empty' operator
@@ -378,7 +634,7 @@ export class Handler<T = unknown> {
 
     // Handle regex operator (different signature)
     if (tree.operator === 'reg') {
-      return matchRegex(leftValue, tree.right.value, tree.right.opts);
+      return matchRegex(leftValue, tree.right.value, tree.right.opts, this.tick, tree);
     }
 
     // Handle standard binary comparators
@@ -386,7 +642,7 @@ export class Handler<T = unknown> {
     const comparatorFn = comparators[tree.operator];
 
     if (comparatorFn) {
-      return comparatorFn(leftValue, rightValue);
+      return comparatorFn(leftValue, rightValue, this.tick, this.setCache);
     }
     /* c8 ignore next */
     return false;
@@ -396,26 +652,47 @@ export class Handler<T = unknown> {
   // Logical Expression Handler
   // ============================================
 
-  private handleLogicalExpression = (payload: ValuePath, tree: LogicalExpression): boolean => {
-    const leftValue = this.handleFilterExpressionContent(payload, tree.left);
-    const rightValue = this.handleFilterExpressionContent(payload, tree.right);
+  // Chains such as @.a && @.b || ... are left-deep: walk the left spine in a
+  // loop rather than recursing once per operator, and short-circuit.
+  private handleLogicalExpression = (payload: ValuePath, tree: LogicalExpression): boolean =>
+    this.memoInvariant(tree, () => this.evaluateLogicalExpression(payload, tree));
 
-    switch (tree.operator) {
-      case 'and':
-        return leftValue && rightValue;
-      case 'or':
-        return leftValue || rightValue;
+  private evaluateLogicalExpression = (payload: ValuePath, tree: LogicalExpression): boolean => {
+    const steps: { operator: LogicalExpression['operator']; right: FilterExpressionContent }[] = [];
+    // A chain reading @ may start with a prefix that does not (`true && ... && @`):
+    // stop there, so the prefix goes through the memoized handler instead of
+    // being redone per candidate. A chain not reading @ at all is flattened
+    // whole: it is memoized as a unit, and recursing into it per level could
+    // overflow the stack.
+    const stopAtInvariant = !this.isInvariant(tree);
+    let node: FilterExpressionContent = tree;
+    while (node.type === 'logicalExpression' && (node === tree || !stopAtInvariant || !this.isInvariant(node))) {
+      steps.push({ operator: node.operator, right: node.right });
+      node = node.left;
     }
+    this.tick(steps.length);
+    let result = this.handleFilterExpressionContent(payload, node);
+    for (let i = steps.length - 1; i >= 0; i--) {
+      if (steps[i].operator === 'and' ? result : !result) {
+        result = this.handleFilterExpressionContent(payload, steps[i].right);
+      }
+    }
+    return result;
   };
 
   // ============================================
   // Function Call Handler
   // ============================================
 
-  private handleFunctionCall = (payload: ValuePath, tree: FunctionCall): unknown => {
+  private handleFunctionCall = (payload: ValuePath, tree: FunctionCall): unknown =>
+    this.memoInvariant(tree, () => this.evaluateFunctionCall(payload, tree));
+
+  private evaluateFunctionCall = (payload: ValuePath, tree: FunctionCall): unknown => {
     const args = tree.args.map((arg) => this.handleOperationContent(payload, arg)?.value);
     const fn = rfc9535Functions[tree.name];
-    return fn ? fn(args) : undefined;
+    const pattern = tree.args[1] as { type?: string; subtype?: string } | undefined;
+    const literal = pattern?.type === 'stringLiteral' || pattern?.subtype === 'string';
+    return fn ? fn(args, this.tick, literal ? tree : undefined) : undefined;
   };
 
   // ============================================
@@ -423,6 +700,7 @@ export class Handler<T = unknown> {
   // ============================================
 
   private handleFilterExpressionContent = (payload: ValuePath, tree: FilterExpressionContent): boolean => {
+    this.tick();
     switch (tree.type) {
       case 'logicalExpression':
         return this.handleLogicalExpression(payload, tree);
@@ -435,7 +713,7 @@ export class Handler<T = unknown> {
       case 'functionCall':
         return !!this.handleFunctionCall(payload, tree);
       case 'root': {
-        const result = this.handleSubscript(this.rootPayload, tree.next);
+        const result = this.handleRootQuery(tree, tree.next);
         // For indefinite results (filters, wildcards), check if non-empty
         if (result?.isIndefinite) {
           return Array.isArray(result.value) && result.value.length > 0;
@@ -479,7 +757,7 @@ export class Handler<T = unknown> {
 
         // RFC 9535 Section 2.3.5.1: Filter selects children for which expression is TRUE
         if (isArray(payloadValue)) {
-          payloadValue.forEach((value, index) => {
+          this.forEachElement(payloadValue, (value, index) => {
             const item = { value, paths: formatNumericLiteralPath(payload.paths, index) };
             if (this.handleFilterExpressionContent(item, tree.value)) {
               results.push(item);
@@ -488,7 +766,8 @@ export class Handler<T = unknown> {
         } else if (isPlainObject(payloadValue)) {
           // For objects, iterate over values (children), not the root object
           for (const key of Object.keys(payloadValue)) {
-            const item = { value: payloadValue[key], paths: formatStringLiteralPath(payload.paths, key) };
+            const item = { value: payloadValue[key], paths: this.formatStringLiteralPath(payload.paths, key) };
+            this.tick();
             if (this.handleFilterExpressionContent(item, tree.value)) {
               results.push(item);
             }
@@ -507,93 +786,93 @@ export class Handler<T = unknown> {
   };
 
   // ============================================
-  // Result Aggregation
+  // Segment Evaluation
   // ============================================
 
-  private concatIndefiniteValuePaths = (payload: ValuePath[], tree: Subscript | null): ValuePath => {
-    // Results are appended in place. Rebuilding the accumulator for every item
-    // (spread or concat) copies everything gathered so far, which made large
-    // result sets quadratic.
-    const values: unknown[] = [];
-    const paths: string[] = [];
+  /** Segments that can select any number of nodes. */
+  private isIndefiniteSegment = (tree: Subscript): boolean => {
+    const value = tree.value;
+    return (
+      value.type === 'bracketExpression' ||
+      value.type === 'dotdot' ||
+      (value.type === 'dot' && value.value.type === 'wildcard')
+    );
+  };
 
-    if (!tree) {
-      for (const current of payload) {
-        values.push(current.value);
-        paths.push(current.paths as string);
-      }
-      return { value: values, paths, isIndefinite: true };
+  private selectMany = (payload: ValuePath, tree: Subscript): ValuePath[] => {
+    const value = tree.value;
+    switch (value.type) {
+      case 'bracketExpression':
+        return this.handleBracketExpressionContent(payload, value.value);
+      case 'dotdot':
+        return this.handleDotdot(payload, value);
+      default:
+        return this.handleWildcard(payload);
     }
+  };
 
-    for (const item of payload) {
-      const result = this.handleSubscript(item, tree);
-      if (isUndefined(result)) {
-        continue;
-      }
-      if (result.isIndefinite) {
-        appendAll(values, result.value);
-      } else {
-        values.push(result.value);
-      }
-      appendAll(paths, result.paths);
+  private selectOne = (payload: ValuePath, tree: Subscript): ValuePath | undefined => {
+    const value = tree.value;
+    switch (value.type) {
+      case 'bracketMember':
+        return this.handleBracketMemberContent(payload, value.value);
+      case 'dot':
+        if (value.value.type === 'identifier') return this.handleIdentifier(payload, value.value);
+        if (value.value.type === 'numericLiteral') return this.handleDotNumericLiteral(payload, value.value);
     }
-
-    return { value: values, paths, isIndefinite: true };
+    /* c8 ignore next */
+    return;
   };
 
   // ============================================
   // Main Subscript Handler
   // ============================================
 
+  // Applies the segments one after the other to the whole nodelist (RFC 9535
+  // section 2.1.2). A loop rather than one recursive call per segment, so long
+  // queries on deep documents cannot overflow the call stack. Results are
+  // appended in place: rebuilding the accumulator per item made large result
+  // sets quadratic.
   private handleSubscript = (payload: ValuePath, tree: Subscript | null): ValuePath | undefined => {
     if (tree === null) {
       return payload;
     }
 
-    const treeValue = tree.value;
+    let nodes: ValuePath[] = [payload];
+    let indefinite = false;
 
-    switch (treeValue.type) {
-      case 'bracketExpression': {
-        const result = this.handleBracketExpressionContent(payload, treeValue.value);
-        return this.concatIndefiniteValuePaths(result, tree.next);
-      }
-      case 'bracketMember': {
-        const result = this.handleBracketMemberContent(payload, treeValue.value);
-        if (isUndefined(result)) {
-          return;
+    for (let segment: Subscript | null = tree; segment !== null; segment = segment.next) {
+      const selected: ValuePath[] = [];
+      if (this.isIndefiniteSegment(segment)) {
+        indefinite = true;
+        for (const node of nodes) {
+          appendAll(selected, this.selectMany(node, segment));
         }
-        return this.handleSubscript(result, tree.next);
-      }
-      case 'dot': {
-        switch (treeValue.value.type) {
-          case 'identifier': {
-            const result = this.handleIdentifier(payload, treeValue.value);
-            if (isUndefined(result)) {
-              return;
-            }
-            return this.handleSubscript(result, tree.next);
-          }
-          case 'numericLiteral': {
-            const result = this.handleDotNumericLiteral(payload, treeValue.value);
-            if (isUndefined(result)) {
-              return;
-            }
-            return this.handleSubscript(result, tree.next);
-          }
-          case 'wildcard': {
-            const result = this.handleWildcard(payload);
-            return this.concatIndefiniteValuePaths(result, tree.next);
-          }
+      } else {
+        this.tick(nodes.length);
+        for (const node of nodes) {
+          const result = this.selectOne(node, segment);
+          if (isDefined(result)) selected.push(result);
         }
-        /* c8 ignore start */
-        return;
       }
-      /* c8 ignore stop */
-      case 'dotdot': {
-        const result = this.handleDotdot(payload, treeValue);
-        return this.concatIndefiniteValuePaths(result, tree.next);
+      nodes = selected;
+      if (nodes.length === 0) {
+        if (!indefinite) return;
+        break;
       }
     }
+
+    if (!indefinite) {
+      return nodes[0];
+    }
+
+    const values: unknown[] = [];
+    const paths: string[] = [];
+    for (const node of nodes) {
+      values.push(node.value);
+      paths.push(node.paths as string);
+    }
+    return { value: values, paths, isIndefinite: true };
   };
 
   // ============================================
@@ -601,6 +880,22 @@ export class Handler<T = unknown> {
   // ============================================
 
   public handleRoot = (tree: Root): ValuePath | undefined => {
-    return this.handleSubscript(this.rootPayload, tree.next);
+    try {
+      return this.handleSubscript(this.rootPayload, tree.next);
+    } catch (e) {
+      // Safety net: evaluation recurses only along filter nesting, which the
+      // parser bounds, but a RangeError must never escape as a crash.
+      /* c8 ignore next 3 */
+      if (isStackOverflow(e)) {
+        throw new JSONPathLimitError('Query is nested too deeply');
+      }
+      // Normalized paths grow with the depth; on a cyclic JavaScript object a
+      // path can outgrow V8's maximum string length before the budget runs out.
+      // A Set built for subsetof & co. can likewise outgrow V8's 2^24 entries.
+      if (isCapacityError(e)) {
+        throw new JSONPathLimitError('Query result is too large');
+      }
+      throw e;
+    }
   };
 }

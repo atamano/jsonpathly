@@ -17,6 +17,14 @@
     return result;
   }
 
+  // Operands that primaryExpression accepts on their own as a test expression
+  // (a parenthesized group is left to primaryExpression, which builds a
+  // groupExpression rather than a groupOperation).
+  function isTestExpression(node) {
+    if (node.type === 'root' || node.type === 'current' || node.type === 'functionCall') return true;
+    return node.type === 'value' && (node.subtype === 'boolean' || node.subtype === 'null');
+  }
+
   // Helper to build left-associative binary expressions
   function buildBinaryExpr(head, tail, makeNode) {
     return tail.reduce((left, item) => makeNode(left, item), head);
@@ -56,7 +64,7 @@ descendantSegment
 
 dotContent
   = STAR { return { type: 'wildcard' }; }
-  / n:NUMBER { return { type: 'numericLiteral', value: n }; }
+  / n:INTEGER { return { type: 'numericLiteral', value: n }; }
   / id:identifier { return { type: 'identifier', value: id }; }
 
 dotdotContent
@@ -76,7 +84,7 @@ bracketContent
   / slices
   / selectorList
   / STAR { return { type: 'bracketExpression', value: { type: 'wildcard' } }; }
-  / n:NUMBER { return { type: 'bracketMember', value: { type: 'numericLiteral', value: n } }; }
+  / n:INTEGER { return { type: 'bracketMember', value: { type: 'numericLiteral', value: n } }; }
   / s:STRING { return { type: 'bracketMember', value: { type: 'stringLiteral', value: s } }; }
   / id:identifier { return { type: 'bracketMember', value: { type: 'identifier', value: id } }; }
 
@@ -132,17 +140,27 @@ notExpression
     }
   / comparisonExpression
 
+// The left operand is parsed once. Trying it in one alternative per operator
+// and again through primaryExpression reparsed nested filters such as
+// $[?$[?$[?@]]] four times per level (4^k parse time for k levels).
 comparisonExpression
-  = left:filterarg _ op:comparisonOperator _ right:filterarg {
-      return { type: 'comparator', operator: op, left: left, right: right };
-    }
-  / left:filterarg _ REG _ regex:regex {
-      return { type: 'comparator', operator: 'reg', left: left, right: regex };
-    }
-  / left:filterarg _ EMPT {
-      return { type: 'comparator', operator: 'empty', left: left, right: null };
+  = left:filterarg rest:(_ comparisonTail)? &{ return rest !== null || isTestExpression(left); } {
+      if (rest === null) return left;
+      const tail = rest[1];
+      if (tail.operator === 'reg') {
+        return { type: 'comparator', operator: 'reg', left: left, right: tail.right };
+      }
+      if (tail.operator === 'empty') {
+        return { type: 'comparator', operator: 'empty', left: left, right: null };
+      }
+      return { type: 'comparator', operator: tail.operator, left: left, right: tail.right };
     }
   / primaryExpression
+
+comparisonTail
+  = op:comparisonOperator _ right:filterarg { return { operator: op, right: right }; }
+  / REG _ regex:regex { return { operator: 'reg', right: regex }; }
+  / EMPT { return { operator: 'empty' }; }
 
 comparisonOperator
   = EQ { return 'eq'; }
@@ -251,7 +269,7 @@ filterpath
 // ===================
 
 slices
-  = start:NUMBER? COLON end:NUMBER? step:(COLON NUMBER?)? {
+  = start:INTEGER? COLON end:INTEGER? step:(COLON INTEGER?)? {
       return {
         type: 'bracketExpression',
         value: {
@@ -272,7 +290,7 @@ selectorList
 
 selector
   = STAR { return { type: 'wildcard' }; }
-  / n:NUMBER { return { type: 'numericLiteral', value: n }; }
+  / n:INTEGER { return { type: 'numericLiteral', value: n }; }
   / s:STRING { return { type: 'stringLiteral', value: s }; }
   / id:identifier { return { type: 'identifier', value: id }; }
 
@@ -303,13 +321,9 @@ stringLiteral "string"
 
 obj
   = BRACE_LEFT _ pairs:pairList? _ BRACE_RIGHT {
-      const obj = {};
-      if (pairs) {
-        for (const [key, val] of pairs) {
-          obj[key] = val;
-        }
-      }
-      return { type: 'value', subtype: 'object', value: obj };
+      // fromEntries defines own properties: assigning obj[key] would treat a
+      // "__proto__" key as the prototype setter instead of a member.
+      return { type: 'value', subtype: 'object', value: Object.fromEntries(pairs || []) };
     }
 
 pairList
@@ -421,6 +435,18 @@ NUMBER "number"
 
 INT
   = [0-9]+
+
+// RFC 9535 section 2.3.3.1 / 2.3.4.1: indices and slice parameters are
+// integers. A fractional slice step such as 1e-100 never advanced the index
+// (1 + 1e-100 === 1) and looped forever.
+INTEGER "integer"
+  = "-"? INT {
+      const num = parseInt(text(), 10);
+      if (num < -9007199254740991 || num > 9007199254740991) {
+        error('Integer out of I-JSON range [-(2^53)+1, (2^53)-1]');
+      }
+      return num;
+    }
 
 EXP
   = [eE] [+-]? [0-9]+

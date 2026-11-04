@@ -141,6 +141,7 @@ query(legends, "$.champions[0].era");
 | :--------------- | :-------- | :--------------------------------------------------------------- |
 | `hideExceptions` | `boolean` | Return `undefined` instead of throwing (or `[]` if `returnArray` is true) |
 | `returnArray`    | `boolean` | Always return results as an array                                |
+| `maxSteps`       | `number`  | Evaluation steps allowed before throwing `JSONPathLimitError` (default: the larger of 1,000,000 and 100 per document node or string character, plus a linear regex scan of the document's strings; `Infinity` disables it) |
 
 ### paths(data, path, options?)
 
@@ -165,6 +166,7 @@ paths(tournament, "$..player");
 | Option           | Type      | Description                              |
 | :--------------- | :-------- | :--------------------------------------- |
 | `hideExceptions` | `boolean` | Return empty array instead of throwing   |
+| `maxSteps`       | `number`  | Same as for `query()`                    |
 
 ### parse(path)
 
@@ -204,6 +206,22 @@ try {
 }
 ```
 
+### JSONPathLimitError
+
+Thrown when a query needs more evaluation steps than `maxSteps` allows (a step is a node selected or visited, a selector tried, an expression evaluated, a value compared, or a string character compared or scanned by a regex). Typical queries, linear in the document, stay below the default; nested descendant filters such as `$..[?@..[?@..a]]` grow polynomially and hit it. A heavy but legitimate query (dozens of conditions per element on a large document) may need a higher `maxSteps`.
+
+```typescript
+import { query, JSONPathLimitError } from "jsonpathly";
+
+try {
+  query(doc, untrustedPath, { maxSteps: 100_000 });
+} catch (e) {
+  if (e instanceof JSONPathLimitError) {
+    console.log("Query too expensive");
+  }
+}
+```
+
 ## Security
 
 jsonpathly is designed with security in mind:
@@ -212,6 +230,9 @@ jsonpathly is designed with security in mind:
 - **No code injection** - Script expressions `$(...)` are not supported
 - **I-Regexp compliance** - Regex patterns in `match()` and `search()` are validated against RFC 9485
 - **No ReDoS** - Regex filters (`=~`, `match()`, `search()`) run on a linear-time matcher, never on the backtracking engine, so a pattern like `(a+)+$` cannot hang the event loop. Patterns are limited to 1000 characters, 16 `\p{...}` escapes and 1000 compiled instructions; a larger pattern matches nothing, like an invalid one
+- **Bounded evaluation** - Parsing is linear in the query length (filter expressions are memoized, so nesting never makes the parser backtrack exponentially), subqueries on `$` and tests that do not read `@` are evaluated once per query, and evaluation stops with `JSONPathLimitError` past `maxSteps`
+- **No stack overflow** - Deeply nested documents and long queries are processed iteratively; an expression nested too deeply to parse is a `JSONPathSyntaxError`
+- **Own members only** - Name selectors only see the document's own members: `$.constructor` or `$['__proto__']` never return `Object` or `Object.prototype`
 
 ## Comparison with Other Libraries
 

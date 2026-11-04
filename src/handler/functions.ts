@@ -8,10 +8,12 @@
  * - search(string, pattern) - substring match against I-Regexp
  * - value(nodelist) - extracts single value from nodelist
  */
+import { Tick } from './budget';
 import { isArray, isDefined, isPlainObject, isString } from './helper';
-import { MAX_REGEX_PATTERN_LENGTH, safeRegexTest } from './regex';
+import { MAX_REGEX_PATTERN_LENGTH, regexProgram, runProgram } from './regex';
 
-type FunctionImpl = (args: unknown[]) => unknown;
+/** `site`: the call's AST node, when its pattern argument is a literal. */
+type FunctionImpl = (args: unknown[], tick: Tick, site?: object) => unknown;
 
 /**
  * Check if \b or \B (word boundary) appears outside character classes.
@@ -71,15 +73,74 @@ export const isValidIRegexp = (pattern: string): boolean => {
   return true;
 };
 
+const MAX_VALIDATION_CACHE_SIZE = 256;
+const validationCache = new Map<string, boolean>();
+
+/**
+ * isValidIRegexp with a small cache: a filter such as search(@, "...") checks
+ * the same pattern for every candidate. The scan is charged on a cache miss
+ * only, after the result is cached, so a query stopped there does not leave
+ * the next one to scan it again.
+ */
+export const checkIRegexp = (pattern: string, tick: Tick): boolean => {
+  let valid = validationCache.get(pattern);
+  if (valid === undefined) {
+    valid = isValidIRegexp(pattern);
+    if (validationCache.size >= MAX_VALIDATION_CACHE_SIZE) validationCache.clear();
+    // A sliced pattern would keep its parent string alive as a key: cache a flat copy.
+    validationCache.set(Array.from(pattern).join(''), valid);
+  }
+  // Validating, or finding the pattern among the flat copies, reads it whole.
+  tick(pattern.length);
+  return valid;
+};
+
+const MAX_REGEX_SITES = 256;
+
+/**
+ * Tests `input` against an I-Regexp pattern.
+ *
+ * A pattern from the document can differ from one candidate to the next, or be
+ * an equal string in another object, so each call charges reading it. A
+ * literal is the same for every candidate: `site`, its AST node, then finds
+ * the compiled program without reading the pattern at all. Bounded, because
+ * these entries keep programs alive past their eviction from the regex cache.
+ */
+export const testRegex = (
+  pattern: string,
+  flags: string,
+  input: string,
+  anchored: boolean,
+  tick: Tick,
+  site?: object,
+): boolean => {
+  const sites = site === undefined ? undefined : tick.regexSites;
+  let prog = sites?.get(site as object);
+  if (prog === undefined) {
+    // Length first: validation scans the whole pattern.
+    const usable = pattern.length <= MAX_REGEX_PATTERN_LENGTH && checkIRegexp(pattern, tick);
+    prog = usable ? regexProgram(pattern, flags, anchored, tick) : null;
+    if (sites !== undefined) {
+      if (sites.size >= MAX_REGEX_SITES) sites.clear();
+      sites.set(site as object, prog);
+    }
+  }
+  return prog !== null && runProgram(prog, input, tick);
+};
+
 /**
  * RFC 9535 length() function.
  * Returns length of string, array, or number of keys in object.
  */
-const length: FunctionImpl = (args) => {
+const length: FunctionImpl = (args, tick) => {
   const val = args[0];
   if (isString(val)) return val.length;
   if (isArray(val)) return val.length;
-  if (isPlainObject(val)) return Object.keys(val).length;
+  if (isPlainObject(val)) {
+    const keys = Object.keys(val);
+    tick(keys.length);
+    return keys.length;
+  }
   return undefined;
 };
 
@@ -98,26 +159,22 @@ const count: FunctionImpl = (args) => {
  * Full string match against I-Regexp pattern.
  * Pattern is implicitly anchored: ^(?:pattern)$
  */
-const match: FunctionImpl = (args) => {
+const match: FunctionImpl = (args, tick, site) => {
   const val = args[0];
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
-  // Length first: validation scans the whole pattern, once per candidate node.
-  if (pattern.length > MAX_REGEX_PATTERN_LENGTH || !isValidIRegexp(pattern)) return false;
-  return safeRegexTest(pattern, 'u', val, true);
+  return testRegex(pattern, 'u', val, true, tick, site);
 };
 
 /**
  * RFC 9535 search() function.
  * Substring match against I-Regexp pattern.
  */
-const search: FunctionImpl = (args) => {
+const search: FunctionImpl = (args, tick, site) => {
   const val = args[0];
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
-  // Length first: validation scans the whole pattern, once per candidate node.
-  if (pattern.length > MAX_REGEX_PATTERN_LENGTH || !isValidIRegexp(pattern)) return false;
-  return safeRegexTest(pattern, 'u', val);
+  return testRegex(pattern, 'u', val, false, tick, site);
 };
 
 /**

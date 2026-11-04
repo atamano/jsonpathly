@@ -14,7 +14,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "gen": "peggy --format es -o src/parser/generated/parser.js src/parser/jsonpath.peggy",
+    "gen": "peggy --cache --format es -o src/parser/generated/parser.js src/parser/jsonpath.peggy && node scripts/selective-cache.mjs src/parser/generated/parser.js",
     "test": "mocha --require ts-node/register --timeout 60000 --exit --no-cache tests/*.ts",
     "build": "tsup",
     "format": "prettier --write \"src/**/*.ts\"",

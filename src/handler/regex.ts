@@ -18,6 +18,7 @@
  * Constructs that need backtracking (backreferences, lookaround) or that this
  * module does not implement are rejected: the pattern then matches nothing.
  */
+import { noTick, Tick } from './budget';
 
 /** Upper bound on compiled NFA instructions (bounds `a{1000}{1000}` and similar). */
 export const MAX_REGEX_PROGRAM_SIZE = 1000;
@@ -67,13 +68,64 @@ const OP_BOL = 3;
 const OP_EOL = 4;
 const OP_MATCH = 5;
 
-type Program = {
+export type Program = {
   op: number[];
   x: number[];
   y: number[];
   atoms: Array<{ re: RegExp; literal?: string }>;
   unicode: boolean;
   sticky: boolean;
+  /** Buffers reused by every run, allocated on the first one. */
+  scratch?: Scratch;
+};
+
+/**
+ * Per-program working memory. Allocating it per run cost the program size for
+ * every string tested, outside the budget, even when the run matched at once.
+ * Marks compare against `gen` and `step`, which only grow, so nothing is
+ * cleared between runs. A run reserves its range of both before starting, so
+ * a run stopped by the budget leaves no mark the next run could mistake for
+ * its own.
+ */
+type Scratch = {
+  clist: Int32Array;
+  nlist: Int32Array;
+  onList: Int32Array;
+  stack: Int32Array;
+  atomGen: Int32Array;
+  atomHit: Uint8Array;
+  gen: number;
+  step: number;
+};
+
+// Counters restart (and the marks are cleared) before they could overflow Int32.
+const MAX_MARK = 2 ** 31 - 1;
+
+/**
+ * Takes the program's scratch for one run. It stays detached until the run
+ * ends: reading a getter of a JavaScript document can start a nested query
+ * using the same program, which then works on buffers of its own.
+ */
+const leaseScratch = (prog: Program, inputLength: number): Scratch => {
+  const size = prog.op.length;
+  const scratch: Scratch = prog.scratch ?? {
+    clist: new Int32Array(size),
+    nlist: new Int32Array(size),
+    onList: new Int32Array(size),
+    stack: new Int32Array(size),
+    atomGen: new Int32Array(prog.atoms.length),
+    atomHit: new Uint8Array(prog.atoms.length),
+    gen: 0,
+    step: 0,
+  };
+  prog.scratch = undefined;
+  if (scratch.gen > MAX_MARK - inputLength - 2 || scratch.step > MAX_MARK - inputLength - 2) {
+    scratch.onList.fill(0);
+    scratch.atomGen.fill(0);
+    scratch.gen = 0;
+    scratch.step = 0;
+  }
+  return scratch;
 };
 
 const SYNTAX_CHARS = new Set(['^', '$', '\\', '.', '*', '+', '?', '(', ')', '[', ']', '{', '}', '|', '/']);
@@ -386,36 +438,48 @@ const compile = (pattern: string, flags: string): Program | null => {
   }
 };
 
-const run = (prog: Program, input: string): boolean => {
+// `tick` is charged for every state addThread visits. Each thread is examined
+// once at the next position after being added, so this bounds the whole run,
+// and an early match stops it.
+const execute = (prog: Program, input: string, tick: Tick, scratch: Scratch): boolean => {
   const { op, x, y, atoms, unicode, sticky } = prog;
-  const size = op.length;
-  let clist = new Int32Array(size);
-  let nlist = new Int32Array(size);
+  const charge = tick.regexWork ?? tick;
+  let { clist, nlist } = scratch;
   let clen = 0;
   let nlen = 0;
   // onList[pc] === gen means pc is already in the list being built for this step.
-  const onList = new Int32Array(size);
-  let gen = 0;
-  const stack = new Int32Array(size);
-  const atomGen = new Int32Array(atoms.length);
-  const atomHit = new Uint8Array(atoms.length);
+  const { onList, stack, atomGen, atomHit } = scratch;
+  let gen = scratch.gen;
+  // atomGen[a] === step means atom a was already tested at this position.
+  const stepBase = scratch.step;
+  // One generation per position plus the first; steps are at most input.length + 1.
+  scratch.gen = gen + input.length + 2;
+  scratch.step = stepBase + input.length + 2;
 
   let pos = 0;
   let matched = false;
 
   // Adds pc and everything reachable from it without consuming input to `list`.
+  // Each state visited is charged: a run of empty groups such as (){0,990}
+  // walks hundreds of states per input position.
   const addThread = (list: Int32Array, len: number, pc: number): number => {
     let sp = 0;
     stack[sp++] = pc;
+    let visited = 0;
     while (sp > 0) {
       const p = stack[--sp];
       if (onList[p] === gen) continue;
       onList[p] = gen;
+      if (++visited === 64) {
+        charge(visited);
+        visited = 0;
+      }
       switch (op[p]) {
         case OP_CHAR:
           list[len++] = p;
           break;
         case OP_MATCH:
+          charge(visited);
           matched = true;
           return len;
         case OP_JMP:
@@ -433,6 +497,7 @@ const run = (prog: Program, input: string): boolean => {
           break;
       }
     }
+    charge(visited);
     return len;
   };
 
@@ -445,7 +510,7 @@ const run = (prog: Program, input: string): boolean => {
     const code = unicode ? (input.codePointAt(pos) as number) : input.charCodeAt(pos);
     const width = code > 0xffff ? 2 : 1;
     const ch = input.slice(pos, pos + width);
-    const step = pos + 1;
+    const step = stepBase + pos + 1;
 
     gen++;
     nlen = 0;
@@ -477,8 +542,62 @@ const run = (prog: Program, input: string): boolean => {
   return false;
 };
 
+const run = (prog: Program, input: string, tick: Tick): boolean => {
+  const scratch = leaseScratch(prog, input.length);
+  try {
+    return execute(prog, input, tick, scratch);
+  } finally {
+    prog.scratch = scratch;
+  }
+};
+
 const MAX_CACHE_SIZE = 256;
-const cache = new Map<string, Program | null>();
+// Keyed by pattern (a flat copy), then by flags and anchoring.
+const cache = new Map<string, Map<string, Program | null>>();
+let cacheEntries = 0;
+
+/**
+ * The compiled program for `pattern`, or null if it is invalid or unsupported.
+ * Charges the pattern's length on every call: a hit compares it with the
+ * cached copy. A miss also charges the program size, which a short pattern
+ * such as a{900} can make far larger than itself.
+ */
+export const regexProgram = (pattern: string, flags: string, anchored: boolean, tick: Tick): Program | null => {
+  // Bounds checked before V8 sees the pattern and before it is cached, so oversized
+  // patterns cost neither native compile time nor cache memory.
+  if (pattern.length > MAX_REGEX_PATTERN_LENGTH || flags.length > 7 || !SUPPORTED_FLAGS_RE.test(flags)) return null;
+  const variant = `${flags}/${anchored ? 1 : 0}`;
+  const cached = cache.get(pattern)?.get(variant);
+  if (cached !== undefined) {
+    tick(pattern.length);
+    return cached;
+  }
+  // A pattern produced by slice() keeps its whole parent string alive in V8, so a
+  // 19-character slice of a 10 MiB string would pin those 10 MiB in the cache (via
+  // the key and the atom sources). Copy it into an independent string first.
+  const flat = Array.from(pattern).join('');
+  // Too many property escapes is cached as unsupported, so a hit skips this scan.
+  const prog =
+    countPropertyEscapes(flat) > MAX_REGEX_PROPERTY_ESCAPES ? null : compile(anchored ? `^(?:${flat})$` : flat, flags);
+  if (cacheEntries >= MAX_CACHE_SIZE) {
+    cache.clear();
+    cacheEntries = 0;
+  }
+  let variants = cache.get(flat);
+  if (variants === undefined) cache.set(flat, (variants = new Map()));
+  variants.set(variant, prog);
+  cacheEntries++;
+  // Charged once cached (work bounded by MAX_REGEX_PROGRAM_SIZE), so a query
+  // stopped here does not leave the next one to compile it again.
+  tick(flat.length + (prog === null ? 0 : prog.op.length));
+  return prog;
+};
+
+/** Runs a program from regexProgram on `input`, in time linear in its length. */
+export const runProgram = (prog: Program, input: string, tick: Tick): boolean => {
+  tick.regexProgram?.(prog.op.length);
+  return run(prog, input, tick);
+};
 
 /**
  * Test whether `pattern` (JavaScript syntax, compiled with `flags`) matches
@@ -487,21 +606,13 @@ const cache = new Map<string, Program | null>();
  * after the length check, so the wrapper does not eat into the budget).
  * Returns false for invalid or unsupported patterns.
  */
-export const safeRegexTest = (pattern: string, flags: string, input: string, anchored = false): boolean => {
-  // Bounds checked before V8 sees the pattern and before it is cached, so oversized
-  // patterns cost neither native compile time nor cache memory.
-  if (pattern.length > MAX_REGEX_PATTERN_LENGTH || flags.length > 7 || !SUPPORTED_FLAGS_RE.test(flags)) return false;
-  if (countPropertyEscapes(pattern) > MAX_REGEX_PROPERTY_ESCAPES) return false;
-  const prefix = `${flags}/${anchored ? 1 : 0}/`;
-  let prog = cache.get(prefix + pattern);
-  if (prog === undefined) {
-    // A pattern produced by slice() keeps its whole parent string alive in V8, so a
-    // 19-character slice of a 10 MiB string would pin those 10 MiB in the cache (via
-    // the key and the atom sources). Copy it into an independent string first.
-    const flat = Array.from(pattern).join('');
-    prog = compile(anchored ? `^(?:${flat})$` : flat, flags);
-    if (cache.size >= MAX_CACHE_SIZE) cache.clear();
-    cache.set(prefix + flat, prog);
-  }
-  return prog !== null && run(prog, input);
+export const safeRegexTest = (
+  pattern: string,
+  flags: string,
+  input: string,
+  anchored = false,
+  tick: Tick = noTick,
+): boolean => {
+  const prog = regexProgram(pattern, flags, anchored, tick);
+  return prog !== null && runProgram(prog, input, tick);
 };

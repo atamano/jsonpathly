@@ -4,6 +4,8 @@
  * Converts parsed JSONPath AST back to string representation.
  * Uses RFC 9535 normalized format with single quotes.
  */
+import { isCapacityError, isStackOverflow } from '../handler/helper';
+import { JSONPathLimitError } from './errors';
 import { Comparator, JsonPathElement, LogicalExpression, Operation } from './types';
 
 // ============================================
@@ -93,21 +95,47 @@ const escapeForSingleQuote = (str: string): string => {
 const singleQuoted = (str: string): string => `'${escapeForSingleQuote(str)}'`;
 
 /**
- * Recursively stringify a JSON value with single quotes for strings.
- * Used for object and array values in filter expressions.
+ * Stringify a JSON value with single quotes for strings.
+ * Used for object and array values in filter expressions. Iterative (an
+ * explicit stack of pending values and punctuation): recursion overflowed the
+ * call stack on deeply nested literals such as [[[...0...]]].
  */
-const stringifyJsonValue = (value: unknown): string => {
-  if (typeof value === 'string') {
-    return singleQuoted(value);
+const stringifyJsonValue = (root: unknown): string => {
+  const out: string[] = [];
+  const stack: ({ value: unknown } | string)[] = [{ value: root }];
+
+  while (stack.length > 0) {
+    const item = stack.pop() as { value: unknown } | string;
+    if (typeof item === 'string') {
+      out.push(item);
+      continue;
+    }
+    const value = item.value;
+    if (typeof value === 'string') {
+      out.push(singleQuoted(value));
+    } else if (Array.isArray(value)) {
+      // Pushed in reverse so they pop in order: '[' v0 ',' v1 ... ']'
+      stack.push(']');
+      for (let i = value.length - 1; i >= 0; i--) {
+        stack.push({ value: value[i] });
+        if (i > 0) stack.push(',');
+      }
+      stack.push('[');
+    } else if (value !== null && typeof value === 'object') {
+      const entries = Object.entries(value);
+      stack.push('}');
+      for (let i = entries.length - 1; i >= 0; i--) {
+        stack.push({ value: entries[i][1] });
+        stack.push(`${singleQuoted(entries[i][0])}:`);
+        if (i > 0) stack.push(',');
+      }
+      stack.push('{');
+    } else {
+      out.push(JSON.stringify(value));
+    }
   }
-  if (Array.isArray(value)) {
-    return `[${value.map(stringifyJsonValue).join(',')}]`;
-  }
-  if (value !== null && typeof value === 'object') {
-    const pairs = Object.entries(value).map(([k, v]) => `${singleQuoted(k)}:${stringifyJsonValue(v)}`);
-    return `{${pairs.join(',')}}`;
-  }
-  return JSON.stringify(value);
+
+  return out.join('');
 };
 
 // ============================================
@@ -160,35 +188,113 @@ function stringifySlice(input: Extract<JsonPathElement, { type: 'slices' }>): st
 // ============================================
 
 /**
+ * Throw a TypeError if the AST (literal values included) contains a cycle,
+ * which only a hand-built AST can: the iterative parts of stringify would
+ * otherwise grow forever. Depth-first with an explicit stack; shared
+ * (acyclic) references are allowed.
+ */
+const assertAcyclic = (root: unknown): void => {
+  const ON_PATH = 1;
+  const DONE = 2;
+  const state = new Map<object, number>();
+  const frames: { node: object; children: unknown[]; i: number }[] = [];
+
+  const enter = (value: unknown): void => {
+    if (typeof value !== 'object' || value === null) return;
+    const s = state.get(value);
+    if (s === ON_PATH) throw new TypeError('Cannot stringify a cyclic AST');
+    if (s === DONE) return;
+    state.set(value, ON_PATH);
+    frames.push({ node: value, children: Object.values(value), i: 0 });
+  };
+
+  enter(root);
+  while (frames.length > 0) {
+    const frame = frames[frames.length - 1];
+    if (frame.i < frame.children.length) {
+      enter(frame.children[frame.i++]);
+    } else {
+      state.set(frame.node, DONE);
+      frames.pop();
+    }
+  }
+};
+
+/**
  * Convert JSONPath AST element to string representation.
  *
  * @param input - AST element to stringify
  * @returns String representation of the JSONPath
  */
 export function stringify(input: JsonPathElement | null): string {
+  try {
+    // Inside the try: on an AST of millions of nodes, its visited Map can
+    // reach V8's maximum Map size.
+    assertAcyclic(input);
+    return stringifyNode(input);
+  } catch (e) {
+    // Segment, operator and literal chains are iterative; only nesting (groups,
+    // filters, function calls) recurses, and parse() bounds it. A hand-built
+    // AST nested deeper still must not escape as a RangeError.
+    if (isStackOverflow(e)) {
+      throw new JSONPathLimitError('AST is nested too deeply to stringify');
+    }
+    if (isCapacityError(e)) {
+      throw new JSONPathLimitError('AST is too large to stringify');
+    }
+    // The TypeError for a cyclic AST, among others.
+    throw e;
+  }
+}
+
+/**
+ * `head` followed by `parts` in reverse order. Concatenates rather than
+ * joining: join() copies its parts into a new flat string, so nested chains
+ * copied the same serialized right operand once per enclosing level.
+ */
+function appendReversed(head: string, parts: string[]): string {
+  let out = head;
+  for (let i = parts.length - 1; i >= 0; i--) out += parts[i];
+  return out;
+}
+
+/** `open`, the nodes separated by ", ", then `close`, concatenated for the same reason. */
+function joinNodes(open: string, nodes: readonly JsonPathElement[], close: string): string {
+  let out = open;
+  for (let i = 0; i < nodes.length; i++) out += (i === 0 ? '' : ', ') + stringifyNode(nodes[i]);
+  return out + close;
+}
+
+function stringifyNode(input: JsonPathElement | null): string {
   if (input === null) {
     return '';
   }
 
   switch (input.type) {
     case 'root':
-      return '$' + stringify(input.next);
+      return '$' + stringifyNode(input.next);
 
     case 'current':
-      return '@' + stringify(input.next);
+      return '@' + stringifyNode(input.next);
 
     case 'dot':
-      return '.' + stringify(input.value);
+      return '.' + stringifyNode(input.value);
 
     case 'dotdot':
-      return '..' + stringify(input.value);
+      return '..' + stringifyNode(input.value);
 
     case 'bracketExpression':
     case 'bracketMember':
-      return '[' + stringify(input.value) + ']';
+      return '[' + stringifyNode(input.value) + ']';
 
-    case 'subscript':
-      return stringify(input.value) + stringify(input.next);
+    case 'subscript': {
+      // Iterative: one recursive call per segment overflowed the call stack on long paths.
+      let out = '';
+      for (let segment: typeof input | null = input; segment !== null; segment = segment.next) {
+        out += stringifyNode(segment.value);
+      }
+      return out;
+    }
 
     case 'identifier':
       return input.value;
@@ -197,7 +303,7 @@ export function stringify(input: JsonPathElement | null): string {
       return '*';
 
     case 'unions':
-      return input.values.map(stringify).join(', ');
+      return joinNodes('', input.values, '');
 
     case 'stringLiteral':
       return singleQuoted(input.value);
@@ -206,38 +312,52 @@ export function stringify(input: JsonPathElement | null): string {
       return String(input.value);
 
     case 'notExpression':
-      return '!(' + stringify(input.value) + ')';
+      return '!(' + stringifyNode(input.value) + ')';
 
     case 'value':
       return stringifyValue(input);
 
     case 'filterExpression':
-      return '?(' + stringify(input.value) + ')';
+      return '?(' + stringifyNode(input.value) + ')';
 
     case 'groupOperation':
     case 'groupExpression':
-      return '(' + stringify(input.value) + ')';
+      return '(' + stringifyNode(input.value) + ')';
 
-    case 'operation':
-      return stringify(input.left) + ' ' + ARITHMETIC_OPERATORS[input.operator] + ' ' + stringify(input.right);
+    case 'operation': {
+      // Chains such as 1 + 1 + ... are left-deep: walk the left spine in a loop.
+      const tail: string[] = [];
+      let node: JsonPathElement = input;
+      while (node.type === 'operation') {
+        tail.push(' ' + ARITHMETIC_OPERATORS[node.operator] + ' ' + stringifyNode(node.right));
+        node = node.left;
+      }
+      return appendReversed(stringifyNode(node), tail);
+    }
 
     case 'comparator':
       // Handle unary operators (empty has no right operand)
       if (input.operator === 'empty') {
-        return stringify(input.left) + ' empty';
+        return stringifyNode(input.left) + ' empty';
       }
-      return stringify(input.left) + ` ${COMPARATOR_OPERATORS[input.operator]} ` + stringify(input.right);
+      return stringifyNode(input.left) + ` ${COMPARATOR_OPERATORS[input.operator]} ` + stringifyNode(input.right);
 
-    case 'logicalExpression':
-      return stringify(input.left) + ` ${LOGICAL_OPERATORS[input.operator]} ` + stringify(input.right);
+    case 'logicalExpression': {
+      // Chains such as @.a && @.b && ... are left-deep: walk the left spine in a loop.
+      const tail: string[] = [];
+      let node: JsonPathElement = input;
+      while (node.type === 'logicalExpression') {
+        tail.push(` ${LOGICAL_OPERATORS[node.operator]} ` + stringifyNode(node.right));
+        node = node.left;
+      }
+      return appendReversed(stringifyNode(node), tail);
+    }
 
     case 'slices':
       return stringifySlice(input);
 
-    case 'functionCall': {
-      const args = input.args.map((arg) => stringify(arg as JsonPathElement)).join(', ');
-      return `${input.name}(${args})`;
-    }
+    case 'functionCall':
+      return joinNodes(input.name + '(', input.args as JsonPathElement[], ')');
 
     /* c8 ignore start */
     default: {

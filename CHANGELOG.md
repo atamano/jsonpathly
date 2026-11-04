@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Name selectors used the `in` operator, which also sees inherited members: `$.constructor` returned `Object`, `$['__proto__']` returned `Object.prototype` itself (a caller modifying that result changed every object in the process), and `$[?@.toString]` matched every object. Only the document's own members are now visible.
+- Fractional slice steps and indices were accepted: `$[1:2:1e-100]` never advanced and looped forever, filling memory. Indices and slice parameters, in brackets or after a dot (`$.0`), must now be integers, as RFC 9535 requires; anything else is a `JSONPathSyntaxError`.
+- Nested filters took exponential time to parse (each level reparsed its operand four times): `$[?$[?$[?...@]]]` 12 levels deep took 10 seconds, even when invalid. The parser now memoizes the two filter rules that alternatives retry at the same position (filter operands, and the bodies of groups and negations), which makes parsing linear in the query length while plain paths parse as fast as before and memory stays close to 3.1.0.
+- Subqueries on `$` inside a filter were re-evaluated for every candidate node, so `$[?$..x]` was quadratic in the document and nested `$` filters exponential in the nesting depth. They are now evaluated once per query, as is any comparison, function call or logical chain that does not read `@` (`$.a == $.b`, `length($) > 0`, the `true && ...` prefix of a longer condition).
+- Some queries remain polynomial by nature (`$..[?@..[?@..a]]`, `$..*..*..*`, repeated unions such as `$[0,0][0,0]...`). Evaluation now stops with the new `JSONPathLimitError` after `maxSteps` steps (default: the larger of 1,000,000 and 100 per document node or string character, plus a linear scan of the document's strings by the largest regex used). Steps count nodes selected, selectors tried, expressions evaluated, values compared, and string characters compared or scanned by a regex. `&&` and `||` now short-circuit.
+- Deeply nested documents (around 5,000 levels), long `&&`/`+` chains, long paths and deeply nested parentheses threw `RangeError: Maximum call stack size exceeded`. Descendant segments, equality, segment chains, operator chains and `stringify()` are now iterative, and a parser stack overflow is reported as a `JSONPathSyntaxError`.
+- `{"__proto__": ...}` in an object literal of a filter set the literal's prototype instead of defining a member, so `@ == {"__proto__":{"x":1}}` matched `{}`.
+
+### Added
+
+- `maxSteps` option for `query()` and `paths()`, and the `JSONPathLimitError` class.
+
+### Changed
+
+- A query that used to run for very long now throws `JSONPathLimitError`. A heavy but legitimate query, such as a filter with thousands of conditions over a large document, may need a higher `maxSteps`.
+- Expressions can be nested slightly less deeply before the parser reports "Expression is nested too deeply": about 950 parentheses instead of 1,150 on Node 20 and 22.
+
 ## [3.1.0] - 2026-11-03
 
 ### Changed

@@ -4,6 +4,7 @@
  * Parses JSONPath expressions into an Abstract Syntax Tree (AST).
  * Uses Peggy-generated parser with RFC 9535 compliant grammar.
  */
+import { isStackOverflow } from '../handler/helper';
 import { JSONPathSyntaxError } from './errors';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - Peggy generates plain JS without types
@@ -20,6 +21,16 @@ export function parseInternal(input: string): Root {
   try {
     return parser.parse(input) as Root;
   } catch (e: unknown) {
+    // The generated parser recurses once per nesting level: a deeply nested
+    // expression must surface as a syntax error, not as a RangeError.
+    if (isStackOverflow(e)) {
+      throw new JSONPathSyntaxError(1, 1, 'Expression is nested too deeply');
+    }
+    // Map maximum size, invalid array or string length: an input of tens of
+    // megabytes outgrowing the parser's tables or its AST.
+    if (e instanceof RangeError) {
+      throw new JSONPathSyntaxError(1, 1, 'Expression is too large to parse');
+    }
     // Convert Peggy's SyntaxError to our JSONPathSyntaxError
     if (e && typeof e === 'object' && 'location' in e && 'message' in e) {
       const peggyError = e as { location: { start: { line: number; column: number } }; message: string };

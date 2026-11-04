@@ -40,3 +40,24 @@ export class JSONPathSyntaxError extends Error {
     this.msg = msg;
   }
 }
+
+/**
+ * Error thrown when evaluating a query would take too much work: more
+ * evaluation steps than the `maxSteps` budget, or nesting too deep to evaluate.
+ *
+ * @example
+ * ```typescript
+ * import { query, JSONPathLimitError } from 'jsonpathly';
+ *
+ * try {
+ *   query(doc, untrustedPath, { maxSteps: 100_000 });
+ * } catch (e) {
+ *   if (e instanceof JSONPathLimitError) {
+ *     // reject the query
+ *   }
+ * }
+ * ```
+ */
+export class JSONPathLimitError extends Error {
+  override name = 'JSONPathLimitError';
+}
