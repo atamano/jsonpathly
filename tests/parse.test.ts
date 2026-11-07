@@ -15,6 +15,7 @@
  */
 import { parse } from '../src/parser/parse';
 import { stringify } from '../src/parser/stringify';
+import { JSONPathSyntaxError } from '../src/parser/errors';
 import { expect } from 'chai';
 
 describe('Parser', () => {
@@ -403,24 +404,14 @@ describe('Parser', () => {
   // ============================================
 
   describe('whitespace handling', () => {
-    it('accepts leading whitespace', () => {
-      const tree = parse(' $.a');
-      expect(stringify(tree)).to.equal('$.a');
+    it('rejects blank space around the query (RFC 9535)', () => {
+      for (const q of [' $.a', '$.a ', '  $.store.book[0]  ', '\t\n$.a\n\t']) {
+        expect(() => parse(q), JSON.stringify(q)).to.throw(JSONPathSyntaxError);
+      }
     });
 
-    it('accepts trailing whitespace', () => {
-      const tree = parse('$.a ');
-      expect(stringify(tree)).to.equal('$.a');
-    });
-
-    it('accepts leading and trailing whitespace', () => {
-      const tree = parse('  $.store.book[0]  ');
-      expect(stringify(tree)).to.equal('$.store.book[0]');
-    });
-
-    it('accepts tabs and newlines', () => {
-      const tree = parse('\t\n$.a\n\t');
-      expect(stringify(tree)).to.equal('$.a');
+    it('accepts blank space before a segment', () => {
+      expect(stringify(parse('$ .store\n\t.book [0]'))).to.equal('$.store.book[0]');
     });
   });
 });

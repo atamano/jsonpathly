@@ -45,7 +45,7 @@ const dup = (times: number): string => "$['a'" + ",'a'".repeat(times - 1) + ']';
 const K = 40;
 run('parse: nested filters', () => parse('$[?'.repeat(K) + '@' + ']'.repeat(K)));
 run('parse: nested comparisons', () => parse('$[?'.repeat(K) + '@==1' + ']'.repeat(K)));
-run('parse: nested length() of filters', () => parse('$[?' + 'length($[?'.repeat(K) + '@' + '])'.repeat(K) + '>0]'));
+run('parse: nested count() of filters', () => parse('$[?' + 'count($[?'.repeat(K) + '@' + ']) > 0'.repeat(K) + ']'));
 run('parse: nested descendant filters', () => parse('$' + '..[?@'.repeat(K) + ']'.repeat(K)));
 run('parse: grouped filters', () => {
   let e = '@';
@@ -188,8 +188,8 @@ run('budget: hideExceptions returns no result', () => {
 run('budget: the right operand alone exceeds the budget', () =>
   query({ a: chain }, '$[?$..[?@..[?@..a]]]', SMALL_BUDGET),
 );
-run('eval: false && short-circuits that operand', () => query({ a: chain }, '$[?false && $..[?@..[?@..a]]]'));
-run('eval: true || short-circuits that operand', () => query({ a: chain }, '$[?true || $..[?@..[?@..a]]]'));
+run('eval: false && short-circuits that operand', () => query({ a: chain }, '$[?$.no && $..[?@..[?@..a]]]'));
+run('eval: true || short-circuits that operand', () => query({ a: chain }, '$[?$ || $..[?@..[?@..a]]]'));
 run('stringify: cyclic literal', () => {
   const value: unknown[] = [];
   value.push(value);
@@ -269,7 +269,7 @@ run('parse: 5,000 conditions', () => parse('$[?' + Array(5000).fill('@.a == "xyz
 run('budget: repeated unions padded with whitespace', () => {
   let doc: unknown = 0;
   for (let i = 0; i < 24; i++) doc = [doc];
-  query(doc, '$' + '[0,0]'.repeat(24) + ' '.repeat(50_000), SMALL_BUDGET);
+  query(doc, '$' + ' '.repeat(50_000) + '[0,0]'.repeat(24), SMALL_BUDGET);
 });
 // The pattern matches at once; every call used to rescan it to build a cache key.
 run('eval: long cached pattern matching at once', () =>

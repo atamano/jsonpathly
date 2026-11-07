@@ -30,7 +30,7 @@ type ProbeResult = { name: string; outcome: 'ok' | 'limit' | 'syntax' | 'type' |
 const EXPECTED_OUTCOMES: Record<string, ProbeResult['outcome']> = {
   'parse: nested filters': 'ok',
   'parse: nested comparisons': 'ok',
-  'parse: nested length() of filters': 'ok',
+  'parse: nested count() of filters': 'ok',
   'parse: nested descendant filters': 'ok',
   'parse: grouped filters': 'ok',
   'parse: unclosed nested filters': 'syntax',
@@ -49,7 +49,8 @@ const EXPECTED_OUTCOMES: Record<string, ProbeResult['outcome']> = {
   'budget: long arithmetic chain per element': 'limit',
   'eval: long arithmetic chain without @, once per query': 'ok',
   'budget: long && chain per element': 'limit',
-  'budget: many function arguments per element': 'limit',
+  // Rejected by the arity check before any evaluation.
+  'budget: many function arguments per element': 'syntax',
   'eval: length() of a wide root object, once per query': 'ok',
   'budget: search() over a long string': 'limit',
   'budget: =~ over a long string': 'limit',
@@ -165,10 +166,9 @@ describe('hardening', () => {
       expect(query(doc, "$['__proto__'].x")).to.equal(1);
       expect(query(doc, '$.constructor')).to.equal(2);
       expect(query(doc, '$.toString')).to.equal(3);
-      expect(query({ 2: 'two' }, '$.2')).to.equal('two');
-      // $.0.5 used to select the index 0.5 (reported as present); now two segments.
-      expect(query([[0, 5]], '$.0.1')).to.equal(5);
-      expect(paths([[0, 5]], '$.0.1')).to.deep.equal(['$[0][1]']);
+      expect(query({ 2: 'two' }, "$['2']")).to.equal('two');
+      expect(query([[0, 5]], '$[0][1]')).to.equal(5);
+      expect(paths([[0, 5]], '$[0][1]')).to.deep.equal(['$[0][1]']);
     });
 
     it('does not return array elements inherited from a prototype', () => {
@@ -179,7 +179,6 @@ describe('hardening', () => {
       expect(arr[0]).to.equal(Object.prototype);
       expect(query(arr, '$[0]')).to.equal(undefined);
       expect(query(arr, '$[-1]')).to.equal(undefined);
-      expect(query(arr, '$.0')).to.equal(undefined);
       expect(query(arr, '$[*]')).to.deep.equal([]);
       expect(query(arr, '$..*')).to.deep.equal([]);
       expect(query(arr, '$[?@]')).to.deep.equal([]);
@@ -205,7 +204,7 @@ describe('hardening', () => {
         '$[?@ == [7]]',
         '$[?value(@) == 7]',
         '$[?@[0] == 7]',
-        '$[?@[-1:] == [7]]',
+        '$[?@[-1:] anyof [7]]',
         '$[?length(@) == 1]',
       ]) {
         // Same selection as for a hole (the selected candidate is the array itself,
@@ -801,9 +800,9 @@ describe('hardening', () => {
       const doc = Array(1000).fill(0);
       const arithmetic = '$[?@ == ' + '('.repeat(100) + '0' + ')'.repeat(100) + ']';
       expect(query(doc, arithmetic, { maxSteps: 10_000 })).to.have.length(1000);
-      const grouped = '$[?' + '('.repeat(100) + 'true' + ')'.repeat(100) + ']';
+      const grouped = '$[?' + '('.repeat(100) + '$' + ')'.repeat(100) + ']';
       expect(query(doc, grouped, { maxSteps: 5000 })).to.have.length(1000);
-      const negated = '$[?' + '!('.repeat(100) + 'true' + ')'.repeat(100) + ']'; // an even number of negations
+      const negated = '$[?' + '!('.repeat(100) + '$' + ')'.repeat(100) + ']'; // an even number of negations
       expect(query(doc, negated, { maxSteps: 5000 })).to.have.length(1000);
       expect(query(doc, '$[?!(!(@ == 0))]')).to.have.length(1000);
     });
@@ -875,7 +874,7 @@ describe('hardening', () => {
       // every later query.
       const pattern = '('.repeat(490) + 'a' + ')'.repeat(490);
       const test = `search(@, ${JSON.stringify(pattern)})`;
-      const deep = '$[?' + 'value('.repeat(800) + test + ')'.repeat(800) + ']';
+      const deep = '$[?' + '('.repeat(800) + test + ')'.repeat(800) + ']';
       try {
         expect(query(['a'], deep)).to.deep.equal(['a']);
       } catch (e) {
@@ -944,19 +943,20 @@ describe('hardening', () => {
       expect(query([{ v: 1 }, { v: 2 }], '$[?length(@) == 1 && @.v > 1]')).to.deep.equal([{ v: 2 }]);
       // Logical chains and negations without @ as well: a few steps per
       // candidate, where 100 terms x 1,000 candidates would be 100,000.
+      // `$` is a true test and `$.no` a false one, neither reading @.
       const many = Array(1000).fill(0);
-      expect(query(many, '$[?' + Array(100).fill('true').join(' && ') + ']', { maxSteps: 5000 })).to.have.length(1000);
-      expect(query(many, '$[?!(' + Array(100).fill('false').join(' || ') + ')]', { maxSteps: 5000 })).to.have.length(
+      expect(query(many, '$[?' + Array(100).fill('$').join(' && ') + ']', { maxSteps: 5000 })).to.have.length(1000);
+      expect(query(many, '$[?!(' + Array(100).fill('$.no').join(' || ') + ')]', { maxSteps: 5000 })).to.have.length(
         1000,
       );
       // ...including as the prefix of a chain whose last term reads @ (about
       // 8 steps per candidate; 100 per candidate without the memo).
-      const andPrefix = '$[?' + Array(100).fill('true').join(' && ') + ' && @ == 0]';
+      const andPrefix = '$[?' + Array(100).fill('$').join(' && ') + ' && @ == 0]';
       expect(query(many, andPrefix, { maxSteps: 10_000 })).to.have.length(1000);
-      const orPrefix = '$[?' + Array(100).fill('false').join(' || ') + ' || @ == 1]';
+      const orPrefix = '$[?' + Array(100).fill('$.no').join(' || ') + ' || @ == 1]';
       expect(query(many, orPrefix, { maxSteps: 10_000 })).to.have.length(0);
       // A wholly invariant chain stays iterative.
-      expect(query([0], '$[?' + Array(10_000).fill('true').join(' && ') + ']')).to.deep.equal([0]);
+      expect(query([0], '$[?' + Array(10_000).fill('$').join(' && ') + ']')).to.deep.equal([0]);
     });
 
     it('charges regex states without input', () => {
@@ -1169,7 +1169,7 @@ describe('hardening', () => {
     it('does not scale the default budget with the query text', () => {
       let doc: unknown = 0;
       for (let i = 0; i < 24; i++) doc = [doc];
-      const q = '$' + '[0,0]'.repeat(24) + ' '.repeat(50_000);
+      const q = '$' + ' '.repeat(50_000) + '[0,0]'.repeat(24);
       // Neither bound grows with the 50,000 characters of padding.
       expect(() => query(doc, q)).to.throw(JSONPathLimitError, / 1000000 evaluation steps/);
       expect(() => query(doc, q, { maxSteps: 10_000_000 })).to.throw(JSONPathLimitError, / 10000000 evaluation steps/);
@@ -1284,9 +1284,10 @@ describe('hardening', () => {
     it('stringify does not copy nested right operands once per level', () => {
       // A long operand (member names are limited, string values are not).
       const longPath = 'length("' + 'x'.repeat(100_000) + '")';
+      const longTest = 'search("' + 'x'.repeat(100_000) + '", "x")';
       const queries = [
         '$[?' + '1+1+('.repeat(400) + longPath + ')'.repeat(400) + '==0]',
-        '$[?' + '@&&('.repeat(400) + longPath + ')'.repeat(400) + ']',
+        '$[?' + '@&&('.repeat(400) + longTest + ')'.repeat(400) + ']',
         '$[?' + 'length('.repeat(400) + longPath + ')'.repeat(400) + '==0]',
       ];
       for (const q of queries) {

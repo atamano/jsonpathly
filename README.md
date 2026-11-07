@@ -13,7 +13,7 @@
 
 ## Features
 
-- **RFC 9535 compliant** - Follows the official JSONPath specification and passes every valid-query test of the [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite)
+- **RFC 9535 compliant** - Follows the official JSONPath specification and passes the whole [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite): valid queries give the expected results, invalid ones are rejected
 - **Secure** - No dynamic code execution, no injection vulnerabilities
 - **TypeScript native** - Full type definitions included
 - **Dual module** - Works with ESM and CommonJS
@@ -245,6 +245,21 @@ For a comparison with other JSONPath implementations, see [json-path-comparison]
 - Uses a Peggy parser instead of dynamic execution
 - Follows RFC 9535 semantics for edge cases
 - Normalized paths use single quotes per RFC 9535
+
+## Breaking Changes in v4.0.0
+
+Queries that RFC 9535 does not allow are now rejected with a `JSONPathSyntaxError` instead of being evaluated. The most common ones to update:
+
+| Before (3.x)              | Now                          |
+| :------------------------ | :--------------------------- |
+| `$.content-type`          | `$['content-type']`          |
+| `$.items.0`, `$.items.-1` | `$.items[0]`, `$.items[-1]` (arrays), `$.items['0']`, `$.items['-1']` (objects) |
+| `' $.a '`                 | `'$.a'`                      |
+| `$[?true]`                | `$[?@]`                      |
+| `$[?length(@.a)]`         | `$[?length(@.a) > 0]`        |
+| `$[?@.* == 1]` (matched nothing) | `$[?@[?@ == 1]]` (a child equals 1) |
+
+Function names must be lowercase, and arithmetic operands, like comparison operands, must be singular queries. `match()` and `search()` follow the I-Regexp grammar (no `\d`, `\w`, `(?:...)`; `\-` allowed), `length()` counts Unicode characters, and strings compare by code point. The extension operators (`in`, `anyof`, `=~`...) still accept any query, and unquoted names in brackets (`$[key-dash]`) still work. See the [changelog](CHANGELOG.md) for the full list.
 
 ## Breaking Changes in v3.0.0
 

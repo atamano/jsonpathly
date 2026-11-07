@@ -10,6 +10,7 @@ import { JSONPathSyntaxError } from './errors';
 // @ts-ignore - Peggy generates plain JS without types
 import * as parser from './generated/parser.js';
 import { Root } from './types';
+import { validate } from './validate';
 
 /**
  * Internal parse function that always throws on error.
@@ -18,8 +19,9 @@ import { Root } from './types';
  * @internal
  */
 export function parseInternal(input: string): Root {
+  let ast: Root;
   try {
-    return parser.parse(input) as Root;
+    ast = parser.parse(input) as Root;
   } catch (e: unknown) {
     // The generated parser recurses once per nesting level: a deeply nested
     // expression must surface as a syntax error, not as a RangeError.
@@ -44,6 +46,8 @@ export function parseInternal(input: string): Root {
     throw e;
   }
   /* c8 ignore stop */
+  validate(ast as unknown as Parameters<typeof validate>[0]);
+  return ast;
 }
 
 /**

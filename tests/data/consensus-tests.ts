@@ -269,6 +269,8 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[010:024:010]',
     document: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
     consensus: [10, 20],
+    skip: true,
+    skipReason: 'RFC 9535: leading zeros are invalid in indices',
   },
   {
     id: 'array_slice_with_step_but_end_not_aligned',
@@ -707,6 +709,8 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$.key-dash',
     document: { key: 42, 'key-': 43, '-': 44, dash: 45, '-dash': 46, '': 47, 'key-dash': 'value', something: 'else' },
     consensus: ['value'],
+    skip: true,
+    skipReason: 'RFC 9535: a dash is not a name character in dot notation',
   },
   {
     id: 'dot_notation_with_double_quotes',
@@ -773,6 +777,8 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$.2',
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: ['third'],
+    skip: true,
+    skipReason: 'RFC 9535: a dot name cannot start with a digit',
   },
   {
     id: 'dot_notation_with_number_-1',
@@ -785,6 +791,8 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$.2',
     document: { a: 'first', '2': 'second', b: 'third' },
     consensus: ['second'],
+    skip: true,
+    skipReason: 'RFC 9535: a dot name cannot start with a digit',
   },
   {
     id: 'dot_notation_with_single_quotes',
@@ -939,6 +947,8 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(@.key>0 && true)]',
     document: [{ key: 1 }, { key: 3 }, { key: 'nice' }, { key: true }, { key: null }, { key: false }, { key: {} }, { key: [] }, { key: -1 }, { key: 0 }, { key: '' }],
     consensus: [{ key: 1 }, { key: 3 }],
+    skip: true,
+    skipReason: 'RFC 9535: a literal must be compared',
   },
   {
     id: 'filter_expression_with_boolean_or_operator',
@@ -951,12 +961,16 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(@.key>0 || false)]',
     document: [{ key: 1 }, { key: 3 }, { key: 'nice' }, { key: true }, { key: null }, { key: false }, { key: {} }, { key: [] }, { key: -1 }, { key: 0 }, { key: '' }],
     consensus: [{ key: 1 }, { key: 3 }],
+    skip: true,
+    skipReason: 'RFC 9535: a literal must be compared',
   },
   {
     id: 'filter_expression_with_boolean_or_operator_and_value_true',
     selector: '$[?(@.key>0 || true)]',
     document: [{ key: 1 }, { key: 3 }, { key: 'nice' }, { key: true }, { key: null }, { key: false }, { key: {} }, { key: [] }, { key: -1 }, { key: 0 }, { key: '' }],
     consensus: [{ key: 1 }, { key: 3 }, { key: 'nice' }, { key: true }, { key: null }, { key: false }, { key: {} }, { key: [] }, { key: -1 }, { key: 0 }, { key: '' }],
+    skip: true,
+    skipReason: 'RFC 9535: a literal must be compared',
   },
   {
     id: 'filter_expression_with_bracket_notation',
@@ -1019,18 +1033,24 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(@.key-dash==1)]',
     document: [{ 'key-dash': 1 }, { 'key-dash': 10 }, { key: 1 }],
     consensus: [{ 'key-dash': 1 }],
+    skip: true,
+    skipReason: 'RFC 9535: a dash is not a name character in dot notation',
   },
   {
     id: 'filter_expression_with_dot_notation_with_number',
     selector: '$[?(@.2==3)]',
     document: [{ a: 1, b: 2, '2': 3 }],
     consensus: [{ a: 1, b: 2, '2': 3 }],
+    skip: true,
+    skipReason: 'RFC 9535: a dot name cannot start with a digit',
   },
   {
     id: 'filter_expression_with_dot_notation_with_number_on_array',
     selector: '$[?(@.2==3)]',
     document: [[1, 2, 3], [1], [1, 2, 3, 4, 5]],
     consensus: [[1, 2, 3], [1, 2, 3, 4, 5]],
+    skip: true,
+    skipReason: 'RFC 9535: a dot name cannot start with a digit',
   },
   {
     id: 'filter_expression_with_equals',
@@ -1121,6 +1141,8 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(@.key==010)]',
     document: [{ key: '010' }, { key: '10' }, { key: 10 }, { key: 8 }, { key: '8' }],
     consensus: [{ key: 10 }],
+    skip: true,
+    skipReason: 'RFC 9535: leading zeros are invalid in numbers',
   },
   {
     id: 'filter_expression_with_equals_object',
@@ -1447,6 +1469,8 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(true)]',
     document: [1, 3, 'nice', true, null, false, {}, [], -1, 0, ''],
     consensus: [1, 3, 'nice', true, null, false, {}, [], -1, 0, ''],
+    skip: true,
+    skipReason: 'RFC 9535: a literal must be compared',
   },
   {
     id: 'filter_expression_without_parens',

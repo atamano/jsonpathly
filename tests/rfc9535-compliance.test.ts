@@ -24,7 +24,7 @@
  * - Proper return values for edge cases (empty nodelists, wrong types)
  */
 import { expect } from 'chai';
-import { query, paths, parse, stringify } from '../src/index';
+import { query, paths, parse, stringify, JSONPathSyntaxError } from '../src/index';
 
 describe('RFC 9535 Full Compliance', () => {
   // ============================================
@@ -338,6 +338,179 @@ describe('RFC 9535 Full Compliance', () => {
         const round = parse(path);
         expect(parse(stringify(round)), path).to.deep.equal(round);
       }
+    });
+  });
+
+  // ============================================
+  // Strict syntax and well-typedness (4.0.0)
+  // ============================================
+
+  describe('Strict syntax and well-typedness', () => {
+    const rejects = (path: string, message?: RegExp): void => {
+      const call = (): unknown => parse(path);
+      if (message) expect(call, path).to.throw(JSONPathSyntaxError, message);
+      else expect(call, path).to.throw(JSONPathSyntaxError);
+    };
+
+    it('rejects literals and ValueType functions as filter tests', () => {
+      rejects('$[?true]', /literal must be compared/);
+      rejects('$[?@.a && null]', /literal must be compared/);
+      rejects('$[?!false]', /literal must be compared/);
+      rejects('$[?length(@.a)]', /length\(\) must be compared/);
+      rejects('$[?count(@.*)]', /count\(\) must be compared/);
+      rejects('$[?@.a + 1]'); // already rejected by the grammar
+    });
+
+    it('rejects comparing LogicalType functions and non-singular queries', () => {
+      rejects("$[?match(@.a, 'x') == true]", /match\(\) cannot be compared/);
+      rejects('$[?@.* == 1]', /non-singular/);
+      rejects('$[?$..a == 1]', /non-singular/);
+      rejects('$[?@[0:1] == 1]', /non-singular/);
+      rejects('$[?@.a + @.* == 1]', /non-singular/);
+      rejects('$[?length(@.*) == 1]', /non-singular/);
+    });
+
+    it('checks function arity and NodesType arguments', () => {
+      rejects('$[?count() == 1]', /count\(\) takes 1 argument, found 0/);
+      rejects('$[?match(@.a) == 1]', /match\(\) takes 2 arguments, found 1/);
+      rejects('$[?count(1) == 1]', /Expected a query/);
+      rejects('$[?value(length(@.a)) == 1]', /Expected a query/);
+    });
+
+    it('checks nested filters too', () => {
+      rejects('$[?@[?true]]', /literal must be compared/);
+      rejects('$..[?@.a, ?@.* == 1]', /non-singular/);
+      rejects('$[?count(@[?length(@)]) > 0]', /length\(\) must be compared/);
+    });
+
+    it('keeps valid typed queries', () => {
+      for (const path of [
+        '$[?@.a == 1 && (@.b || !@.c)]',
+        '$[?count(@.*) > 1]',
+        '$[?count($..a[?@ > 1]) == 0]',
+        '$[?value(@..a) == 1]',
+        "$[?length(value(@.a)) == 3 && match(@.b, 'x.*')]",
+        '$[?@.a == @.b[0]]',
+        '$[?(count(@.a[*])) == 2]',
+        '$[?$[0] == @]',
+      ]) {
+        expect(() => parse(path), path).to.not.throw();
+      }
+    });
+
+    it('keeps the extension operators lenient', () => {
+      const data = [{ tags: ['a', 'b'], n: 5, name: 'Magnus' }];
+      expect(query(data, '$[?@.tags[*] anyof ["b"]]', { returnArray: true })).to.have.length(1);
+      expect(query(data, '$[?(@.tags[*]) anyof ["b"]]', { returnArray: true })).to.have.length(1);
+      expect(query(data, '$[?"a" in @.tags]', { returnArray: true })).to.have.length(1);
+      expect(query(data, '$[?@.name =~ /^mag/i]', { returnArray: true })).to.have.length(1);
+      expect(query(data, '$[?@.n * 2 + 1 == 11]', { returnArray: true })).to.have.length(1);
+    });
+
+    it('rejects uppercase function names and non-singular arithmetic operands', () => {
+      rejects('$[?LENGTH(@) == 1]');
+      rejects('$[?Count(@.*) == 1]');
+      rejects('$[?@.* + 1 == @.missing]', /non-singular/);
+    });
+
+    it('keeps unquoted names in brackets (jsonpathly extension)', () => {
+      const data = { 'key-dash': 7, a: 1, é: 2 };
+      expect(query(data, '$[key-dash]')).to.equal(7);
+      expect(query(data, '$[a, key-dash]')).to.deep.equal([1, 7]);
+      expect(query(data, '$[é]')).to.equal(2);
+      expect(query([data], '$[?@[key-dash] == 7]', { returnArray: true })).to.have.length(1);
+    });
+
+    it('rejects lax tokens', () => {
+      for (const path of [
+        '$.1',
+        '$.a-b',
+        '$[01]',
+        '$[-0]',
+        '$[:-0]',
+        '$[?@.a == 01]',
+        ' $',
+        '$ ',
+        '$[?count (@.*) == 1]',
+      ]) {
+        rejects(path);
+      }
+      // A raw control character, an escaped quote of the other kind, lone surrogates.
+      rejects('$["\u0001"]');
+      rejects(`$['\\"']`);
+      rejects(`$["\\'"]`);
+      rejects('$["\\uD800"]');
+      rejects('$["\\uDC00\\uD800"]');
+      // Still valid: -0 as a number, escaped surrogate pairs, non-ASCII names.
+      expect(query([{ a: 0 }], '$[?@.a == -0]', { returnArray: true })).to.have.length(1);
+      expect(query({ '\u{1F600}': 1 }, '$["\\uD83D\\uDE00"]')).to.equal(1);
+      expect(query({ 'é𝄞x9': 1 }, '$.é𝄞x9')).to.equal(1);
+    });
+  });
+
+  describe('Unicode and I-Regexp details', () => {
+    const q = (data: unknown, path: string): unknown => query(data, path, { returnArray: true });
+
+    it('length() counts Unicode scalar values', () => {
+      expect(q(['😀', 'ab', '\uD800'], '$[?length(@) == 1]')).to.deep.equal(['😀', '\uD800']);
+      expect(q(['a😀b'], '$[?length(@) == 3]')).to.deep.equal(['a😀b']);
+    });
+
+    it('strings compare by code point, not UTF-16 unit', () => {
+      // U+FFFF is one unit above the surrogates, but below U+1F600.
+      expect(q([{ s: '￿' }], "$[?@.s < '😀']")).to.have.length(1);
+      expect(q([{ s: '😀' }], "$[?@.s > '￿']")).to.have.length(1);
+      expect(q([{ s: 'ab' }], "$[?@.s < 'abc' && @.s > 'a']")).to.have.length(1);
+    });
+
+    it('accepts I-Regexp constructs JavaScript treats differently', () => {
+      expect(q(['a-b', 'ab'], "$[?match(@, 'a\\\\-b')]")).to.deep.equal(['a-b']);
+      expect(q(['a-b'], "$[?match(@, '[a\\\\-]-b')]")).to.deep.equal(['a-b']);
+      expect(q(['Ab', 'ab'], "$[?match(@, '\\\\p{Lu}b')]")).to.deep.equal(['Ab']);
+      expect(q(['ab', 'aab'], "$[?match(@, '(a){2}b|ab')]")).to.deep.equal(['ab', 'aab']);
+      expect(q(['x'], "$[?match(@, 'x|')]")).to.deep.equal(['x']);
+      expect(q(['😀x', 'ax'], "$[?match(@, '😀x')]")).to.deep.equal(['😀x']);
+      expect(q(['-', 'a', 'b'], "$[?match(@, '[-a]')]")).to.deep.equal(['-', 'a']);
+      expect(q(['-', 'a', 'b'], "$[?match(@, '[^a-]')]")).to.deep.equal(['b']);
+      // A translation is never longer than its pattern: an 804-character
+      // pattern stays within the 1,000-character limit.
+      expect(q(['a'.repeat(201)], `$[?match(@, "${'[a-]'.repeat(201)}")]`)).to.have.length(1);
+      expect(q(['😀', '😃', 'a'], "$[?match(@, '[😀-😂]')]")).to.deep.equal(['😀']);
+      expect(q(['a', '1'], "$[?match(@, '[\\\\p{L}]')]")).to.deep.equal(['a']);
+      // ^ and $ stay anchors, as the Compliance Test Suite expects.
+      expect(q(['abc', 'xab'], "$[?search(@, '^ab')]")).to.deep.equal(['abc']);
+    });
+
+    it('rejects what is not I-Regexp (the pattern matches nothing)', () => {
+      for (const pattern of [
+        '\\d',
+        '\\w',
+        '\\s',
+        '\\b',
+        '(?:a)',
+        'a*?',
+        '[]',
+        '[^]',
+        'a{,2}',
+        '\\p{IsBasicLatin}',
+        '[a-\\d]',
+        '[z-a]',
+        '[--a]',
+        'a]',
+        'a}',
+        '(a',
+        'a)',
+        '\\uD800',
+      ]) {
+        expect(q(['1', 'a', 'z', ' ', 'aa'], `$[?search(@, ${JSON.stringify(pattern)})]`), pattern).to.deep.equal([]);
+      }
+    });
+
+    it('leaves the =~ extension on JavaScript regular expressions', () => {
+      expect(q(['1', 'a'], '$[?@ =~ /\\d/]')).to.deep.equal(['1']);
+      // ...within the subset that excludes lookaround and backreferences.
+      expect(q(['ab'], '$[?@ =~ /(?<=a)b/]')).to.deep.equal([]);
+      expect(q(['ab'], '$[?@ =~ /(?<n>a)b/]')).to.deep.equal([]);
     });
   });
 });

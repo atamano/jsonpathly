@@ -48,6 +48,7 @@ npm run release:major   # 3.0.0 -> 4.0.0
 - `types.ts` - TypeScript types for the AST nodes (Root, Subscript, FilterExpression, FunctionCall, etc.)
 - `stringify.ts` - Converts AST back to JSONPath string (with RFC 9535 normalized escaping)
 - `errors.ts` - Custom syntax error class
+- `validate.ts` - RFC 9535 well-typedness pass run by `parse.ts` on every AST (tests vs values, singular queries, function arity and argument types); iterative, extension operators stay lenient
 
 ### Handler Layer (`src/handler/`)
 - `Handler.ts` - Core query engine that traverses JSON using the AST
@@ -80,12 +81,12 @@ Test files in `tests/`:
 - `parse.test.ts` - Parser and stringify round-trips
 - `rfc9535-compliance.test.ts` - RFC 9535 specific tests
 - `consensus.test.ts` - Cross-implementation compatibility (uses `data/consensus-tests.ts`)
-- `cts.test.ts` - Official JSONPath Compliance Test Suite, vendored in `data/cts/cts.json` (commit 20ebdcc). Cases not passed yet (invalid queries jsonpathly accepts) are listed by reason in `data/cts/known-failures.ts`; a listed case that starts passing fails the test until it is removed from the list
+- `cts.test.ts` - Official JSONPath Compliance Test Suite, vendored in `data/cts/cts.json` (commit 20ebdcc). All 715 cases pass; `data/cts/known-failures.ts` (empty) is where new cases from a suite update go, by reason, and a listed case that starts passing fails the test until it is removed
 - `extensions.test.ts` - jsonpathly-specific extensions (in, nin, subsetof, etc.)
 - `api.test.ts` - Public API contracts
 - `module-resolution.test.ts` - ESM/CJS build verification
 
-**Note:** ~58 consensus tests are intentionally skipped (pending). These represent:
+**Note:** ~70 consensus tests are intentionally skipped (pending). These represent:
 - RFC 9535 semantic differences (jsonpathly follows the RFC strictly)
 - Ambiguous syntax with no standard behavior across implementations
 

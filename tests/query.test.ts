@@ -32,7 +32,7 @@ describe('query()', () => {
     });
 
     it('accesses array by index', () => {
-      expect(query(data, '$.array.2')).to.equal(3);
+      expect(query(data, '$.array[2]')).to.equal(3);
     });
 
     it('returns undefined for missing property', () => {
@@ -40,7 +40,7 @@ describe('query()', () => {
     });
 
     it('accesses negative index', () => {
-      expect(query(data, '$.array.-1')).to.equal(4);
+      expect(query(data, '$.array[-1]')).to.equal(4);
     });
 
     it('accesses nested property', () => {
@@ -57,7 +57,9 @@ describe('query()', () => {
 
     it('handles key with underscore and dash', () => {
       const obj = { 'key_underscore-dash': 'value' };
-      expect(query(obj, '$.key_underscore-dash')).to.equal('value');
+      expect(query(obj, "$['key_underscore-dash']")).to.equal('value');
+      // RFC 9535: a dash is not a name character in dot notation.
+      expect(() => query(obj, '$.key_underscore-dash', { hideExceptions: false })).to.throw(JSONPathSyntaxError);
     });
   });
 
@@ -809,20 +811,17 @@ describe('query()', () => {
   // DOT NUMERIC LITERAL EDGE CASES
   // ============================================
 
-  describe('dot numeric literal edge cases', () => {
-    it('returns undefined when object has no matching property', () => {
-      const data = { a: 1, b: 2 };
-      expect(query(data, '$.5')).to.be.undefined;
+  describe('numeric dot names', () => {
+    it('are rejected (RFC 9535: a dot name cannot start with a digit)', () => {
+      for (const q of ['$.5', '$.value.0', '$.0', '$.array.-1']) {
+        expect(() => query({}, q, { hideExceptions: false }), q).to.throw(JSONPathSyntaxError);
+      }
     });
 
-    it('returns undefined when accessing numeric property on primitive', () => {
-      const data = { value: 'string' };
-      expect(query(data, '$.value.0')).to.be.undefined;
-    });
-
-    it('accesses numeric property on object', () => {
-      const data = { '0': 'zero', '1': 'one' };
-      expect(query(data, '$.0')).to.equal('zero');
+    it('have bracket equivalents', () => {
+      expect(query({ a: 1, b: 2 }, "$['5']")).to.be.undefined;
+      expect(query({ value: 'string' }, '$.value[0]')).to.be.undefined;
+      expect(query({ '0': 'zero', '1': 'one' }, "$['0']")).to.equal('zero');
     });
   });
 
@@ -907,9 +906,10 @@ describe('query()', () => {
         expect(query([{ a: 10 }], '$[?@.a--5>10]')).to.deep.equal([{ a: 10 }]);
       });
 
-      it('hyphenated keys still work', () => {
-        expect(query([{ 'my-key': 1 }], '$[*].my-key')).to.deep.equal([1]);
-        expect(query([{ 'my-key-name': 2 }], '$[*].my-key-name')).to.deep.equal([2]);
+      it('hyphenated keys need bracket notation (RFC 9535)', () => {
+        expect(query([{ 'my-key': 1 }], "$[*]['my-key']")).to.deep.equal([1]);
+        expect(query([{ 'my-key-name': 2 }], "$[*]['my-key-name']")).to.deep.equal([2]);
+        expect(() => query([{ 'my-key': 1 }], '$[*].my-key', { hideExceptions: false })).to.throw(JSONPathSyntaxError);
       });
     });
 
@@ -936,9 +936,8 @@ describe('query()', () => {
         expect(query([{ v: 'test' }], '$[?(match(@.v, "\\\\btest\\\\b"))]')).to.deep.equal([]);
       });
 
-      it('match() allows \\b inside char class (backspace)', () => {
-        // \b inside [...] means backspace, which is allowed
-        expect(query([{ v: 'a' }], '$[?(match(@.v, "[a\\\\b]"))]')).to.deep.equal([{ v: 'a' }]);
+      it('match() rejects \\b even inside a char class (not an I-Regexp escape)', () => {
+        expect(query([{ v: 'a' }], '$[?(match(@.v, "[a\\\\b]"))]')).to.deep.equal([]);
       });
 
       it('match() rejects backreferences', () => {

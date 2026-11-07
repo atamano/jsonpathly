@@ -29,12 +29,30 @@ const eq: ComparatorFn = (left, right, tick = noTick) => {
 /** RFC 9535: Inequality comparison */
 const ne: ComparatorFn = (left, right, tick = noTick) => !isEqual(left, right, tick);
 
+/**
+ * Weight of a UTF-16 unit in code point order: surrogates (code points from
+ * U+10000) sort after U+E000-U+FFFF, which UTF-16 units sort before.
+ */
+const codePointWeight = (unit: number): number =>
+  unit >= 0xd800 && unit <= 0xdfff ? unit + 0x2000 : unit >= 0xe000 ? unit - 0x800 : unit;
+
+/** RFC 9535 section 2.3.5.2.2: strings compare by Unicode scalar values, not UTF-16 units. */
+const compareStrings = (left: string, right: string): number => {
+  const n = Math.min(left.length, right.length);
+  for (let i = 0; i < n; i++) {
+    const a = left.charCodeAt(i);
+    const b = right.charCodeAt(i);
+    if (a !== b) return codePointWeight(a) - codePointWeight(b);
+  }
+  return left.length - right.length;
+};
+
 /** RFC 9535: Less than (numbers and strings) */
 const lt: ComparatorFn = (left, right, tick = noTick) => {
   if (isNumber(left) && isNumber(right)) return left < right;
   if (isString(left) && isString(right)) {
     tick(Math.min(left.length, right.length));
-    return left < right;
+    return compareStrings(left, right) < 0;
   }
   return false;
 };
@@ -47,7 +65,7 @@ const gt: ComparatorFn = (left, right, tick = noTick) => {
   if (isNumber(left) && isNumber(right)) return left > right;
   if (isString(left) && isString(right)) {
     tick(Math.min(left.length, right.length));
-    return left > right;
+    return compareStrings(left, right) > 0;
   }
   return false;
 };

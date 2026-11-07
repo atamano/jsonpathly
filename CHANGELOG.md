@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-11-07
+
+jsonpathly now passes the whole official [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite): it rejects the 162 invalid queries it used to accept. The extension operators (`in`, `nin`, `subsetof`, `anyof`, `noneof`, `size`, `sizeof`, `empty`, `=~`) keep accepting any query as operand, and unquoted names in brackets (`$[key-dash]`) stay accepted.
+
+### Breaking changes
+
+Queries that are invalid under RFC 9535 now throw a `JSONPathSyntaxError` (or return `undefined` with `hideExceptions`) instead of being evaluated:
+
+- **Dot names follow RFC 9535**: a name with a dash or starting with a digit needs brackets. `$.content-type` becomes `$['content-type']`, `$.items.0` becomes `$.items[0]` on an array or `$.items['0']` on an object, `$.items.-1` becomes `$.items[-1]` on an array or `$.items['-1']` on an object. Non-ASCII names such as `$.café` stay valid.
+- **Function names are lowercase**: `LENGTH(@)` or `Count(@.*)` are rejected.
+- **No blank space around the query** (`' $.a'`, `'$.a '`) or between a function name and its parenthesis (`count (@.a)`). Blank space between segments (`$ .a`) is still allowed.
+- **Integers without leading zeros**: `$[01]`, `$[-0]`, `$[:01]` and the number `01` in a filter are rejected. `-0` stays valid as a number in a filter.
+- **Strict string literals**: raw control characters (U+0000 to U+001F), lone surrogate escapes (`"\uD800"`), and escaping the other kind of quote (`"\'"`, `'\"'`) are rejected. Escaped surrogate pairs (`"\uD83D\uDE00"`) are valid.
+- **Filters are type-checked** (RFC 9535 section 2.4.3):
+  - a literal cannot be a test on its own: `$[?true]`, `$[?@.a && true]`;
+  - `length()` and `value()` and `count()` must be compared (`$[?length(@.a) > 0]`), `match()` and `search()` cannot be (`$[?match(@.a, 'x')]`);
+  - the operands of `==`, `!=`, `<`, `<=`, `>`, `>=`, of the arithmetic extension (`+`, `-`, `*`, `/`) and the argument of `length()` must be singular queries (names and indices only): `$[?@.* == 1]`, `$[?@.* + 1 == 2]` and `$[?length(@.*) > 0]` are rejected; `count(@.*)` is the way to count them;
+  - `count()` and `value()` take a query, and every function its exact number of arguments.
+
+The error message names the rule that was broken, for example `The result of length() must be compared` or `A non-singular query cannot be compared`.
+
+Results also change where 3.x departed from the RFCs:
+
+- **`match()` and `search()` take I-Regexp patterns (RFC 9485)**, checked against its grammar instead of a list of forbidden JavaScript features: `\-` now works outside classes, while `\d`, `\w`, `\s`, `\b` (also inside classes), non-capturing and modifier groups, and lazy quantifiers make the pattern invalid, so it matches nothing. `^` and `$` remain anchors, as the Compliance Test Suite expects. The `=~` extension keeps JavaScript regular expressions.
+- **`length()` counts Unicode characters**: `length('😀')` is 1, not 2 (RFC 9535 section 2.4.4).
+- **Strings compare by code point** (RFC 9535 section 2.3.5.2.2): a character above U+FFFF, such as an emoji, now sorts after U+E000-U+FFFF instead of before.
+
 ## [3.3.0] - 2026-11-07
 
 ### Fixed

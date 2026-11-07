@@ -46,7 +46,7 @@
 // ===================
 
 jsonpath
-  = _ ROOT_VALUE segments:segments _ EOF {
+  = ROOT_VALUE segments:segments EOF {
       return {
         type: 'root',
         next: buildSubscriptChain(segments)
@@ -78,7 +78,6 @@ descendantSegment
 
 dotContent
   = STAR { return { type: 'wildcard' }; }
-  / n:INTEGER { return { type: 'numericLiteral', value: n }; }
   / id:identifier { return { type: 'identifier', value: id }; }
 
 dotdotContent
@@ -213,16 +212,16 @@ primaryExpression
 // ===================
 
 functionCall
-  = name:functionName _ PAREN_LEFT _ args:functionArgs? _ PAREN_RIGHT {
+  = name:functionName PAREN_LEFT _ args:functionArgs? _ PAREN_RIGHT {
       return { type: 'functionCall', name: name, args: args || [] };
     }
 
 functionName
-  = "length"i { return 'length'; }
-  / "count"i { return 'count'; }
-  / "match"i { return 'match'; }
-  / "search"i { return 'search'; }
-  / "value"i { return 'value'; }
+  = "length" { return 'length'; }
+  / "count" { return 'count'; }
+  / "match" { return 'match'; }
+  / "search" { return 'search'; }
+  / "value" { return 'value'; }
 
 functionArgs
   = head:functionArg tail:(_ COMMA _ functionArg)* {
@@ -306,7 +305,7 @@ selector
   / STAR { return { type: 'wildcard' }; }
   / n:INTEGER { return { type: 'numericLiteral', value: n }; }
   / s:STRING { return { type: 'stringLiteral', value: memberName(s) }; }
-  / id:identifier { return { type: 'identifier', value: id }; }
+  / id:bracketIdentifier { return { type: 'identifier', value: id }; }
 
 // ===================
 // Regex
@@ -365,9 +364,21 @@ valueList
 // Identifier
 // ===================
 
+// Unquoted names in brackets ($[key-dash]) are a jsonpathly extension (RFC 9535
+// requires quotes there): they keep the names 3.x accepted, dashes included.
+bracketIdentifier
+  = chars:$([a-zA-Z_] bracketKeyChar*) { return memberName(chars); }
+  / chars:$([\u0080-\uFFFF_]+) { return memberName(chars); }
+  / TRUE { return 'true'; }
+  / FALSE { return 'false'; }
+  / NULL { return 'null'; }
+
+bracketKeyChar
+  = [a-zA-Z0-9_]
+  / "-" !([0-9@$\-])
+
 identifier
   = chars:KEY { return memberName(chars); }
-  / chars:SPECIAL_KEY { return memberName(chars); }
   / TRUE { return 'true'; }
   / FALSE { return 'false'; }
   / NULL { return 'null'; }
@@ -428,16 +439,19 @@ REGEX_EXPR "regex"
 REGEX_OPT
   = opts:[gimsuy]* { return opts.join(''); }
 
+// RFC 9535 section 2.5.1.1: name-first, then name-chars (name-first or a digit).
 KEY
-  = first:[a-zA-Z_] rest:keyChar* { return first + rest.join(''); }
+  = $(nameFirst nameChar*)
 
-keyChar
-  = [a-zA-Z0-9_]
-  / "-" !([0-9@$\-]) { return "-"; }
+nameFirst
+  = [a-zA-Z_\u0080-\uD7FF\uE000-\uFFFF]
+  / [\uD800-\uDBFF] [\uDC00-\uDFFF]
 
-SPECIAL_KEY
-  = chars:[\u0080-\uFFFF_]+ { return chars.join(''); }
+nameChar
+  = nameFirst
+  / [0-9]
 
+// RFC 9535 section 2.3.5.1: no leading zeros (-0 is allowed here, not in indices).
 NUMBER "number"
   = "-"? INT frac:("." [0-9]+)? exp:EXP? {
       const num = parseFloat(text());
@@ -449,13 +463,15 @@ NUMBER "number"
     }
 
 INT
-  = [0-9]+
+  = "0"
+  / [1-9] [0-9]*
 
 // RFC 9535 section 2.3.3.1 / 2.3.4.1: indices and slice parameters are
 // integers. A fractional slice step such as 1e-100 never advanced the index
 // (1 + 1e-100 === 1) and looped forever.
+// No leading zeros and no -0 (RFC 9535 section 2.3.3.1).
 INTEGER "integer"
-  = "-"? INT {
+  = ("0" / "-"? [1-9] [0-9]*) {
       const num = parseInt(text(), 10);
       if (num < -9007199254740991 || num > 9007199254740991) {
         error('Integer out of I-JSON range [-(2^53)+1, (2^53)-1]');
@@ -470,25 +486,36 @@ STRING "string"
   = '"' chars:doubleStringChar* '"' { return chars.join(''); }
   / "'" chars:singleStringChar* "'" { return chars.join(''); }
 
+// RFC 9535 section 2.3.1.1: no raw control characters or lone surrogates, and
+// only the quote that delimits the string may be escaped.
 doubleStringChar
-  = !["\\] char:. { return char; }
+  = !["\\] char:unescapedChar { return char; }
+  / "\\" '"' { return '"'; }
   / "\\" seq:escapeSequence { return seq; }
 
 singleStringChar
-  = !['\\] char:. { return char; }
+  = !['\\] char:unescapedChar { return char; }
+  / "\\" "'" { return "'"; }
   / "\\" seq:escapeSequence { return seq; }
 
+unescapedChar
+  = [\u0020-\uD7FF\uE000-\uFFFF]
+  / $([\uD800-\uDBFF] [\uDC00-\uDFFF])
+
 escapeSequence
-  = '"' { return '"'; }
-  / "'" { return "'"; }
-  / "\\" { return "\\"; }
+  = "\\" { return "\\"; }
   / "/" { return "/"; }
   / "b" { return "\b"; }
   / "f" { return "\f"; }
   / "n" { return "\n"; }
   / "r" { return "\r"; }
   / "t" { return "\t"; }
-  / "u" digits:$(HEX HEX HEX HEX) { return String.fromCharCode(parseInt(digits, 16)); }
+  / "u" high:$([dD] [89abAB] HEX HEX) "\\u" low:$([dD] [c-fC-F] HEX HEX) {
+      return String.fromCharCode(parseInt(high, 16), parseInt(low, 16));
+    }
+  / "u" digits:$(HEX HEX HEX HEX) !{ const c = parseInt(digits, 16); return c >= 0xd800 && c <= 0xdfff; } {
+      return String.fromCharCode(parseInt(digits, 16));
+    }
 
 HEX
   = [0-9a-fA-F]

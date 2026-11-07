@@ -53,7 +53,7 @@ describe('Paths Function', () => {
     const consistencyCases = [
       // Non-existent paths
       { path: '$.string', desc: 'non-existent property' },
-      { path: '$.array.2', desc: 'array index via dot notation' },
+      { path: '$.array[2]', desc: 'array index' },
       { path: '$.bad', desc: 'missing property' },
 
       // Filter expressions
@@ -136,7 +136,7 @@ describe('Paths Function', () => {
 
     const outputCases = [
       { path: '$.string', expected: ["$['string']"], desc: 'simple property' },
-      { path: '$.array.2', expected: ["$['array'][2]"], desc: 'array index' },
+      { path: '$.array[2]', expected: ["$['array'][2]"], desc: 'array index' },
       { path: '$.bad', expected: [], desc: 'missing property' },
       { path: '$.array[?(@ > 3)]', expected: ["$['array'][3]"], desc: 'filter result' },
     ];

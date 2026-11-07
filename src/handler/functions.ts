@@ -9,7 +9,8 @@
  * - value(nodelist) - extracts single value from nodelist
  */
 import { Tick } from './budget';
-import { isArray, isDefined, isPlainObject, isString, lengthOf, ownAt, ownKeys } from './helper';
+import { isArray, isPlainObject, isString, lengthOf, ownKeys } from './helper';
+import { translateIRegexp } from './iregexp';
 import { MAX_REGEX_PATTERN_LENGTH, regexProgram, runProgram } from './regex';
 
 /** The nodes a query argument selected, for the functions taking a nodelist. */
@@ -100,10 +101,30 @@ export const checkIRegexp = (pattern: string, tick: Tick): boolean => {
   return valid;
 };
 
+const translationCache = new Map<string, string | null>();
+
+/**
+ * translateIRegexp with a small cache, charged like checkIRegexp: the pattern
+ * is read whole on every call, scanned only on a miss.
+ */
+const translateCached = (pattern: string, tick: Tick): string | null => {
+  let translated = translationCache.get(pattern);
+  if (translated === undefined) {
+    translated = translateIRegexp(pattern);
+    if (translated !== null) translated = Array.from(translated).join('');
+    if (translationCache.size >= MAX_VALIDATION_CACHE_SIZE) translationCache.clear();
+    translationCache.set(Array.from(pattern).join(''), translated);
+  }
+  tick(pattern.length);
+  return translated;
+};
+
 const MAX_REGEX_SITES = 256;
 
 /**
- * Tests `input` against an I-Regexp pattern.
+ * Tests `input` against a pattern: an I-Regexp (RFC 9485) for match() and
+ * search() (`iregexp`), a JavaScript pattern within the I-Regexp-like subset
+ * checkIRegexp accepts for the `=~` extension.
  *
  * A pattern from the document can differ from one candidate to the next, or be
  * an equal string in another object, so each call charges reading it. A
@@ -124,8 +145,14 @@ export const testRegex = (
   let prog = sites?.get(site as object);
   if (prog === undefined) {
     // Length first: validation scans the whole pattern.
-    const usable = pattern.length <= MAX_REGEX_PATTERN_LENGTH && checkIRegexp(pattern, tick);
-    prog = usable ? regexProgram(pattern, flags, anchored, tick, iregexp) : null;
+    if (pattern.length > MAX_REGEX_PATTERN_LENGTH) {
+      prog = null;
+    } else if (iregexp) {
+      const translated = translateCached(pattern, tick);
+      prog = translated === null ? null : regexProgram(translated, flags, anchored, tick, true);
+    } else {
+      prog = checkIRegexp(pattern, tick) ? regexProgram(pattern, flags, anchored, tick) : null;
+    }
     if (sites !== undefined) {
       if (sites.size >= MAX_REGEX_SITES) sites.clear();
       sites.set(site as object, prog);
@@ -140,7 +167,23 @@ export const testRegex = (
  */
 const length: FunctionImpl = (args, tick) => {
   const val = args[0];
-  if (isString(val)) return val.length;
+  if (isString(val)) {
+    // RFC 9535 section 2.4.4: the number of Unicode scalar values, so a
+    // surrogate pair counts once.
+    tick(val.length);
+    let count = val.length;
+    for (let i = 0; i < val.length - 1; i++) {
+      const unit = val.charCodeAt(i);
+      if (unit >= 0xd800 && unit <= 0xdbff) {
+        const next = val.charCodeAt(i + 1);
+        if (next >= 0xdc00 && next <= 0xdfff) {
+          count--;
+          i++;
+        }
+      }
+    }
+    return count;
+  }
   if (isArray(val)) return lengthOf(val);
   if (isPlainObject(val)) {
     const keys = ownKeys(val);
@@ -154,12 +197,8 @@ const length: FunctionImpl = (args, tick) => {
  * RFC 9535 count() function.
  * Returns count of nodes in nodelist.
  */
-const count: FunctionImpl = (args) => {
-  const val = args[0];
-  if (val instanceof NodeList) return val.nodes.length;
-  if (isArray(val)) return lengthOf(val);
-  return isDefined(val) ? 1 : 0;
-};
+// count() and value() always receive a NodeList: parsing rejects any other argument.
+const count: FunctionImpl = (args) => (args[0] as NodeList).nodes.length;
 
 /**
  * RFC 9535 match() function.
@@ -189,11 +228,8 @@ const search: FunctionImpl = (args, tick, site) => {
  * Extracts single value from nodelist, or Nothing if not exactly one.
  */
 const value: FunctionImpl = (args) => {
-  const val = args[0];
-  if (val instanceof NodeList) return val.nodes.length === 1 ? val.nodes[0] : undefined;
-  if (isArray(val) && lengthOf(val) === 1) return ownAt(val, 0);
-  if (!isArray(val) && isDefined(val)) return val;
-  return undefined;
+  const { nodes } = args[0] as NodeList;
+  return nodes.length === 1 ? nodes[0] : undefined;
 };
 
 /**

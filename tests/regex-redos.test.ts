@@ -80,9 +80,11 @@ describe('regex filters run in linear time (ReDoS)', () => {
   });
 
   // Modifier groups need V8 support (Node 23+); older runtimes reject them, as master did.
-  it('supports modifier groups where the runtime does', () => {
+  it('supports modifier groups in =~ where the runtime does', () => {
     const expected = NATIVE_MODIFIERS ? [{ a: 'A' }] : [];
-    expect(query([{ a: 'A' }], '$[?match(@.a, "(?i:a)")]')).to.deep.equal(expected);
+    expect(query([{ a: 'A' }], '$[?@.a =~ /(?i:a)/]')).to.deep.equal(expected);
+    // Not an I-Regexp construct: match() rejects it.
+    expect(query([{ a: 'A' }], '$[?match(@.a, "(?i:a)")]')).to.deep.equal([]);
   });
 });
 
