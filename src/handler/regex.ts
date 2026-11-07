@@ -140,7 +140,12 @@ class Parser {
   private i = 0;
   private mods: Modifiers;
 
-  constructor(private readonly src: string, private readonly unicode: boolean, flags: string) {
+  constructor(
+    private readonly src: string,
+    private readonly unicode: boolean,
+    flags: string,
+    private readonly iregexp = false,
+  ) {
     this.mods = { i: flags.includes('i'), m: flags.includes('m'), s: flags.includes('s') };
   }
 
@@ -221,7 +226,9 @@ class Parser {
 
     if (ch === '.') {
       this.i++;
-      return this.atom('.');
+      // RFC 9485 section 5.3: an I-Regexp `.` matches any character but CR and LF
+      // (JavaScript's `.` also excludes U+2028 and U+2029).
+      return this.atom(this.iregexp ? '[^\\n\\r]' : '.');
     }
 
     if (ch === '\\') {
@@ -416,12 +423,12 @@ class Compiler {
  * Compile a pattern with JavaScript RegExp flags.
  * Returns null when the pattern is invalid or uses an unsupported construct.
  */
-const compile = (pattern: string, flags: string): Program | null => {
+const compile = (pattern: string, flags: string, iregexp: boolean): Program | null => {
   try {
     // Let V8 reject syntax errors and bad flags (compiling is linear, running is what backtracks).
     new RegExp(pattern, flags);
     const unicode = flags.includes('u');
-    const ast = new Parser(pattern, unicode, flags).parse();
+    const ast = new Parser(pattern, unicode, flags, iregexp).parse();
     const compiler = new Compiler(unicode);
     compiler.compile(ast);
     compiler.finish();
@@ -566,11 +573,17 @@ let cacheEntries = 0;
  * cached copy. A miss also charges the program size, which a short pattern
  * such as a{900} can make far larger than itself.
  */
-export const regexProgram = (pattern: string, flags: string, anchored: boolean, tick: Tick): Program | null => {
+export const regexProgram = (
+  pattern: string,
+  flags: string,
+  anchored: boolean,
+  tick: Tick,
+  iregexp = false,
+): Program | null => {
   // Bounds checked before V8 sees the pattern and before it is cached, so oversized
   // patterns cost neither native compile time nor cache memory.
   if (pattern.length > MAX_REGEX_PATTERN_LENGTH || flags.length > 7 || !SUPPORTED_FLAGS_RE.test(flags)) return null;
-  const variant = `${flags}/${anchored ? 1 : 0}`;
+  const variant = `${flags}/${anchored ? 1 : 0}/${iregexp ? 1 : 0}`;
   const cached = cache.get(pattern)?.get(variant);
   if (cached !== undefined) {
     tick(pattern.length);
@@ -582,7 +595,9 @@ export const regexProgram = (pattern: string, flags: string, anchored: boolean, 
   const flat = Array.from(pattern).join('');
   // Too many property escapes is cached as unsupported, so a hit skips this scan.
   const prog =
-    countPropertyEscapes(flat) > MAX_REGEX_PROPERTY_ESCAPES ? null : compile(anchored ? `^(?:${flat})$` : flat, flags);
+    countPropertyEscapes(flat) > MAX_REGEX_PROPERTY_ESCAPES
+      ? null
+      : compile(anchored ? `^(?:${flat})$` : flat, flags, iregexp);
   if (cacheEntries >= MAX_CACHE_SIZE) {
     cache.clear();
     cacheEntries = 0;

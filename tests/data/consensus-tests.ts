@@ -127,8 +127,6 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[0:3:-2]',
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: [],
-    skip: true,
-    skipReason: 'jsonpathly follows RFC 9535 negative step semantics',
   },
   {
     id: 'array_slice_with_negative_step_on_partially_overlapping_array',
@@ -391,8 +389,6 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[0]',
     document: { '0': 'value' },
     consensus: [],
-    skip: true,
-    skipReason: 'jsonpathly treats $[0] as property access on objects',
   },
   {
     id: 'bracket_notation_with_number_on_short_array',
@@ -991,8 +987,6 @@ export const consensusTests: ConsensusTest[] = [
     selector: "$[?(@[1]=='b')]",
     document: [{ 1: 'a' }, { 1: 'b' }, { '1': 'c' }],
     consensus: [],
-    skip: true,
-    skipReason: 'jsonpathly treats $[n] as property access on objects',
   },
   {
     id: 'filter_expression_with_current_object',
@@ -1151,16 +1145,12 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(@.key==42)]',
     document: { a: { key: 0 }, b: { key: 42 }, c: { key: -1 }, d: { key: 41 }, e: { key: 43 }, f: { key: 42.0001 }, g: { key: 41.9999 }, h: { key: 100 }, i: { some: 'value' } },
     consensus: [{ key: 42 }],
-    skip: true,
-    skipReason: 'jsonpathly does not apply filter to object values',
   },
   {
     id: 'filter_expression_with_equals_on_object_with_key_matching_query',
     selector: '$[?(@.id==2)]',
     document: { id: 2 },
     consensus: [],
-    skip: true,
-    skipReason: 'jsonpathly applies filter to object root',
   },
   {
     id: 'filter_expression_with_equals_string',
@@ -1323,8 +1313,6 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(@.a.*)]',
     document: [{ a: [1] }, { a: { b: 1 } }, { a: 1 }, { a: [] }, { a: {} }, { a: { b: 1, c: 2 } }, { a: [1, 2] }],
     consensus: [{ a: [1] }, { a: { b: 1 } }, { a: { b: 1, c: 2 } }, { a: [1, 2] }],
-    skip: true,
-    skipReason: 'jsonpathly handles wildcard in existence check differently',
   },
   {
     id: 'filter_expression_with_not_equals',
@@ -1383,8 +1371,6 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(@.a[?(@.price>10)])]',
     document: [{ a: [{ price: 1 }, { price: 3 }] }, { a: [{ price: 11 }] }, { a: [{ price: 8 }, { price: 12 }, { price: 3 }] }, { a: [] }],
     consensus: [{ a: [{ price: 11 }] }, { a: [{ price: 8 }, { price: 12 }, { price: 3 }] }],
-    skip: true,
-    skipReason: 'jsonpathly handles nested filters differently',
   },
   {
     id: 'filter_expression_with_subpaths',
@@ -1429,8 +1415,6 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$.*[?(@.key)]',
     document: [{ key: 1 }, { key: 2 }],
     consensus: [],
-    skip: true,
-    skipReason: 'jsonpathly applies filter after wildcard on arrays',
   },
   {
     id: 'filter_expression_with_value_after_recursive_descent',
@@ -1451,8 +1435,6 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[?(@..id)]',
     document: [{ x: [{ id: 2 }] }, { x: [{}] }, { x: {} }, {}],
     consensus: [{ x: [{ id: 2 }] }],
-    skip: true,
-    skipReason: 'jsonpathly handles recursive descent in filter differently',
   },
   {
     id: 'filter_expression_with_value_null',
@@ -1605,16 +1587,12 @@ export const consensusTests: ConsensusTest[] = [
     selector: "$.*[0,:5]",
     document: { a: ['string', null, true], b: [false, 'string', 5.4] },
     consensus: ['string', 'string', null, true, false, false, 'string', 5.4],
-    skip: true,
-    skipReason: 'jsonpathly does not support mixed index/slice in union',
   },
   {
     id: 'union_with_slice_and_number',
     selector: '$[1:3,4]',
     document: [1, 2, 3, 4, 5],
     consensus: [2, 3, 5],
-    skip: true,
-    skipReason: 'jsonpathly does not support mixed slice/index in union',
   },
   {
     id: 'union_with_spaces',
@@ -1627,8 +1605,6 @@ export const consensusTests: ConsensusTest[] = [
     selector: '$[*,1]',
     document: ['first', 'second', 'third', 'forth', 'fifth'],
     consensus: ['first', 'second', 'third', 'forth', 'fifth', 'second'],
-    skip: true,
-    skipReason: 'jsonpathly does not support mixed wildcard/index in union',
   },
 
   // ============================================

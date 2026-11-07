@@ -12,6 +12,11 @@ import { Tick } from './budget';
 import { isArray, isDefined, isPlainObject, isString, lengthOf, ownAt, ownKeys } from './helper';
 import { MAX_REGEX_PATTERN_LENGTH, regexProgram, runProgram } from './regex';
 
+/** The nodes a query argument selected, for the functions taking a nodelist. */
+export class NodeList {
+  constructor(readonly nodes: unknown[]) {}
+}
+
 /** `site`: the call's AST node, when its pattern argument is a literal. */
 type FunctionImpl = (args: unknown[], tick: Tick, site?: object) => unknown;
 
@@ -113,13 +118,14 @@ export const testRegex = (
   anchored: boolean,
   tick: Tick,
   site?: object,
+  iregexp = false,
 ): boolean => {
   const sites = site === undefined ? undefined : tick.regexSites;
   let prog = sites?.get(site as object);
   if (prog === undefined) {
     // Length first: validation scans the whole pattern.
     const usable = pattern.length <= MAX_REGEX_PATTERN_LENGTH && checkIRegexp(pattern, tick);
-    prog = usable ? regexProgram(pattern, flags, anchored, tick) : null;
+    prog = usable ? regexProgram(pattern, flags, anchored, tick, iregexp) : null;
     if (sites !== undefined) {
       if (sites.size >= MAX_REGEX_SITES) sites.clear();
       sites.set(site as object, prog);
@@ -150,6 +156,7 @@ const length: FunctionImpl = (args, tick) => {
  */
 const count: FunctionImpl = (args) => {
   const val = args[0];
+  if (val instanceof NodeList) return val.nodes.length;
   if (isArray(val)) return lengthOf(val);
   return isDefined(val) ? 1 : 0;
 };
@@ -163,7 +170,7 @@ const match: FunctionImpl = (args, tick, site) => {
   const val = args[0];
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
-  return testRegex(pattern, 'u', val, true, tick, site);
+  return testRegex(pattern, 'u', val, true, tick, site, true);
 };
 
 /**
@@ -174,7 +181,7 @@ const search: FunctionImpl = (args, tick, site) => {
   const val = args[0];
   const pattern = args[1];
   if (!isString(val) || !isString(pattern)) return false;
-  return testRegex(pattern, 'u', val, false, tick, site);
+  return testRegex(pattern, 'u', val, false, tick, site, true);
 };
 
 /**
@@ -183,6 +190,7 @@ const search: FunctionImpl = (args, tick, site) => {
  */
 const value: FunctionImpl = (args) => {
   const val = args[0];
+  if (val instanceof NodeList) return val.nodes.length === 1 ? val.nodes[0] : undefined;
   if (isArray(val) && lengthOf(val) === 1) return ownAt(val, 0);
   if (!isArray(val) && isDefined(val)) return val;
   return undefined;

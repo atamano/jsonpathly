@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-11-07
+
+### Fixed
+
+RFC 9535 queries that gave wrong results or a syntax error ([#16](https://github.com/atamano/jsonpathly/issues/16)). jsonpathly now passes every valid-query test of the official [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite), which runs with the tests.
+
+- `<=` and `>=` were false for equal `null`, booleans, arrays and objects: `a <= b` now holds when `a < b` or `a == b`.
+- `count()` and `value()` treated a query selecting one array as the array's elements: `count(@.a)` is 1 when `@.a` is an array, and `value(@.a)` returns that array. Use `count(@.a[*])` or `length(@.a)` to count its elements.
+- In `match()` and `search()`, `.` now matches any character but `\n` and `\r`, including U+2028 and U+2029 (RFC 9485). The `=~` extension keeps JavaScript's `.`.
+- Selector lists accept slices and filters (`$[1,5:7]`, `$[?@.a,?@.b]`), a filter may start with a parenthesized group followed by an operator (`$[?(@.a || @.b) && @.c]`), and blank space is allowed between segments (`$ .a`, `@ .a .b`) and around the colons of a slice (`$[1 :5:2]`).
+- Descendant segments applied index, slice, filter and selector-list selectors to objects only: `$..[0,1]`, `$..[1:]` and `$..[?@ == 2]` skipped every array.
+
+### Changed
+
+- `count(@.a)` and `value(@.a)` on an array, see above: queries that relied on the old behavior must add `[*]`.
+
 ## [3.2.1] - 2026-11-04
 
 ### Fixed

@@ -24,7 +24,7 @@ import {
 import { JSONPathLimitError } from '../parser/errors';
 import { Tick } from './budget';
 import { comparators, isEmpty, matchRegex, SetCache } from './comparators';
-import { rfc9535Functions } from './functions';
+import { NodeList, rfc9535Functions } from './functions';
 import type { Program } from './regex';
 import {
   hasOwn,
@@ -677,6 +677,10 @@ export class Handler<T = unknown> {
         case 'wildcard':
           appendAll(results, this.handleWildcard(payload));
           break;
+        case 'slices':
+        case 'filterExpression':
+          appendAll(results, this.handleBracketExpressionContent(payload, selector));
+          break;
       }
     }
 
@@ -723,9 +727,9 @@ export class Handler<T = unknown> {
           break;
         }
         case 'bracketExpression': {
-          if (isPlainObject(value) || (isArray(value) && treeValue.value.type === 'wildcard')) {
-            appendAll(results, this.handleBracketExpressionContent(payload, treeValue.value));
-          }
+          // RFC 9535 section 2.5.2.2: the selectors apply to every descendant,
+          // arrays included ($..[0,1], $..[1:], $..[?@ == 2]).
+          appendAll(results, this.handleBracketExpressionContent(payload, treeValue.value));
           break;
         }
         case 'wildcard': {
@@ -915,7 +919,15 @@ export class Handler<T = unknown> {
     this.memoInvariant(tree, () => this.evaluateFunctionCall(payload, tree));
 
   private evaluateFunctionCall = (payload: ValuePath, tree: FunctionCall): unknown => {
-    const args = tree.args.map((arg) => this.handleOperationContent(payload, arg)?.value);
+    // count() and value() take a nodelist: a query selecting one array is one
+    // node, not the array's elements.
+    const nodelist = tree.name === 'count' || tree.name === 'value';
+    const args = tree.args.map((arg) => {
+      const result = this.handleOperationContent(payload, arg);
+      if (!nodelist || (arg.type !== 'root' && arg.type !== 'current')) return result?.value;
+      if (result?.isIndefinite) return new NodeList(result.value as unknown[]);
+      return new NodeList(isDefined(result?.value) ? [result?.value] : []);
+    });
     const fn = rfc9535Functions[tree.name];
     const pattern = tree.args[1] as { type?: string; subtype?: string } | undefined;
     const literal = pattern?.type === 'stringLiteral' || pattern?.subtype === 'string';

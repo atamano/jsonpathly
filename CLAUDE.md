@@ -80,11 +80,12 @@ Test files in `tests/`:
 - `parse.test.ts` - Parser and stringify round-trips
 - `rfc9535-compliance.test.ts` - RFC 9535 specific tests
 - `consensus.test.ts` - Cross-implementation compatibility (uses `data/consensus-tests.ts`)
+- `cts.test.ts` - Official JSONPath Compliance Test Suite, vendored in `data/cts/cts.json` (commit 20ebdcc). Cases not passed yet (invalid queries jsonpathly accepts) are listed by reason in `data/cts/known-failures.ts`; a listed case that starts passing fails the test until it is removed from the list
 - `extensions.test.ts` - jsonpathly-specific extensions (in, nin, subsetof, etc.)
 - `api.test.ts` - Public API contracts
 - `module-resolution.test.ts` - ESM/CJS build verification
 
-**Note:** ~70 consensus tests are intentionally skipped (pending). These represent:
+**Note:** ~58 consensus tests are intentionally skipped (pending). These represent:
 - RFC 9535 semantic differences (jsonpathly follows the RFC strictly)
 - Ambiguous syntax with no standard behavior across implementations
 

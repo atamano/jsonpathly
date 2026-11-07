@@ -125,7 +125,7 @@ export type NumericLiteral = {
 // RFC 9535: Selector list allows mixed types
 export type Unions = {
   type: 'unions';
-  values: (StringLiteral | Identifier | NumericLiteral | Wildcard)[];
+  values: (StringLiteral | Identifier | NumericLiteral | Wildcard | Slices | FilterExpression)[];
 };
 
 // RFC 9535 Function Call

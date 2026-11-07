@@ -39,15 +39,8 @@ const lt: ComparatorFn = (left, right, tick = noTick) => {
   return false;
 };
 
-/** RFC 9535: Less than or equal (numbers and strings) */
-const le: ComparatorFn = (left, right, tick = noTick) => {
-  if (isNumber(left) && isNumber(right)) return left <= right;
-  if (isString(left) && isString(right)) {
-    tick(Math.min(left.length, right.length));
-    return left <= right;
-  }
-  return false;
-};
+/** RFC 9535 section 2.3.5.2.2: `a <= b` holds when `a < b` or `a == b` (null, booleans, objects too). */
+const le: ComparatorFn = (left, right, tick = noTick) => lt(left, right, tick) || eq(left, right, tick);
 
 /** RFC 9535: Greater than (numbers and strings) */
 const gt: ComparatorFn = (left, right, tick = noTick) => {
@@ -59,15 +52,8 @@ const gt: ComparatorFn = (left, right, tick = noTick) => {
   return false;
 };
 
-/** RFC 9535: Greater than or equal (numbers and strings) */
-const ge: ComparatorFn = (left, right, tick = noTick) => {
-  if (isNumber(left) && isNumber(right)) return left >= right;
-  if (isString(left) && isString(right)) {
-    tick(Math.min(left.length, right.length));
-    return left >= right;
-  }
-  return false;
-};
+/** RFC 9535 section 2.3.5.2.2: `a >= b` holds when `a > b` or `a == b`. */
+const ge: ComparatorFn = (left, right, tick = noTick) => gt(left, right, tick) || eq(left, right, tick);
 
 /** Character work of comparing two values when both are strings of the same length. */
 const stringCost = (a: unknown, b: unknown): number =>

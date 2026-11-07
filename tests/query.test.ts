@@ -580,14 +580,21 @@ describe('query()', () => {
     });
 
     describe('count()', () => {
-      it('counts array elements', () => {
-        expect(query([{ items: [1, 2, 3] }], '$[?(count(@.items) == 3)]', { returnArray: true }))
+      it('counts the nodes a wildcard selects', () => {
+        expect(query([{ items: [1, 2, 3] }], '$[?(count(@.items[*]) == 3)]', { returnArray: true }))
           .to.deep.equal([{ items: [1, 2, 3] }]);
       });
 
-      it('counts empty array as zero', () => {
-        expect(query([{ items: [] }], '$[?(count(@.items) == 0)]', { returnArray: true }))
+      it('counts an empty nodelist as zero', () => {
+        expect(query([{ items: [] }], '$[?(count(@.items[*]) == 0)]', { returnArray: true }))
           .to.deep.equal([{ items: [] }]);
+      });
+
+      it('counts one array node as one node, not its elements', () => {
+        const data = [{ a: [1, 2, 3] }, { a: [1], d: 'f' }, { a: 1, d: 'f' }];
+        expect(query(data, '$[?count(@.a)>1]', { returnArray: true })).to.deep.equal([]);
+        expect(query(data, '$[?count(@.a)==1]', { returnArray: true })).to.deep.equal(data);
+        expect(query(data, '$[?count(@.missing)==0]', { returnArray: true })).to.deep.equal(data);
       });
     });
 
@@ -620,8 +627,14 @@ describe('query()', () => {
     });
 
     describe('value()', () => {
-      it('extracts single value from array', () => {
-        expect(query([{ items: [42] }], '$[?(value(@.items) == 42)]', { returnArray: true }))
+      it('extracts the single node of a nodelist', () => {
+        expect(query([{ items: [42] }], '$[?(value(@.items[*]) == 42)]', { returnArray: true }))
+          .to.deep.equal([{ items: [42] }]);
+      });
+
+      it('returns a single array node whole, not its only element', () => {
+        expect(query([{ items: [42] }], '$[?value(@.items) == 42]', { returnArray: true })).to.deep.equal([]);
+        expect(query([{ items: [42] }], '$[?value(@.items) == [42]]', { returnArray: true }))
           .to.deep.equal([{ items: [42] }]);
       });
 

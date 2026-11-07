@@ -13,7 +13,7 @@
 
 ## Features
 
-- **RFC 9535 compliant** - Follows the official JSONPath specification
+- **RFC 9535 compliant** - Follows the official JSONPath specification and passes every valid-query test of the [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite)
 - **Secure** - No dynamic code execution, no injection vulnerabilities
 - **TypeScript native** - Full type definitions included
 - **Dual module** - Works with ESM and CommonJS
@@ -95,7 +95,7 @@ $['players'][0]['name']
 | Function     | Description                          | Example                                        |
 | :----------- | :----------------------------------- | :--------------------------------------------- |
 | `length()`   | Length of string, array, or object   | `$[?length(@.name) > 10]`                      |
-| `count()`    | Count of elements in a nodelist      | `$[?count(@.titles[*]) > 5]`                   |
+| `count()`    | Number of nodes in a nodelist        | `$[?count(@.titles[*]) > 5]`                   |
 | `match()`    | Full string regex match              | `$[?match(@.title, '^GM.*')]`                  |
 | `search()`   | Regex search within string           | `$[?search(@.name, 'Kasparov')]`               |
 | `value()`    | Extract value from nodelist          | `$[?value(@.achievements[0]) == 'World Champion']` |

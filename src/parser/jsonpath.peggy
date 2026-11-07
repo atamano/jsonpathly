@@ -46,7 +46,7 @@
 // ===================
 
 jsonpath
-  = _ ROOT_VALUE segments:segment* _ EOF {
+  = _ ROOT_VALUE segments:segments _ EOF {
       return {
         type: 'root',
         next: buildSubscriptChain(segments)
@@ -56,6 +56,10 @@ jsonpath
 // ===================
 // Segments
 // ===================
+
+// RFC 9535 section 2.1.1: blank space is allowed before each segment.
+segments
+  = list:(_ segment)* { return list.map(s => s[1]); }
 
 segment
   = descendantSegment
@@ -89,26 +93,33 @@ dotdotContent
 bracket
   = BRACKET_LEFT _ content:bracketContent _ BRACKET_RIGHT { return content; }
 
+// RFC 9535: a selector list mixes any selectors (names, indices, wildcards,
+// slices, filters). One rule for one selector or several, so a filter is
+// parsed once whether or not a comma follows it (trying a list first and a
+// single selector after reparsed nested filters twice per level).
 bracketContent
-  = filterExpression
-  / slices
-  / selectorList
-  / STAR { return { type: 'bracketExpression', value: { type: 'wildcard' } }; }
-  / n:INTEGER { return { type: 'bracketMember', value: { type: 'numericLiteral', value: n } }; }
-  / s:STRING { return { type: 'bracketMember', value: { type: 'stringLiteral', value: memberName(s) } }; }
-  / id:identifier { return { type: 'bracketMember', value: { type: 'identifier', value: id } }; }
+  = head:selector tail:(_ COMMA _ selector)* {
+      if (tail.length > 0) {
+        return { type: 'bracketExpression', value: { type: 'unions', values: [head, ...tail.map(t => t[3])] } };
+      }
+      const member = head.type === 'numericLiteral' || head.type === 'stringLiteral' || head.type === 'identifier';
+      return { type: member ? 'bracketMember' : 'bracketExpression', value: head };
+    }
 
 // ===================
 // Filter Expression
 // ===================
 
+// The parenthesized form only when the group is the whole filter: otherwise
+// `?(@.a || @.b) && @.c` stopped after the group. The general form below
+// parses such a group as a groupExpression.
 filterExpression
-  = QUESTION _ PAREN_LEFT _ expr:expression _ PAREN_RIGHT {
-      return { type: 'bracketExpression', value: { type: 'filterExpression', value: expr } };
+  = QUESTION _ PAREN_LEFT _ expr:expression _ PAREN_RIGHT &(_ (BRACKET_RIGHT / COMMA)) {
+      return { type: 'filterExpression', value: expr };
     }
   / QUESTION _ expr:filterExprContent {
       // RFC 9535 style without parens
-      return { type: 'bracketExpression', value: { type: 'filterExpression', value: expr } };
+      return { type: 'filterExpression', value: expr };
     }
 
 filterExprContent
@@ -261,13 +272,13 @@ filterargUnary
 // ===================
 
 filterpath
-  = ROOT_VALUE segments:segment* {
+  = ROOT_VALUE segments:segments {
       return {
         type: 'root',
         next: buildSubscriptChain(segments)
       };
     }
-  / CURRENT_VALUE segments:segment* {
+  / CURRENT_VALUE segments:segments {
       return {
         type: 'current',
         next: buildSubscriptChain(segments)
@@ -278,28 +289,21 @@ filterpath
 // Slices and Selector Lists
 // ===================
 
-slices
-  = start:INTEGER? COLON end:INTEGER? step:(COLON INTEGER?)? {
+// RFC 9535 section 2.3.4.1: blank space is allowed around the colons.
+slice
+  = start:(INTEGER _)? COLON _ end:(INTEGER _)? step:(COLON _ INTEGER?)? {
       return {
-        type: 'bracketExpression',
-        value: {
-          type: 'slices',
-          start: start !== null ? start : null,
-          end: end !== null ? end : null,
-          step: step ? (step[1] !== null ? step[1] : null) : null
-        }
+        type: 'slices',
+        start: start !== null ? start[0] : null,
+        end: end !== null ? end[0] : null,
+        step: step ? (step[2] !== null ? step[2] : null) : null
       };
     }
 
-// RFC 9535: Selector list allows mixed types (strings, numbers, wildcards)
-selectorList
-  = head:selector tail:(_ COMMA _ selector)+ {
-      const values = [head, ...tail.map(t => t[3])];
-      return { type: 'bracketExpression', value: { type: 'unions', values: values } };
-    }
-
 selector
-  = STAR { return { type: 'wildcard' }; }
+  = filterExpression
+  / slice
+  / STAR { return { type: 'wildcard' }; }
   / n:INTEGER { return { type: 'numericLiteral', value: n }; }
   / s:STRING { return { type: 'stringLiteral', value: memberName(s) }; }
   / id:identifier { return { type: 'identifier', value: id }; }
